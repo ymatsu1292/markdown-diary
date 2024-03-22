@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import moment from 'moment';
 
 function create_calendars_base(check_month) {
+  const year = check_month.clone().year();
   const month = check_month.clone().month();
   let result = {
     "month": check_month.format("YYYY-MM"),
@@ -24,10 +25,10 @@ function create_calendars_base(check_month) {
       } else {
 	week_data["caldata"].push([String(calc_date.date()), "", "", 0]);
       }
-      if (calc_date.month() > month) {
+      if (calc_date.year() > year || (calc_date.year() == year && calc_date.month() > month)) {
 	continue_flag = false;
       }
-      console.log("calc_date=", calc_date, ", calc_date_str=", calc_date_str, ", month=", month, ", calc_date.month()=", calc_date.month(), ", continue_flag=", continue_flag);
+      //console.log("calc_date=", calc_date, ", calc_date_str=", calc_date_str, ", month=", month, ", calc_date.month()=", calc_date.month(), ", continue_flag=", continue_flag);
     }
     result["data"].push(week_data);
     week_number += 1;
@@ -48,8 +49,7 @@ export function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   console.log("api/schedule GET: start - ", params);
   const today_str = moment().format("YYYY-MM-DD");
-  const target_date_str = ('date' in params) ? params['date'] : today_str;
-  const target_page = ('page' in params) ? params['page'] : null;
+  const target_date_str = params.has('target') ? params.get('target') : today_str;
 
   // カレンダーの日付を計算する
   console.log("today_str=", today_str, ", target_date_str=", target_date_str);

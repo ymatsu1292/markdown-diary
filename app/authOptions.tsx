@@ -86,7 +86,7 @@ export const authOptions: NextAuthOptions = {
             // リフレッシュできなかった場合は元のトークンを返し、errorという項目を追加してみる
             // こうなった場合は、クライアント側でいったんログアウトして再ログインする必要があるのかな
             console.log("アクセスtokenがリフレッシュできませんでした", error);
-            return {...token, error: "アクセストークンが更新できませんでした"};
+            return {...token, error: "refresh_access_token_error"};
           }
 	} else if (now < expires_at) {
           // account情報がない場合は現状の情報を引き続き利用するが、tokenが有効かどうかは確認する
@@ -106,7 +106,7 @@ export const authOptions: NextAuthOptions = {
             console.log("アクセスtokenがリフレッシュできませんでした", error);
             let result =  {
               ...token,
-              error: "アクセストークンが更新できませんでした"
+              error: "refresh_access_token_error"
             }
             console.log("jwt(refresh).result=", result);
             return result;

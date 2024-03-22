@@ -12,6 +12,7 @@ export function MainPage() {
   console.log("MainPage: START");
   const { data: session, status } = useSession();
   const [ targetPage, setTargetPage ] = useState(getTodayStr());
+  const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
   const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
   const handleTargetPageChange = (newPage: string) => {
     console.log("MainPage.handleTargetPageChange() START:", newPage);
@@ -19,11 +20,19 @@ export function MainPage() {
     console.log("MainPage.handleTargetPageChange() END");
   };
   
-  let calendarDate = targetPage;
-  if (!datePattern.test(targetPage)) {
+  //let calendarDate = targetPage;
+  //if (!datePattern.test(targetPage)) {
     // 日付以外のページなら今日をターゲットにする
-    calendarDate = getTodayStr();
-  }
+  //calendarDate = getTodayStr();
+  //}
+  useEffect(() => {
+    if (!datePattern.test(targetPage)) {
+      // 日付以外のページなら今日をターゲットにする
+      setCalendarDate(getTodayStr());
+    } else {
+      setCalendarDate(targetPage);
+    }
+  }, [targetPage]);
 
   useEffect(() => {
     console.log("MainPage.useEffect: START");

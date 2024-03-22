@@ -24,7 +24,7 @@ export function MiniCalendars(
     // データを読み込んでscheduleDataに登録する
     const data = async() => {
       console.log("STARTdata fetch");
-      const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}&user=${session?.user?.email}`)
+      const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}&user=${session?.user?.email}`);
       const response = await fetch(uri);
       if (response.ok) {
 	console.log("END data fetch: OK ", response);
@@ -42,8 +42,9 @@ export function MiniCalendars(
   return (
     <div className="h-dvh bg-blue-50 w-200">
       <div className="p-2">
-	<Button color="primary" variant="bordered" size="sm" className="m-2"><ArrowFatLeft /></Button>
-	<Button color="primary" variant="bordered" size="sm" className="m-2"><ArrowFatRight/></Button>
+	<Button color="primary" variant="none" size="sm" className="m-0"><ArrowFatLeft /></Button>
+        <Button color="primary" variant="none" size="sm" className="m-0">今日</Button>
+	<Button color="primary" variant="none" size="sm" className="m-0"><ArrowFatRight/></Button>
       </div>
       {scheduleData != null ? 
       <div className="container mx-auto">
