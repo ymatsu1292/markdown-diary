@@ -42,7 +42,7 @@ export function MainPage() {
         <NavbarBrand key="a">
           <Book size={24} /><p className="font-bold text-inherit mx-1">Markdown Diary</p>
         </NavbarBrand>
-        <NavbarContent className="sm:flex gap-4" justify="center" key="b">
+        <NavbarContent className="sm:flex gap-2" justify="center" key="b">
 	  <NavbarItem key="search">
             <Input type="search" size="sm" placeholder="ページ名" defaultValue={targetPage}/>
           </NavbarItem>

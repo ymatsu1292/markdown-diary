@@ -5,6 +5,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import markdownit from 'markdown-it';
+import mdContainer from 'markdown-it-container';
 
 export function ContentViewer(
   { targetPage } : {
@@ -12,6 +13,7 @@ export function ContentViewer(
   }
 ) {
   const md = markdownit({html: true, linkify: true, typographer: true});
+  md.use(mdContainer, 'info');
   const [markdownText, setMarkdownText] = useState("");
   const [markdownHtml, setMarkdownHtml] = useState("");
   const onChange = useCallback((val, viewUpdate) => {
@@ -39,8 +41,7 @@ export function ContentViewer(
         <Tab key="viewer" title="参照">
 	  <Card>
             <CardBody>
-	      <div>{markdownHtml}</div>
-              <div id="viewer" dangerouslySetInnerHTML={{__html: markdownHtml}}>
+              <div className="markdown-body" id="viewer" dangerouslySetInnerHTML={{__html: markdownHtml}}>
 	      </div>
 	    </CardBody>
 	  </Card>

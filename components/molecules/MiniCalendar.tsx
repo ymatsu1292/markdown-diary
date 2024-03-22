@@ -1,5 +1,6 @@
 import { Table, TableHeader, TableColumn ,TableBody, TableRow, TableCell } from '@nextui-org/react';
 import { Link, Tooltip } from '@nextui-org/react';
+import { getTodayStr } from '@/components/atoms/dateutils';
 
 export function MiniCalendar(
   { scheduleData1m, handleTargetPageChange, calendarDate } : {
@@ -67,13 +68,13 @@ export function MiniCalendar(
     //console.log("drawCell: END");
     return res1;
   }
-  const todayStr = "2024-02-05";
+  const todayStr = getTodayStr();
   console.log("MiniCalendar: END - ", scheduleData1m);
   
   return (
-    <div>
-      <Table aria-label="cal-aria1" isCompact className="m-1 p-1" topContent=<div className="text-center text-sm">2024-02</div>>
-	<TableHeader>
+    <div className="m-0 p-1">
+      <Table aria-label="cal-aria1" isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-2" topContent=<span className="m-0 p-0 text-center text-sm">{scheduleData1m.month}</span>>
+	<TableHeader className="m-0 p-0">
 	  <TableColumn className="m-0 p-0 text-center"><span className="text-red-900">日</span></TableColumn>
 	  <TableColumn className="m-0 p-0 text-center">月</TableColumn>
 	  <TableColumn className="m-0 p-0 text-center">火</TableColumn>

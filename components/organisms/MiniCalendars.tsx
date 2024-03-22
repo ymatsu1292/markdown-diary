@@ -49,6 +49,7 @@ export function MiniCalendars(
       <div className="container mx-auto">
 	<MiniCalendar scheduleData1m={scheduleData.cal1} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
 	<MiniCalendar scheduleData1m={scheduleData.cal2} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
+	<MiniCalendar scheduleData1m={scheduleData.cal3} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
       </div>
       :
       <div className="grid place-items-center h-full">
