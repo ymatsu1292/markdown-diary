@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { open, close, mkdir, writeFile, readFile } from 'node:fs/promises';
+import { open, mkdir, writeFile, readFile } from 'node:fs/promises';
 
 export async function GET(req: NextRequest) {
   console.log("GET: START");

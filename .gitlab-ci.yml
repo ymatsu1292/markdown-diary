@@ -5,9 +5,6 @@ stages:          # List of stages for jobs, and their order of execution
   - test
   - deploy
 
-before_script:
-  - pip install --upgrade pip
-
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
   script:
