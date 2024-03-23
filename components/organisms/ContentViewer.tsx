@@ -21,30 +21,30 @@ export function ContentViewer(
   const [markdownHtml, setMarkdownHtml] = useState("");
   
   const onChange = useCallback((val: string) => {
-    console.log('val:', val);
+    //console.log('val:', val);
     setMarkdownText(val);
     let base_text = targetPage + "\n=====\n" + val;
-    console.log('render raw:', base_text) 
+    //console.log('render raw:', base_text) 
     setMarkdownHtml(md.render(base_text));
   }, [md, targetPage]);
 
   const loadData = async() => {
-    console.log("ContentViewer.loadData: START");
+    //console.log("ContentViewer.loadData: START");
     setMode('load');
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}&user=${session?.user?.email}`);
     const result = await fetch(uri);
     const json_data = await result.json();
-    console.log("json=", json_data);
+    //console.log("json=", json_data);
     //setMarkdownText(json_data["markdown"]);
     onChange(json_data["markdown"]);
     setMode('normal');
     
-    console.log("ContentViewer.loadData: END");
+    //console.log("ContentViewer.loadData: END");
   }
   
   const saveData = async() => {
-    console.log("ContentViewer.saveData: START");
-    console.log("session=", session);
+    //console.log("ContentViewer.saveData: START");
+    //console.log("session=", session);
     const markdown_data = {
       "user": session?.user?.email,
       "target": targetPage,
@@ -58,21 +58,21 @@ export function ContentViewer(
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log(data);
+        //console.log(data);
         setMode('normal');
       })
       .catch((error) => {
         setMode('normal');
       });
-    console.log("ContentViewer.saveData: END");
+    //console.log("ContentViewer.saveData: END");
   };
 
   useEffect(() => {
-    console.log("ContentViewer.useEffect(): START");
+    //console.log("ContentViewer.useEffect(): START");
     if (session != null) {
       loadData();
     }
-    console.log("ContentViewer.useEffect(): END");
+    //console.log("ContentViewer.useEffect(): END");
   }, [targetPage, session]);
   
   return (

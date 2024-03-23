@@ -17,27 +17,27 @@ export function MiniCalendars(
   const today_month = getTodayMonth();
 
   useEffect(() => {
-    console.log("START: MiniCalendars.useEffect session=", session);
+    //console.log("START: MiniCalendars.useEffect session=", session);
     if (session?.user == undefined) {
-      console.log("END: MiniCalendars.useEffect NO SESSION");
+      //console.log("END: MiniCalendars.useEffect NO SESSION");
       return;
     }
     // データを読み込んでscheduleDataに登録する
     const data = async() => {
-      console.log("STARTdata fetch");
+      //console.log("STARTdata fetch");
       const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}&user=${session?.user?.email}`);
       const response = await fetch(uri);
       if (response.ok) {
-	console.log("END data fetch: OK ", response);
+	//console.log("END data fetch: OK ", response);
 	let jsonData = await response.json();
-	console.log("JSON=", jsonData);
+	//console.log("JSON=", jsonData);
 	setScheduleData(jsonData['scheduleData']);
       } else {
-	console.log("END data fetch: NG ", response);
+	//console.log("END data fetch: NG ", response);
       }
     }
     data();
-    console.log("END: MiniCalendars.useEffect");
+    //console.log("END: MiniCalendars.useEffect");
   }, [session, calendarDate]);
   
   return (

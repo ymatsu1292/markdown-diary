@@ -10,14 +10,14 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@
 import { Book } from '@phosphor-icons/react';
 
 export function MainPage() {
-  console.log("MainPage: START");
+  //console.log("MainPage: START");
   const { data: session, status } = useSession();
   const [ targetPage, setTargetPage ] = useState(getTodayStr());
   const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
   const handleTargetPageChange = (newPage: string) => {
-    console.log("MainPage.handleTargetPageChange() START:", newPage);
+    //console.log("MainPage.handleTargetPageChange() START:", newPage);
     setTargetPage(String(newPage));
-    console.log("MainPage.handleTargetPageChange() END");
+    //console.log("MainPage.handleTargetPageChange() END");
   };
   
   //let calendarDate = targetPage;
@@ -36,16 +36,16 @@ export function MainPage() {
   }, [targetPage]);
 
   useEffect(() => {
-    console.log("MainPage.useEffect: START");
+    //console.log("MainPage.useEffect: START");
     if (session?.error == "refresh_access_token_error") {
       signIn();
     }
-    console.log("MainPage.useEffect: END");
+    //console.log("MainPage.useEffect: END");
   }, [session]);
 
-  console.log("session=", session);
+  //console.log("session=", session);
   
-  console.log("MainPage: END");
+  //console.log("MainPage: END");
   return (
     <div>
       <Navbar position="sticky" height="3rem" isBordered className="bg-blue-200 min-w-fit mx-auto">
