@@ -2,8 +2,9 @@ import { Button } from '@nextui-org/react';
 import { MiniCalendar } from '@/components/molecules/MiniCalendar';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { getTodayStr, getTodayMonth } from '@/components/atoms/dateutils';
+import { getTodayStr, getTodayMonth, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from '@/components/atoms/dateutils';
 import { ArrowFatLeft, ArrowFatRight } from '@phosphor-icons/react';
+import { ArrowFatLinesLeft, ArrowFatLinesRight } from '@phosphor-icons/react';
 import { ScheduleData } from '@/components/atoms/scheduleDataType';
 
 export function MiniCalendars(
@@ -42,10 +43,22 @@ export function MiniCalendars(
   
   return (
     <div className="h-dvh bg-blue-50 w-200">
-      <div className="p-2">
-	<Button color="primary" variant="light" size="sm" className="m-0"><ArrowFatLeft /></Button>
-        <Button color="primary" variant="light" size="sm" className="m-0">今日</Button>
-	<Button color="primary" variant="light" size="sm" className="m-0"><ArrowFatRight/></Button>
+      <div className="p-0 m-0">
+	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          onPress={() => handleTargetPageChange(getPrevMonth(calendarDate))}
+        ><ArrowFatLinesLeft /></Button>
+	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          onPress={() => handleTargetPageChange(getPrevDay(calendarDate))}
+        ><ArrowFatLeft /></Button>
+        <Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          onPress={() => handleTargetPageChange(getTodayStr())}
+        >今日</Button>
+	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          onPress={() => handleTargetPageChange(getNextDay(calendarDate))}
+        ><ArrowFatRight/></Button>
+	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          onPress={() => handleTargetPageChange(getNextMonth(calendarDate))}
+        ><ArrowFatLinesRight/></Button>
       </div>
       {scheduleData != null ? 
       <div className="container mx-auto">
