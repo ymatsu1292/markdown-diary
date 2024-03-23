@@ -6,6 +6,7 @@ import { MiniCalendars } from '@/components/organisms/MiniCalendars';
 import { ContentViewer } from '@/components/organisms/ContentViewer';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
 import { Link, Button, Input } from "@nextui-org/react";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@nextui-org/react";
 import { Book } from '@phosphor-icons/react';
 
 export function MainPage() {
@@ -52,21 +53,31 @@ export function MainPage() {
           <Book size={24} /><p className="font-bold text-inherit mx-1">Markdown Diary</p>
         </NavbarBrand>
         <NavbarContent className="sm:flex gap-2" justify="center" key="b">
-	  <NavbarItem key="search">
+          <NavbarItem key="search">
             <Input type="search" size="sm" placeholder="ページ名" defaultValue={targetPage}/>
           </NavbarItem>
-          <NavbarItem key="user">
-	    <Button color="primary" variant="bordered" size="sm">{session?.user?.name}</Button>
-          </NavbarItem>
+          <Dropdown placement="bottom-end">
+            <DropdownTrigger>
+              <Avatar showFallback as="button" size="sm" src="https://images.unsplash.com/broken" />
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Profile" variant="flat">
+              <DropdownItem key="profile" className="h-14 gap-2">
+                <p>Signed in as</p><p className="font-semibold">{session?.user?.name}</p>
+              </DropdownItem>
+              <DropdownItem key="logout" color="danger" onPress={() => signOut()}>
+                Logout
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
         </NavbarContent>
       </Navbar>
       <div>
-	<div className="float-left">
-	  <MiniCalendars calendarDate={calendarDate} handleTargetPageChange={handleTargetPageChange}/>
-	</div>
-	<div className="container mx-auto">
-	  <ContentViewer targetPage={targetPage}/>
-	</div>
+        <div className="float-left">
+          <MiniCalendars calendarDate={calendarDate} handleTargetPageChange={handleTargetPageChange}/>
+        </div>
+        <div className="container mx-auto">
+          <ContentViewer targetPage={targetPage}/>
+        </div>
       </div>
     </div>
   );
