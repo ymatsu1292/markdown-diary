@@ -19,13 +19,12 @@ export function MiniCalendar(
     handleTargetPageChange(dateStr);
   };
   
-  const calcCellColor = (daySchedule: DaySchedule, count: number): string => {
-    //console.log("calcCellColor: START");
-    //console.log("values=", values);
-    //console.log("count=", count);
-    //console.log("calcCellColor: END");
+  const calcCellColor = (daySchedule: DaySchedule, count: number, otherMonth: boolean): string => {
     let color = weekday_color[count];
-    if (daySchedule.holiday != "") {
+    if (otherMonth) {
+      return "";
+    }
+    if (daySchedule.holiday != "")  {
       color = "bg-red-200";
     }
     if (daySchedule.memo != "") {
@@ -40,8 +39,10 @@ export function MiniCalendar(
     //console.log(todayStr);
     let dateStr: string = monthStr + "-" + String(daySchedule.date).padStart(2, "0");
     let key: string = dateStr;
+    let otherMonth: boolean = false;
     if (daySchedule.date == "") {
       key = "dummy-" + String(weekday);
+      otherMonth = true;
     }
     //console.log("drawCell.dateStr=", dateStr);
     if (todayStr == dateStr) {
@@ -72,7 +73,8 @@ export function MiniCalendar(
     }
     //console.log("res1=", res1);
     //console.log("drawCell: END");
-    return res1;
+    let res2 = <TableCell key={weekday} className={`m-0 p-0 text-center ${calcCellColor(daySchedule, weekday, otherMonth)}`}>{res1}</TableCell>;
+    return res2;
   }
   const todayStr = getTodayStr();
   console.log("MiniCalendar: END - ", monthSchedule);
@@ -92,11 +94,9 @@ export function MiniCalendar(
 	<TableBody>
 	  {monthSchedule.data.map((item: WeekSchedule) => (
             <TableRow key={item.id}>
-	    {item.caldata.map((daySchedule: DaySchedule, count: number) => (
-	      <TableCell key={item.id + "-" + count} className={`m-0 p-0 text-center ${calcCellColor(daySchedule, count)}`}>
-  	        {drawCell(daySchedule, monthSchedule.month, todayStr, count)}
-	      </TableCell>
-	    ))}
+	    {item.caldata.map((daySchedule: DaySchedule, count: number) => 
+  	      drawCell(daySchedule, monthSchedule.month, todayStr, count)
+            )}
 	    </TableRow>
           ))}
 	</TableBody>
