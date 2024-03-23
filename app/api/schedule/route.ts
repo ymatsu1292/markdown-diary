@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import moment from 'moment';
 import { ScheduleData, MonthSchedule, WeekSchedule, DaySchedule } from '@/components/atoms/scheduleDataType';
-import { EventData, EventItem } from '@/components/atoms/scheduleDataType';
+import { EventData } from '@/components/atoms/scheduleDataType';
+import { stat, readFile, opendir } from 'node:fs/promises';
+import { Buffer } from 'node:buffer';
 
-function create_calendars_base(check_month: any): MonthSchedule {
+function create_calendar_base(check_month: any): MonthSchedule {
   const year = check_month.clone().year();
   const month = check_month.clone().month();
   let result: MonthSchedule = {
@@ -11,7 +13,7 @@ function create_calendars_base(check_month: any): MonthSchedule {
     "data": []
   }
   let start_date = check_month.clone().weekday(0);
-  console.log("start_date=", start_date, ", check_month=", month);
+  //console.log("start_date=", start_date, ", check_month=", month);
   let week_number = 0;
   let continue_flag = true;
   while (continue_flag) {
@@ -30,29 +32,108 @@ function create_calendars_base(check_month: any): MonthSchedule {
       if (calc_date.year() > year || (calc_date.year() == year && calc_date.month() > month)) {
 	continue_flag = false;
       }
-      //console.log("calc_date=", calc_date, ", calc_date_str=", calc_date_str, ", month=", month, ", calc_date.month()=", calc_date.month(), ", continue_flag=", continue_flag);
+      //console.log("calc_date=", calc_date, ", calc_date_str=", calc_date_str,
+      // ", month=", month, ", calc_date.month()=", calc_date.month(), ", continue_flag=", continue_flag);
     }
     result["data"].push(week_data);
     week_number += 1;
   }
-  console.log(result);
+  //console.log(result);
   return result;
 }
 
-function load_data(calc_month: string): EventData {
-  let eventData: EventData = {events: []}
-  return eventData
+function parse_event_text(text: string): {[key: string]: string} {
+  console.log("parse_event_text: START ", text);
+  const lines: string[] = text.split('\n');
+  let res: {[key: string]: string} = {}
+  lines.forEach((line) => {
+    let items: string[] = line.split(':');
+    if (items.length == 2) {
+      let date: string = items[0].trim();
+      let event_text: string = items[1].trim();
+      res[date] = event_text;
+    }
+  });
+  
+  console.log("parse_event_text: END ", res);
+  return res;
 }
 
-function set_schedule(calendars_base: ScheduleData, schedule: EventData) {
+
+async function load_events(event_file: string, base_file: string): Promise<EventData> {
+  console.log("load_holiday_events: START");
+  // イベント設定ファイルを読み込む
+  let event_data: EventData = {"events": {}};
+  try {
+    let event_buffer = await readFile(event_file, { encoding: 'utf8' });
+    let event_text = event_buffer.toString();
+    event_data["events"] = parse_event_text(event_text);
+  } catch (error) {
+    // ファイルがない場合はベースファイルから読み込む
+    if (base_file != null) {
+      try {
+        let event_buffer = await readFile(base_file);
+        let event_text = event_buffer.toString();
+        event_data["events"] = parse_event_text(event_text);
+      } catch (error) {
+      }
+    }
+  }
+  return event_data;
+}
+
+async function check_diary_exists(target_month_list: string[], user: string): Promise<EventData> {
+  console.log("check_diary_exists: START");
+  let event_data: EventData = {"events": {}};
+  try {
+    const work_dir = process.env.DATA_DIRECTORY + "/" + user;
+    //console.log("work_dir=", work_dir);
+    const dir = await opendir(work_dir);
+    const month_list = "(" + target_month_list.join("|") + ")";
+    const filename_pattern = new RegExp("^" + month_list + "-[0-9]{2}\.md$");
+    for await (const dirent of dir) {
+      //console.log(dirent);
+      if (filename_pattern.test(dirent.name)) {
+        const date_str = dirent.name.slice(0, 10);
+        event_data["events"][date_str] = "";
+      }
+    }
+  } catch (error) {}
+  console.log("check_diary_exists: END");
+  return event_data;
+}
+
+function set_schedule(calendars_base: ScheduleData, event_data: EventData, type: string) {
+  for (const cal of ["cal1", "cal2", "cal3"]) {
+    let target_calendar = calendars_base[cal];
+    let month = target_calendar["month"];
+    for (const week_data of target_calendar["data"]) {
+      for (const day_data of week_data["caldata"]) {
+        const date = day_data["date"];
+        if (date != "") {
+          const date_str = month + "-" + String(date).padStart(2, '0');
+          //console.log("date_str=", date_str, date, event_data["events"]);
+          if (date_str in event_data["events"]) {
+            if (type != "diary") {
+              day_data[type] = event_data["events"][date_str]
+            } else {
+              day_data["hasDiary"] = true;
+            }
+          }
+        }
+      }
+    }
+    //console.log("event_data['event']=", event_data.events);
+  }
   return calendars_base;
 }
 
-export function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   console.log("api/schedule GET: start - ", params);
   const today_str = moment().format("YYYY-MM-DD");
   const target_date_str = params.has('target') ? params.get('target') : today_str;
+  const user: string | null = params.has('user') ? params.get('user') : 'user';
 
   // カレンダーの日付を計算する
   console.log("today_str=", today_str, ", target_date_str=", target_date_str);
@@ -63,106 +144,32 @@ export function GET(req: NextRequest) {
   const next_month = target_month.clone().add(1, "M");
   console.log("target_months=", prev_month, target_month, next_month);
 
-  let calendars_base: ScheduleData = {
-    "cal1": create_calendars_base(prev_month),
-    "cal2": create_calendars_base(target_month),
-    "cal3": create_calendars_base(next_month)
+  let calendars_data: ScheduleData = {
+    "cal1": create_calendar_base(prev_month),
+    "cal2": create_calendar_base(target_month),
+    "cal3": create_calendar_base(next_month)
   };
   
   // {"cal1": [{"id": "week1", "caldata": [["", "", "", 0], [""...]...
   
-  const schedule = load_data(String(target_month));
-  // {"2024-01-01": [true, "元旦"], "2024-01-02": [false, None], ...}
+  const holiday_file = process.env.DATA_DIRECTORY + "/" + user + "/holiday.md";
+  const base_holiday_file = process.env.DATA_DIRECTORY + "/base/holiday.md";
+  const holiday_data = await load_events(holiday_file, base_holiday_file);
+  // {"2024-01-01": {"holiday": "元旦"}, ...}
+  const private_file = process.env.DATA_DIRECTORY + "/" + user + "/private.md";
+  const private_data = await load_events(private_file, null);
   
-  const data = set_schedule(calendars_base, schedule);
-  console.log("data=", data);
+  set_schedule(calendars_data, holiday_data, "holiday");
+  set_schedule(calendars_data, private_data, "memo");
+  // console.log("data=", calendars_data, ", holiday_data=", holiday_data);
+  // console.log("calendars_data=", calendars_data);
+  const diary_check_result: EventData = await check_diary_exists([calendars_data["cal1"]["month"],
+    calendars_data["cal2"]["month"],
+    calendars_data["cal2"]["month"]], user);
+  //console.log("diary_check_result=", diary_check_result);
+  set_schedule(calendars_data, diary_check_result, "diary");
 
-  // const data = {
-  //   "cal1": {
-  //     "month": "2024-02",
-  //     "data": [
-  // 	{
-  // 	  "id": "week1",
-  //         "caldata": [
-  // 	    ["", "", "", 0],
-  // 	    ["", "", "", 0],
-  // 	    ["", "", "", 0],
-  // 	    ["", "", "", 0],
-  // 	    ["1", "", "", 0],
-  // 	    ["2", "", "", 1],
-  // 	    ["3", "", "", 1],
-  // 	  ],
-  // 	},
-  // 	{
-  // 	  "id": "week2",
-  //         "caldata": [
-  // 	    ["4", "", "", 0],
-  // 	    ["5", "", "", 0],
-  // 	    ["6", "", "", 0],
-  // 	    ["7", "", "", 0],
-  // 	    ["8", "", "", 0],
-  // 	    ["9", "", "", 1],
-  // 	    ["10", "", "", 1],
-  // 	  ],
-  // 	},
-  // 	{
-  // 	  "id": "week3",
-  // 	  "caldata": [
-  // 	    ["11", "建国記念の日", "", 0],
-  // 	    ["12", "振替休日", "", 0],
-  // 	    ["13", "", "", 0],
-  // 	    ["14", "テスト", "メモ1", 0],
-  // 	    ["15", "", "メモ2", 0],
-  // 	    ["16", "", "", 0],
-  // 	    ["17", "", "", 0],
-  // 	  ],
-  // 	},
-  //     ],
-  //   },
-  //   "cal2": {
-  //     "month": "2024-03",
-  //     "data": [
-  // 	{
-  // 	  "id": "week1",
-  //         "caldata": [
-  // 	    ["", "", "", 0],
-  // 	    ["", "", "", 0],
-  // 	    ["", "", "", 0],
-  // 	    ["", "", "", 0],
-  // 	    ["1", "", "", 0],
-  // 	    ["2", "", "", 1],
-  // 	    ["3", "", "", 1],
-  // 	  ],
-  // 	},
-  // 	{
-  // 	  "id": "week2",
-  //         "caldata": [
-  // 	    ["4", "", "", 0],
-  // 	    ["5", "", "", 0],
-  // 	    ["6", "", "", 0],
-  // 	    ["7", "", "", 0],
-  // 	    ["8", "", "", 0],
-  // 	    ["9", "", "", 1],
-  // 	    ["10", "", "", 1],
-  // 	  ],
-  // 	},
-  // 	{
-  // 	  "id": "week3",
-  // 	  "caldata": [
-  // 	    ["11", "建国記念の日", "", 0],
-  // 	    ["12", "振替休日", "", 0],
-  // 	    ["13", "", "", 0],
-  // 	    ["14", "テスト", "メモ1", 0],
-  // 	    ["15", "", "メモ2", 0],
-  // 	    ["16", "", "", 0],
-  // 	    ["17", "", "", 0],
-  // 	  ],
-  // 	},
-  //     ]
-  //   },
-  // };
-
-  const res = NextResponse.json({"scheduleData": data});
+  const res = NextResponse.json({"scheduleData": calendars_data});
   return res;
 }
 

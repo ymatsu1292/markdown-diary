@@ -10,12 +10,12 @@ export function MiniCalendar(
     calendarDate: string,
   }
 ) {
-  console.log("MiniCalendar: START");
-  console.log("monthSchedule:", monthSchedule);
+  //console.log("MiniCalendar: START");
+  //console.log("monthSchedule:", monthSchedule);
   const weekday_color = ["bg-red-200", "", "", "", "", "", "bg-blue-200"];
 
   const changePage = (dateStr: string) => {
-    console.log("changePage: dateStr=", dateStr);
+    //console.log("changePage: dateStr=", dateStr);
     handleTargetPageChange(dateStr);
   };
   
@@ -33,8 +33,8 @@ export function MiniCalendar(
     return color;
   };
   
-  const drawCell = (daySchedule: DaySchedule, monthStr: string, todayStr: string, weekday: number): JSX.Element => {
-    //console.log("drawCell: START");
+  const drawCell = (daySchedule: DaySchedule, monthStr: string, todayStr: string, weekday: number, calendarDate: string): JSX.Element => {
+    //console.log("drawCell: START ", calendarDate);
     let fontStyle = "font-normal";
     //console.log(todayStr);
     let dateStr: string = monthStr + "-" + String(daySchedule.date).padStart(2, "0");
@@ -47,6 +47,9 @@ export function MiniCalendar(
     //console.log("drawCell.dateStr=", dateStr);
     if (todayStr == dateStr) {
       fontStyle = "font-black";
+    }
+    if (calendarDate == dateStr) {
+      fontStyle = "font-black text-red-900";
     }
     let linkType: "none" | "always" = "none";
     if (daySchedule.hasDiary) {
@@ -77,11 +80,12 @@ export function MiniCalendar(
     return res2;
   }
   const todayStr = getTodayStr();
-  console.log("MiniCalendar: END - ", monthSchedule);
+  //console.log("MiniCalendar: END - ", monthSchedule);
   
   return (
     <div className="m-0 p-1">
-      <Table aria-label="cal-aria1" isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-2" topContent=<span className="m-0 p-0 text-center text-sm">{monthSchedule.month}</span>>
+      <Table aria-label="cal-aria1" isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-2"
+        topContent=<span className="m-0 p-0 text-center text-sm">{monthSchedule.month}</span>>
 	<TableHeader className="m-0 p-0">
 	  <TableColumn className="m-0 p-0 text-center"><span className="text-red-900">日</span></TableColumn>
 	  <TableColumn className="m-0 p-0 text-center">月</TableColumn>
@@ -95,7 +99,7 @@ export function MiniCalendar(
 	  {monthSchedule.data.map((item: WeekSchedule) => (
             <TableRow key={item.id}>
 	    {item.caldata.map((daySchedule: DaySchedule, count: number) => 
-  	      drawCell(daySchedule, monthSchedule.month, todayStr, count)
+  	      drawCell(daySchedule, monthSchedule.month, todayStr, count, calendarDate)
             )}
 	    </TableRow>
           ))}

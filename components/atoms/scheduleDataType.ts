@@ -21,12 +21,6 @@ export interface ScheduleData {
   cal3: MonthSchedule;
 };
 
-export interface EventItem {
-  date: string;
-  eventType: "holiday" | "memo";
-  eventText: string;
-};
-
 export interface EventData {
-  events: EventItem[];
+  events: { [date: string]: string };
 };
