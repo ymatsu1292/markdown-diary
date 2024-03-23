@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth';
-import { NextAuthOptions } from 'next-auth';
+import { NextAuthOptions, User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import KeycloakProvider from 'next-auth/providers/keycloak';
 import { jwtDecode } from 'jwt-decode';
@@ -17,9 +17,9 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         console.log("authorize:", credentials);
-        if (credentials["password"] == process.env["AUTH_PASSWORD"]) {
+        if (credentials != undefined && credentials["password"] == process.env["AUTH_PASSWORD"]) {
           let userId = process.env["AUTH_USER"];
-          const user = { id: userId, name: userId, email: userId };
+          const user: User = { id: userId || "", name: userId || "", email: userId || "", image: "" };
           return user;
         }
         return null;
