@@ -13,7 +13,6 @@ export function MainPage() {
   const { data: session, status } = useSession();
   const [ targetPage, setTargetPage ] = useState(getTodayStr());
   const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
-  const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
   const handleTargetPageChange = (newPage: string) => {
     console.log("MainPage.handleTargetPageChange() START:", newPage);
     setTargetPage(String(newPage));
@@ -26,6 +25,7 @@ export function MainPage() {
   //calendarDate = getTodayStr();
   //}
   useEffect(() => {
+    const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
     if (!datePattern.test(targetPage)) {
       // 日付以外のページなら今日をターゲットにする
       setCalendarDate(getTodayStr());
