@@ -11,14 +11,11 @@ export async function GET(req: NextRequest) {
   const directory = process.env.DATA_DIRECTORY + "/" + user;
   const filename = directory + "/" + target + ".md";
   
-  let fd;
   let markdown = "";
   try {
     markdown = await readFile(filename, { encoding: "utf-8" });
   } catch (error) {
     // エラーが出ても気にしない
-  } finally {
-    await fd?.close();
   }
   const res = NextResponse.json({"markdown": markdown});
   console.log("GET: END ", markdown);

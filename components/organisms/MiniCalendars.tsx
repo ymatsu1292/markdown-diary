@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { getTodayStr, getTodayMonth } from '@/components/atoms/dateutils';
 import { ArrowFatLeft, ArrowFatRight } from '@phosphor-icons/react';
+import { ScheduleData } from '@/components/atoms/scheduleDataType';
 
 export function MiniCalendars(
   { calendarDate, handleTargetPageChange } : {
@@ -12,7 +13,7 @@ export function MiniCalendars(
   }
 ) {
   const { data: session, status } = useSession();
-  const [ scheduleData, setScheduleData ] = useState(null);
+  const [ scheduleData, setScheduleData ] = useState<ScheduleData | null>(null);
   const today_month = getTodayMonth();
 
   useEffect(() => {
@@ -28,9 +29,9 @@ export function MiniCalendars(
       const response = await fetch(uri);
       if (response.ok) {
 	console.log("END data fetch: OK ", response);
-	let d = await response.json();
-	console.log("JSON=", d);
-	setScheduleData(d);
+	let jsonData = await response.json();
+	console.log("JSON=", jsonData);
+	setScheduleData(jsonData['scheduleData']);
       } else {
 	console.log("END data fetch: NG ", response);
       }
@@ -42,15 +43,15 @@ export function MiniCalendars(
   return (
     <div className="h-dvh bg-blue-50 w-200">
       <div className="p-2">
-	<Button color="primary" variant="none" size="sm" className="m-0"><ArrowFatLeft /></Button>
-        <Button color="primary" variant="none" size="sm" className="m-0">今日</Button>
-	<Button color="primary" variant="none" size="sm" className="m-0"><ArrowFatRight/></Button>
+	<Button color="primary" variant="light" size="sm" className="m-0"><ArrowFatLeft /></Button>
+        <Button color="primary" variant="light" size="sm" className="m-0">今日</Button>
+	<Button color="primary" variant="light" size="sm" className="m-0"><ArrowFatRight/></Button>
       </div>
       {scheduleData != null ? 
       <div className="container mx-auto">
-	<MiniCalendar scheduleData1m={scheduleData.cal1} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
-	<MiniCalendar scheduleData1m={scheduleData.cal2} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
-	<MiniCalendar scheduleData1m={scheduleData.cal3} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
+	<MiniCalendar monthSchedule={scheduleData.cal1} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
+	<MiniCalendar monthSchedule={scheduleData.cal2} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
+	<MiniCalendar monthSchedule={scheduleData.cal3} handleTargetPageChange={handleTargetPageChange} calendarDate={calendarDate} />
       </div>
       :
       <div className="grid place-items-center h-full">

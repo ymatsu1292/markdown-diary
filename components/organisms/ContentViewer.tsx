@@ -20,13 +20,13 @@ export function ContentViewer(
   const [markdownText, setMarkdownText] = useState("");
   const [markdownHtml, setMarkdownHtml] = useState("");
   
-  const onChange = useCallback((val, viewUpdate) => {
+  const onChange = useCallback((val: string) => {
     console.log('val:', val);
     setMarkdownText(val);
     let base_text = targetPage + "\n=====\n" + val;
     console.log('render raw:', base_text) 
     setMarkdownHtml(md.render(base_text));
-  }, []);
+  }, [md, targetPage]);
 
   const loadData = async() => {
     console.log("ContentViewer.loadData: START");

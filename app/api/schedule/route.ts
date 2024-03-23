@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import moment from 'moment';
+import { ScheduleData, MonthSchedule, WeekSchedule, DaySchedule } from '@/components/atoms/scheduleDataType';
+import { EventData, EventItem } from '@/components/atoms/scheduleDataType';
 
-function create_calendars_base(check_month) {
+function create_calendars_base(check_month: any): MonthSchedule {
   const year = check_month.clone().year();
   const month = check_month.clone().month();
-  let result = {
+  let result: MonthSchedule = {
     "month": check_month.format("YYYY-MM"),
     "data": []
   }
@@ -13,7 +15,7 @@ function create_calendars_base(check_month) {
   let week_number = 0;
   let continue_flag = true;
   while (continue_flag) {
-    let week_data = {
+    let week_data: WeekSchedule = {
       "id": "week" + String(week_number),
       "caldata": []
     };
@@ -21,9 +23,9 @@ function create_calendars_base(check_month) {
       const calc_date = start_date.clone().add(d + week_number * 7, 'days');
       const calc_date_str = calc_date.format("YYYY-MM-DD");
       if (calc_date.month() != month) {
-	week_data["caldata"].push(["", "", "", 0]);
+	week_data["caldata"].push({date: "", holiday: "", memo: "", hasDiary: false});
       } else {
-	week_data["caldata"].push([String(calc_date.date()), "", "", 0]);
+	week_data["caldata"].push({date: String(calc_date.date()), holiday: "", memo: "", hasDiary: false});
       }
       if (calc_date.year() > year || (calc_date.year() == year && calc_date.month() > month)) {
 	continue_flag = false;
@@ -37,11 +39,12 @@ function create_calendars_base(check_month) {
   return result;
 }
 
-function load_data(calc_month) {
-  return {}
+function load_data(calc_month: string): EventData {
+  let eventData: EventData = {events: []}
+  return eventData
 }
 
-function set_schedule(calendars_base, schedule) {
+function set_schedule(calendars_base: ScheduleData, schedule: EventData) {
   return calendars_base;
 }
 
@@ -60,14 +63,15 @@ export function GET(req: NextRequest) {
   const next_month = target_month.clone().add(1, "M");
   console.log("target_months=", prev_month, target_month, next_month);
 
-  let calendars_base = {}
-  calendars_base["cal1"] = create_calendars_base(prev_month);
-  calendars_base["cal2"] = create_calendars_base(target_month);
-  calendars_base["cal3"] = create_calendars_base(next_month);
+  let calendars_base: ScheduleData = {
+    "cal1": create_calendars_base(prev_month),
+    "cal2": create_calendars_base(target_month),
+    "cal3": create_calendars_base(next_month)
+  };
   
   // {"cal1": [{"id": "week1", "caldata": [["", "", "", 0], [""...]...
   
-  const schedule = load_data(target_month);
+  const schedule = load_data(String(target_month));
   // {"2024-01-01": [true, "元旦"], "2024-01-02": [false, None], ...}
   
   const data = set_schedule(calendars_base, schedule);
@@ -158,7 +162,7 @@ export function GET(req: NextRequest) {
   //   },
   // };
 
-  const res = NextResponse.json(data);
+  const res = NextResponse.json({"scheduleData": data});
   return res;
 }
 

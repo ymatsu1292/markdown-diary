@@ -13,6 +13,7 @@
     "@codemirror/language-data": "^6.4.1",
     "@nextui-org/react": "^2.2.10",
     "@phosphor-icons/react": "^2.0.15",
+    "@types/markdown-it-container": "^2.0.9",
     "@uiw/react-codemirror": "^4.21.24",
     "framer-motion": "^10.12.16",
     "jwt-decode": "^4.0.0",

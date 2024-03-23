@@ -1,47 +1,46 @@
 import { Table, TableHeader, TableColumn ,TableBody, TableRow, TableCell } from '@nextui-org/react';
 import { Link, Tooltip } from '@nextui-org/react';
 import { getTodayStr } from '@/components/atoms/dateutils';
+import { MonthSchedule, WeekSchedule, DaySchedule } from '@/components/atoms/scheduleDataType';
 
 export function MiniCalendar(
-  { scheduleData1m, handleTargetPageChange, calendarDate } : {
-    scheduleData1m: any,
+  { monthSchedule, handleTargetPageChange, calendarDate } : {
+    monthSchedule: MonthSchedule,
     handleTargetPageChange: (newPage: string) => void,
     calendarDate: string,
   }
 ) {
   console.log("MiniCalendar: START");
-  console.log("scheduleData1m:", scheduleData1m);
+  console.log("monthSchedule:", monthSchedule);
   const weekday_color = ["bg-red-200", "", "", "", "", "", "bg-blue-200"];
 
-  const changePage = (dateStr) => {
+  const changePage = (dateStr: string) => {
     console.log("changePage: dateStr=", dateStr);
-    console.log("changePage: target=", dateStr.target);
-    console.log("handleTargetPageChange=", handleTargetPageChange);
     handleTargetPageChange(dateStr);
   };
   
-  const calcCellColor = (values: any[], count: number): string => {
+  const calcCellColor = (daySchedule: DaySchedule, count: number): string => {
     //console.log("calcCellColor: START");
     //console.log("values=", values);
     //console.log("count=", count);
     //console.log("calcCellColor: END");
     let color = weekday_color[count];
-    if (values.length > 0 && values[1] != "") {
+    if (daySchedule.holiday != "") {
       color = "bg-red-200";
     }
-    if (values.length > 0 && values[2] != "") {
+    if (daySchedule.memo != "") {
       color = "bg-yellow-200";
     }
     return color;
   };
   
-  const drawCell = (values: any[], monthStr: string, todayStr: string, weekday: number): JSX.Element => {
+  const drawCell = (daySchedule: DaySchedule, monthStr: string, todayStr: string, weekday: number): JSX.Element => {
     //console.log("drawCell: START");
     let fontStyle = "font-normal";
     //console.log(todayStr);
-    let dateStr: string = monthStr + "-" + String(values[0]).padStart(2, "0");
+    let dateStr: string = monthStr + "-" + String(daySchedule.date).padStart(2, "0");
     let key: string = dateStr;
-    if (values[0] == "") {
+    if (daySchedule.date == "") {
       key = "dummy-" + String(weekday);
     }
     //console.log("drawCell.dateStr=", dateStr);
@@ -49,18 +48,25 @@ export function MiniCalendar(
       fontStyle = "font-black";
     }
     let linkType: "none" | "always" = "none";
-    if (values[3] == 1) {
+    if (daySchedule.hasDiary) {
       linkType = "always";
     }
     //console.log("drawCell.dateStr=", dateStr);
-    let res0 = <Link data-date={dateStr} size="sm" href="#" color="foreground" underline={linkType} className={fontStyle} onPress={(e) => changePage(e.target.dataset.date)}>{values[0]}</Link>;
+    let res0 = <Link data-date={dateStr} size="sm" href="#" color="foreground" underline={linkType}
+                 className={fontStyle} onPress={(e) => {
+                   if (e.target instanceof HTMLElement) {
+                     changePage(String(e.target.dataset.date));
+                   }
+                 }}>
+                 {daySchedule.date}
+               </Link>;
     let res1 = res0;
-    if (values[1] !="" || values[2] != "") {
-      let message = values[1];
-      if (values[1] == "") {
-	message = values[2];
-      } else if (values[2] != "") {
-	message = values[1] + "/" + values[2];
+    if (daySchedule.holiday !="" || daySchedule.memo != "") {
+      let message = daySchedule.holiday;
+      if (daySchedule.holiday == "") {
+	message = daySchedule.memo;
+      } else if (daySchedule.memo != "") {
+	message = daySchedule.holiday + "/" + daySchedule.memo;
       }
       res1 = <Tooltip showArrow={true} content={message}>{res0}</Tooltip>;
     }
@@ -69,11 +75,11 @@ export function MiniCalendar(
     return res1;
   }
   const todayStr = getTodayStr();
-  console.log("MiniCalendar: END - ", scheduleData1m);
+  console.log("MiniCalendar: END - ", monthSchedule);
   
   return (
     <div className="m-0 p-1">
-      <Table aria-label="cal-aria1" isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-2" topContent=<span className="m-0 p-0 text-center text-sm">{scheduleData1m.month}</span>>
+      <Table aria-label="cal-aria1" isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-2" topContent=<span className="m-0 p-0 text-center text-sm">{monthSchedule.month}</span>>
 	<TableHeader className="m-0 p-0">
 	  <TableColumn className="m-0 p-0 text-center"><span className="text-red-900">日</span></TableColumn>
 	  <TableColumn className="m-0 p-0 text-center">月</TableColumn>
@@ -84,11 +90,11 @@ export function MiniCalendar(
 	  <TableColumn className="m-0 p-0 text-center"><span className="text-blue-900">土</span></TableColumn>
 	</TableHeader>
 	<TableBody>
-	  {scheduleData1m.data.map((item) => (
+	  {monthSchedule.data.map((item: WeekSchedule) => (
             <TableRow key={item.id}>
-	    {item.caldata.map((values, count) => (
-	      <TableCell key={item.id + "-" + count} className={`m-0 p-0 text-center ${calcCellColor(values, count)}`}>
-  	        {drawCell(values, scheduleData1m.month, todayStr, count)}
+	    {item.caldata.map((daySchedule: DaySchedule, count: number) => (
+	      <TableCell key={item.id + "-" + count} className={`m-0 p-0 text-center ${calcCellColor(daySchedule, count)}`}>
+  	        {drawCell(daySchedule, monthSchedule.month, todayStr, count)}
 	      </TableCell>
 	    ))}
 	    </TableRow>
