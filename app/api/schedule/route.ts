@@ -60,7 +60,7 @@ function parse_event_text(text: string): {[key: string]: string} {
 }
 
 
-async function load_events(event_file: string, base_file: string): Promise<EventData> {
+async function load_events(event_file: string, base_file: string | null): Promise<EventData> {
   console.log("load_holiday_events: START");
   // イベント設定ファイルを読み込む
   let event_data: EventData = {"events": {}};
@@ -82,7 +82,7 @@ async function load_events(event_file: string, base_file: string): Promise<Event
   return event_data;
 }
 
-async function check_diary_exists(target_month_list: string[], user: string): Promise<EventData> {
+async function check_diary_exists(target_month_list: string[], user: string | null): Promise<EventData> {
   console.log("check_diary_exists: START");
   let event_data: EventData = {"events": {}};
   try {
@@ -103,29 +103,32 @@ async function check_diary_exists(target_month_list: string[], user: string): Pr
   return event_data;
 }
 
-function set_schedule(calendars_base: ScheduleData, event_data: EventData, type: string) {
-  for (const cal of ["cal1", "cal2", "cal3"]) {
-    let target_calendar = calendars_base[cal];
-    let month = target_calendar["month"];
-    for (const week_data of target_calendar["data"]) {
-      for (const day_data of week_data["caldata"]) {
-        const date = day_data["date"];
-        if (date != "") {
-          const date_str = month + "-" + String(date).padStart(2, '0');
-          //console.log("date_str=", date_str, date, event_data["events"]);
-          if (date_str in event_data["events"]) {
-            if (type != "diary") {
-              day_data[type] = event_data["events"][date_str]
-            } else {
-              day_data["hasDiary"] = true;
-            }
+function set_schedule_sub(target_calendar: MonthSchedule, event_data: EventData, type: string) {
+  let month = target_calendar["month"];
+  for (const week_data of target_calendar["data"]) {
+    for (const day_data of week_data["caldata"]) {
+      const date = day_data["date"];
+      if (date != "") {
+        const date_str = month + "-" + String(date).padStart(2, '0');
+        //console.log("date_str=", date_str, date, event_data["events"]);
+        if (date_str in event_data["events"]) {
+          if (type == "holiday") {
+            day_data.holiday = event_data["events"][date_str]
+          } else if (type == "memo") {
+            day_data.memo = event_data["events"][date_str]
+          } else {
+            day_data["hasDiary"] = true;
           }
         }
       }
     }
-    //console.log("event_data['event']=", event_data.events);
   }
-  return calendars_base;
+}
+
+function set_schedule(calendars_base: ScheduleData, event_data: EventData, type: string) {
+  set_schedule_sub(calendars_base.cal1, event_data, type);
+  set_schedule_sub(calendars_base.cal2, event_data, type);
+  set_schedule_sub(calendars_base.cal3, event_data, type);
 }
 
 export async function GET(req: NextRequest) {
@@ -165,7 +168,8 @@ export async function GET(req: NextRequest) {
   // console.log("calendars_data=", calendars_data);
   const diary_check_result: EventData = await check_diary_exists([calendars_data["cal1"]["month"],
     calendars_data["cal2"]["month"],
-    calendars_data["cal2"]["month"]], user);
+    calendars_data["cal2"]["month"]], 
+    user);
   //console.log("diary_check_result=", diary_check_result);
   set_schedule(calendars_data, diary_check_result, "diary");
 
