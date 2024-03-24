@@ -137,6 +137,7 @@ function set_schedule(calendars_base: ScheduleData, event_data: EventData, type:
   set_schedule_sub(calendars_base.cal1, event_data, type);
   set_schedule_sub(calendars_base.cal2, event_data, type);
   set_schedule_sub(calendars_base.cal3, event_data, type);
+  event_data["others"].sort();
   calendars_base.markdownFiles = event_data["others"];
 }
 
