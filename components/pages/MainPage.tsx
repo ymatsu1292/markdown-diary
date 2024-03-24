@@ -58,7 +58,7 @@ export function MainPage() {
           </NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <Button isIconOnly color="light"><List size={24}/></Button>
+              <Button isIconOnly variant="light"><List size={24}/></Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="Profile" variant="flat">
               <DropdownItem className="h-14 gap-2">
