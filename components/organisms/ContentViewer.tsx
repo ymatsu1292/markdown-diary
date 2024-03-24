@@ -6,6 +6,7 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import markdownit from 'markdown-it';
 import mdContainer from 'markdown-it-container';
+import { tasklist } from '@mdit/plugin-tasklist';
 import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
 
@@ -23,8 +24,7 @@ export function ContentViewer(
         } catch (__) {}
       }
       return '';
-    }});
-  md.use(mdContainer, 'info');
+    }}).use(mdContainer, 'info').use(tasklist);
   const [mode, setMode] = useState("normal");
   const [markdownText, setMarkdownText] = useState("");
   const [markdownHtml, setMarkdownHtml] = useState("");
@@ -113,7 +113,8 @@ export function ContentViewer(
         <Tab key="viewer" title="参照">
           <Card>
             <CardBody>
-              <div className="markdown-body" id="viewer" dangerouslySetInnerHTML={{__html: markdownHtml}}>
+              <div className="markdown-body" id="viewer"
+                dangerouslySetInnerHTML={{__html: markdownHtml}}>
               </div>
             </CardBody>
           </Card>
