@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { getTodayStr, getTodayMonth } from '@/components/utils/dateutils';
 import { MiniCalendars } from '@/components/organisms/MiniCalendars';
@@ -20,7 +20,6 @@ export function MainPage() {
   const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
   const [ scheduleData, setScheduleData ] = useState<ScheduleData | null>(null);
   const [ searchText, setSearchText ] = useState("");
-  const [ filenameIsValid, setFilenameIsValid ] = useState<boolean>(true);
 
   // どこかでページが設定された際の処理
   const handleTargetPageChange = (newPage: string) => {
@@ -76,16 +75,17 @@ export function MainPage() {
     //console.log("MainPage.useEffect: END");
   }, [session]);
 
-  const doSearchIfNecessary = (key: string, page: string) => {
+  const isInvalid = useMemo(() => {
     const filenameNgPattern = /[\\\/:\*\?\"<>\|]/;
-    if (filenameNgPattern.test(page)) {
-      setFilenameIsValid(false);
-    } else {
-      setFilenameIsValid(true);
-      if (key == 'Enter') {
-        // ページを設定する
-        setTargetPage(page);
-      }
+    console.log(searchText);
+    if (searchText === "") return false;
+    return filenameNgPattern.test(searchText) ? true : false;
+  }, [searchText]);
+  
+  const doSearchIfNecessary = (key: string, page: string) => {
+    if (key == 'Enter' && !isInvalid) {
+      // ページを設定する
+      setTargetPage(page);
     }
   };
 
@@ -98,16 +98,21 @@ export function MainPage() {
     <div>
       <Navbar position="sticky" height="3rem" isBordered className="bg-blue-200 min-w-fit mx-auto">
         <NavbarBrand key="a">
-          <Book size={24} /><p className="font-bold text-inherit mx-1">Markdown Diary</p>
+          <Link href={process.env.NEXT_PUBLIC_BASE_URL} color="foreground">
+            <Book size={24} /><p className="font-bold text-inherit mx-1">Markdown Diary</p>
+          </Link>
         </NavbarBrand>
         <NavbarContent className="sm:flex gap-2" justify="center" key="b">
           <NavbarItem key="search">
-            <Input type="search" size="sm" placeholder="ページ名" defaultValue="" onKeyPress={(e) => {
+            <Input type="search" size="sm" placeholder="ページ名" value={searchText} onKeyPress={(e) => {
               if (e.target instanceof HTMLInputElement) {
                 doSearchIfNecessary(e.key, e.target.value);
               }
             }}
-              isInvalid={!filenameIsValid}
+              onValueChange={setSearchText}
+              isInvalid={isInvalid} errorMessage={isInvalid && "ファイル名に使えない文字が含まれています"}
+              color={isInvalid ? "danger" : "default"}
+              className="max-w-xs"
             />
           </NavbarItem>
           <Dropdown placement="bottom-end">
