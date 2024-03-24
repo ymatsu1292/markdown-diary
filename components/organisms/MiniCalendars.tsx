@@ -9,7 +9,7 @@ export function MiniCalendars(
   { calendarDate, scheduleData, handleTargetPageChange } : {
     calendarDate: string,
     scheduleData: ScheduleData | null,
-    handleTargetPageChange: (newPage: string) => void
+    handleTargetPageChange: (newPage: string) => void,
   }
 ) {
   return (
