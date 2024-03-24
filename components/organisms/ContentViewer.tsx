@@ -6,7 +6,6 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import markdownit from 'markdown-it';
 import mdContainer from 'markdown-it-container';
-import markdownItCheckbox from 'markdown-it-checkbox';
 import markdownItPrism from 'markdown-it-prism';
 import { useSession } from 'next-auth/react';
 
@@ -24,7 +23,6 @@ export function ContentViewer(
   const { data: session, status } = useSession();
   const md = markdownit({html: true, linkify: true, typographer: true});
   md.use(mdContainer, 'info');
-  md.use(markdownItCheckbox, {divWrap: true});
   md.use(markdownItPrism);
   const [mode, setMode] = useState("normal");
   const [markdownText, setMarkdownText] = useState("");
