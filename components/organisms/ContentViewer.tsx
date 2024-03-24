@@ -76,6 +76,7 @@ export function ContentViewer(
   };
 
   useEffect(() => {
+  
     //console.log("ContentViewer.useEffect(): START");
     if (session != null) {
       loadData();
