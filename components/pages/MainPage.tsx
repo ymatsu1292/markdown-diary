@@ -7,7 +7,7 @@ import { ContentViewer } from '@/components/organisms/ContentViewer';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
 import { Link, Button, Input } from "@nextui-org/react";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@nextui-org/react";
-import { Book } from '@phosphor-icons/react';
+import { Book, List } from '@phosphor-icons/react';
 
 export function MainPage() {
   //console.log("MainPage: START");
@@ -58,13 +58,13 @@ export function MainPage() {
           </NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <Avatar showFallback as="button" size="sm" src="https://images.unsplash.com/broken" />
+              <Button isIconOnly variant="light"><List size={24}/></Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="Profile" variant="flat">
-              <DropdownItem key="profile" className="h-14 gap-2">
+              <DropdownItem className="h-14 gap-2">
                 <p>Signed in as</p><p className="font-semibold">{session?.user?.name}</p>
               </DropdownItem>
-              <DropdownItem key="logout" color="danger" onPress={() => signOut()}>
+              <DropdownItem color="danger" onPress={() => signOut()}>
                 Logout
               </DropdownItem>
             </DropdownMenu>
