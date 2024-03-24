@@ -29,6 +29,20 @@ export function MainPage() {
   };
 
   // カレンダーの日付が変更された際の処理
+  const loadData = async() => {
+    //console.log("STARTdata fetch");
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}&user=${session?.user?.email}`);
+    const response = await fetch(uri);
+    if (response.ok) {
+      //console.log("END data fetch: OK ", response);
+      let jsonData = await response.json();
+      //console.log("JSON=", jsonData);
+      setScheduleData(jsonData['scheduleData']);
+    } else {
+      //console.log("END data fetch: NG ", response);
+    }
+  };
+  
   const today_month = getTodayMonth();
   useEffect(() => {
     //console.log("START: MiniCalendars.useEffect session=", session);
@@ -37,20 +51,7 @@ export function MainPage() {
       return;
     }
     // データを読み込んでscheduleDataに登録する
-    const data = async() => {
-      //console.log("STARTdata fetch");
-      const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}&user=${session?.user?.email}`);
-      const response = await fetch(uri);
-      if (response.ok) {
-	//console.log("END data fetch: OK ", response);
-	let jsonData = await response.json();
-	//console.log("JSON=", jsonData);
-	setScheduleData(jsonData['scheduleData']);
-      } else {
-	//console.log("END data fetch: NG ", response);
-      }
-    }
-    data();
+    loadData();
     //console.log("END: MiniCalendars.useEffect");
   }, [session, calendarDate]);
   
@@ -74,6 +75,17 @@ export function MainPage() {
     //console.log("MainPage.useEffect: END");
   }, [session]);
 
+  const doSearchIfNecessary = (key: string, page: string) => {
+    if (key == 'Enter') {
+      // ページを設定する
+      setTargetPage(page);
+    }
+  };
+
+  const calendarRefreshHook = async () => {
+    await loadData();
+  };
+  
   //console.log("MainPage: END");
   return (
     <div>
@@ -83,7 +95,11 @@ export function MainPage() {
         </NavbarBrand>
         <NavbarContent className="sm:flex gap-2" justify="center" key="b">
           <NavbarItem key="search">
-            <Input type="search" size="sm" placeholder="ページ名" value={searchText}/>
+            <Input type="search" size="sm" placeholder="ページ名" defaultValue="" onKeyPress={(e) => {
+              if (e.target instanceof HTMLInputElement) {
+                doSearchIfNecessary(e.key, e.target.value);
+              }
+            }} />
           </NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
@@ -112,7 +128,7 @@ export function MainPage() {
           </Tabs>
         </div>
         <div className="grow">
-          <ContentViewer targetPage={targetPage}/>
+          <ContentViewer targetPage={targetPage} calendarRefreshHook={calendarRefreshHook}/>
         </div>
       </div>
     </div>

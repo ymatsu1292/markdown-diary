@@ -11,8 +11,9 @@ import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
 
 export function ContentViewer(
-  { targetPage } : {
-    targetPage: string
+  { targetPage, calendarRefreshHook } : {
+    targetPage: string;
+    calendarRefreshHook: () => void;
   }
 ) {
   const { data: session, status } = useSession();
@@ -60,24 +61,20 @@ export function ContentViewer(
       "markdown": markdownText
     };
     setMode('save');
-    await fetch(`${process.env.BASE_PATH}/api/markdown`, {
+    const response = await fetch(`${process.env.BASE_PATH}/api/markdown`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(markdown_data),
     })
-      .then((response) => response.json())
-      .then((data) => {
-        //console.log(data);
-        setMode('normal');
-      })
-      .catch((error) => {
-        setMode('normal');
-      });
+    if (response.ok) {
+      //let jsonData = await response.json();
+      setMode('normal');
+      calendarRefreshHook();
+    }
     //console.log("ContentViewer.saveData: END");
   };
 
   useEffect(() => {
-  
     //console.log("ContentViewer.useEffect(): START");
     if (session != null) {
       loadData();
