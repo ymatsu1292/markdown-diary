@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { open, mkdir, writeFile, readFile } from 'node:fs/promises';
+import { open, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 
 export async function GET(req: NextRequest) {
   console.log("GET: START");
@@ -34,13 +34,18 @@ export async function POST(req: Request) {
   console.log("mkdir done");
   // ファイル名を作る
   const filename = directory + "/" + target + ".md";
-  // ファイルを出力する
-  let fd;
-  try {
-    fd = await open(filename, 'w');
-    fd.writeFile(markdown);
-  } finally {
-    await fd?.close();
+
+  if (markdown != "") {
+    // ファイルを出力する
+    let fd;
+    try {
+      fd = await open(filename, 'w');
+      fd.writeFile(markdown);
+    } finally {
+      await fd?.close();
+    }
+  } else {
+    await rm(filename);
   }
   const res = NextResponse.json({});
   return res;
