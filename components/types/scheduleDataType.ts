@@ -19,8 +19,10 @@ export interface ScheduleData {
   cal1: MonthSchedule;
   cal2: MonthSchedule;
   cal3: MonthSchedule;
+  markdownFiles: string[];
 };
 
 export interface EventData {
   events: { [date: string]: string };
+  others: string[];
 };
