@@ -1,30 +1,60 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { getTodayStr } from '@/components/atoms/dateutils';
+import { getTodayStr, getTodayMonth } from '@/components/utils/dateutils';
 import { MiniCalendars } from '@/components/organisms/MiniCalendars';
+import { MarkdownFileList } from '@/components/organisms/MarkdownFileList';
 import { ContentViewer } from '@/components/organisms/ContentViewer';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
 import { Link, Button, Input } from "@nextui-org/react";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@nextui-org/react";
 import { Book, List } from '@phosphor-icons/react';
+import { Tabs, Tab } from '@nextui-org/react';
+import { Listbox, ListboxSection, ListboxItem } from '@nextui-org/react';
+import { ScheduleData } from '@/components/types/scheduleDataType';
 
 export function MainPage() {
   //console.log("MainPage: START");
   const { data: session, status } = useSession();
   const [ targetPage, setTargetPage ] = useState(getTodayStr());
   const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
+  const [ scheduleData, setScheduleData ] = useState<ScheduleData | null>(null);
+  const [ searchText, setSearchText ] = useState("");
+
+  // どこかでページが設定された際の処理
   const handleTargetPageChange = (newPage: string) => {
     //console.log("MainPage.handleTargetPageChange() START:", newPage);
     setTargetPage(String(newPage));
     //console.log("MainPage.handleTargetPageChange() END");
   };
+
+  // カレンダーの日付が変更された際の処理
+  const today_month = getTodayMonth();
+  useEffect(() => {
+    //console.log("START: MiniCalendars.useEffect session=", session);
+    if (session?.user == undefined) {
+      //console.log("END: MiniCalendars.useEffect NO SESSION");
+      return;
+    }
+    // データを読み込んでscheduleDataに登録する
+    const data = async() => {
+      //console.log("STARTdata fetch");
+      const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}&user=${session?.user?.email}`);
+      const response = await fetch(uri);
+      if (response.ok) {
+	//console.log("END data fetch: OK ", response);
+	let jsonData = await response.json();
+	//console.log("JSON=", jsonData);
+	setScheduleData(jsonData['scheduleData']);
+      } else {
+	//console.log("END data fetch: NG ", response);
+      }
+    }
+    data();
+    //console.log("END: MiniCalendars.useEffect");
+  }, [session, calendarDate]);
   
-  //let calendarDate = targetPage;
-  //if (!datePattern.test(targetPage)) {
-    // 日付以外のページなら今日をターゲットにする
-  //calendarDate = getTodayStr();
-  //}
+  // ページが変更されたときの処理
   useEffect(() => {
     const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
     if (!datePattern.test(targetPage)) {
@@ -35,6 +65,7 @@ export function MainPage() {
     }
   }, [targetPage]);
 
+  // セッション情報が設定されたときの処理
   useEffect(() => {
     //console.log("MainPage.useEffect: START");
     if (session?.error == "refresh_access_token_error") {
@@ -43,8 +74,6 @@ export function MainPage() {
     //console.log("MainPage.useEffect: END");
   }, [session]);
 
-  //console.log("session=", session);
-  
   //console.log("MainPage: END");
   return (
     <div>
@@ -54,7 +83,7 @@ export function MainPage() {
         </NavbarBrand>
         <NavbarContent className="sm:flex gap-2" justify="center" key="b">
           <NavbarItem key="search">
-            <Input type="search" size="sm" placeholder="ページ名" defaultValue={targetPage}/>
+            <Input type="search" size="sm" placeholder="ページ名" value={searchText}/>
           </NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
@@ -71,11 +100,18 @@ export function MainPage() {
           </Dropdown>
         </NavbarContent>
       </Navbar>
-      <div>
-        <div className="float-left">
-          <MiniCalendars calendarDate={calendarDate} handleTargetPageChange={handleTargetPageChange}/>
+      <div className="flex">
+        <div className="flex-basis-220">
+          <Tabs>
+            <Tab key="calendar" title={<div className="flex items-center space-x-2"><span>カレンダー</span></div>}>
+              <MiniCalendars calendarDate={calendarDate} scheduleData={scheduleData} handleTargetPageChange={handleTargetPageChange} />
+            </Tab>
+            <Tab key="files" title={<div className="flex items-center space-x-2"><span>ファイル</span></div>}>
+              <MarkdownFileList scheduleData={scheduleData} handleTargetPageChange={handleTargetPageChange} />
+            </Tab>
+          </Tabs>
         </div>
-        <div className="container mx-auto">
+        <div className="grow">
           <ContentViewer targetPage={targetPage}/>
         </div>
       </div>

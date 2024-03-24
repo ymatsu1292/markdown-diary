@@ -86,7 +86,7 @@ export function ContentViewer(
   }, [targetPage, session]);
   
   return (
-    <div className="container mx-auto bg-gray-200">
+    <div className="container mx-auto">
       <Tabs aria-label="editor">
         <Tab key="editor" title="編集">
           <Card>
@@ -102,7 +102,7 @@ export function ContentViewer(
                 </div>
               </div>
               <div id="editor">
-                <CodeMirror value={markdownText} height="400px"
+                <CodeMirror value={markdownText} height="640px"
                   extensions={[markdown({base: markdownLanguage, codeLanguages: languages})]}
                   onChange={onChange} 
                 />

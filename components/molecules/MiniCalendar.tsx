@@ -1,7 +1,7 @@
 import { Table, TableHeader, TableColumn ,TableBody, TableRow, TableCell } from '@nextui-org/react';
 import { Link, Tooltip } from '@nextui-org/react';
-import { getTodayStr } from '@/components/atoms/dateutils';
-import { MonthSchedule, WeekSchedule, DaySchedule } from '@/components/atoms/scheduleDataType';
+import { getTodayStr } from '@/components/utils/dateutils';
+import { MonthSchedule, WeekSchedule, DaySchedule } from '@/components/types/scheduleDataType';
 
 export function MiniCalendar(
   { monthSchedule, handleTargetPageChange, calendarDate } : {

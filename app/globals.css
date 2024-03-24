@@ -4,16 +4,16 @@
 
 @layer components {
   .markdown-body{
-    @apply bg-white md:p-4 p-2 shadow-md rounded-md border;
+      @apply bg-white md:p-2 p-1 shadow-md;
   }
   .markdown-body h1 {
-    @apply mt-2 p-2 bg-blue-200;
+    @apply mt-1 p-1 bg-blue-200;
   }
   .markdown-body h2 {
-    @apply mt-2 p-2 bg-slate-200;
+    @apply mt-1 p-1 bg-slate-200;
   }
   .markdown-body h3 {
-    @apply bg-gray-200 mt-2 p-2;
+    @apply bg-gray-200 mt-1 p-1;
   }
   .markdown-body p {
     @apply leading-loose;
