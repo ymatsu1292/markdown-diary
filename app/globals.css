@@ -4,16 +4,16 @@
 
 @layer components {
   .markdown-body{
-    @apply bg-white md:p-8 p-4 shadow-md rounded-md border;
+    @apply bg-white md:p-4 p-2 shadow-md rounded-md border;
   }
   .markdown-body h1 {
-    @apply mt-12;
+    @apply mt-2 p-2 bg-blue-200;
   }
   .markdown-body h2 {
-    @apply mt-10;
+    @apply mt-2 p-2 bg-slate-200;
   }
   .markdown-body h3 {
-    @apply bg-gray-200 mt-10 py-2;
+    @apply bg-gray-200 mt-2 p-2;
   }
   .markdown-body p {
     @apply leading-loose;
@@ -27,8 +27,11 @@
   .markdown-body th, .markdown-body td {
     @apply table-cell;
   }
-  .markdown-body ul li, .markdown-body ol li {
+  .markdown-body ul li {
     @apply relative -left-3 list-disc;
+  }
+  .markdown-body ol li {
+    @apply relative -left-3 list-decimal;
   }
   .markdown-body .info a{
     @apply block border bg-blue-500 transition duration-300 font-semibold shadow-sm text-sm;
