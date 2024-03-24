@@ -20,6 +20,7 @@ export function MainPage() {
   const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
   const [ scheduleData, setScheduleData ] = useState<ScheduleData | null>(null);
   const [ searchText, setSearchText ] = useState("");
+  const [ filenameIsValid, setFilenameIsValid ] = useState<boolean>(true);
 
   // どこかでページが設定された際の処理
   const handleTargetPageChange = (newPage: string) => {
@@ -76,9 +77,15 @@ export function MainPage() {
   }, [session]);
 
   const doSearchIfNecessary = (key: string, page: string) => {
-    if (key == 'Enter') {
-      // ページを設定する
-      setTargetPage(page);
+    const filenameNgPattern = /[\\\/:\*\?\"<>\|]/;
+    if (filenameNgPattern.test(page)) {
+      setFilenameIsValid(false);
+    } else {
+      setFilenameIsValid(true);
+      if (key == 'Enter') {
+        // ページを設定する
+        setTargetPage(page);
+      }
     }
   };
 
@@ -99,7 +106,9 @@ export function MainPage() {
               if (e.target instanceof HTMLInputElement) {
                 doSearchIfNecessary(e.key, e.target.value);
               }
-            }} />
+            }}
+              isInvalid={!filenameIsValid}
+            />
           </NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
