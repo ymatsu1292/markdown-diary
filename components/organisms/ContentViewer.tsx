@@ -6,14 +6,8 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import markdownit from 'markdown-it';
 import mdContainer from 'markdown-it-container';
-import markdownItPrism from 'markdown-it-prism';
+import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
-
-import "prismjs/components/prism-clike";
-import "prismjs/components/prism-java";
-import "prismjs/components/prism-python";
-import "prismjs/components/prism-bash";
-import "prismjs/components/prism-shell-session";
 
 export function ContentViewer(
   { targetPage } : {
@@ -21,9 +15,16 @@ export function ContentViewer(
   }
 ) {
   const { data: session, status } = useSession();
-  const md = markdownit({html: true, linkify: true, typographer: true});
+  const md = markdownit({html: true, linkify: true, typographer: true, 
+    highlight: function (str, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        try {
+          return hljs.highlight(str, { language: lang }).value;
+        } catch (__) {}
+      }
+      return '';
+    }});
   md.use(mdContainer, 'info');
-  md.use(markdownItPrism);
   const [mode, setMode] = useState("normal");
   const [markdownText, setMarkdownText] = useState("");
   const [markdownHtml, setMarkdownHtml] = useState("");
