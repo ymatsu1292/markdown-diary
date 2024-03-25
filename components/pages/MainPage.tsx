@@ -92,7 +92,7 @@ export function MainPage() {
   const calendarRefreshHook = async () => {
     await loadData();
   };
-  
+
   //console.log("MainPage: END");
   return (
     <div>

@@ -5,6 +5,20 @@ import { EventData } from '@/components/types/scheduleDataType';
 import { stat, writeFile, readFile, opendir } from 'node:fs/promises';
 import { Buffer } from 'node:buffer';
 
+function build_path(base_directory: string, user_email: string) {
+  const words = user_email.split('@');
+  let parent_dir = "common";
+  let child_dir = "dummy";
+  if (words.length == 1) {
+    parent_dir = "common";
+    child_dir = words[0];
+  } else if (words.length == 2) {
+    parent_dir = words[1];
+    child_dir = words[0];
+  }
+  return base_directory + "/" + parent_dir + "/" + child_dir;
+}
+
 function create_calendar_base(check_month: any): MonthSchedule {
   const year = check_month.clone().year();
   const month = check_month.clone().month();
@@ -89,7 +103,7 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
   console.log("check_diary_exists: START");
   let event_data: EventData = {"events": {}, "others": []};
   try {
-    const work_dir = process.env.DATA_DIRECTORY + "/" + user;
+    const work_dir = build_path(process.env.DATA_DIRECTORY || "", user || "");
     //console.log("work_dir=", work_dir);
     const dir = await opendir(work_dir);
     const month_list = "(" + target_month_list.join("|") + ")";
@@ -146,7 +160,7 @@ export async function GET(req: NextRequest) {
   console.log("api/schedule GET: start - ", params);
   const today_str = moment().format("YYYY-MM-DD");
   const target_date_str = params.has('target') ? params.get('target') : today_str;
-  const user: string | null = params.has('user') ? params.get('user') : 'user';
+  const user: string = params.has('user') ? params.get('user') || "" : 'user';
 
   // カレンダーの日付を計算する
   console.log("today_str=", today_str, ", target_date_str=", target_date_str);
@@ -165,12 +179,13 @@ export async function GET(req: NextRequest) {
   };
   
   // {"cal1": [{"id": "week1", "caldata": [["", "", "", 0], [""...]...
-  
-  const holiday_file = process.env.DATA_DIRECTORY + "/" + user + "/holiday.md";
-  const base_holiday_file = process.env.DATA_DIRECTORY + "/base/holiday.md";
+
+  const data_directory: string = process.env.DATA_DIRECTORY || "";
+  const holiday_file: string = build_path(data_directory, user) + "/holiday.md";
+  const base_holiday_file = data_directory + "/base/holiday.md";
   const holiday_data = await load_events(holiday_file, base_holiday_file);
   // {"2024-01-01": {"holiday": "元旦"}, ...}
-  const private_file = process.env.DATA_DIRECTORY + "/" + user + "/private.md";
+  const private_file = build_path(data_directory, user) + "/private.md";
   const private_data = await load_events(private_file, null);
   
   set_schedule(calendars_data, holiday_data, "holiday");
