@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
 import { Input, Button } from '@nextui-org/react';
 import CodeMirror from '@uiw/react-codemirror';
@@ -11,9 +11,10 @@ import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
 
 export function ContentViewer(
-  { targetPage, calendarRefreshHook } : {
+  { targetPage, calendarRefreshHook, userId } : {
     targetPage: string;
     calendarRefreshHook: () => void;
+    userId: string;
   }
 ) {
   const { data: session, status } = useSession();
@@ -26,10 +27,11 @@ export function ContentViewer(
       }
       return '';
     }}).use(mdContainer, 'info').use(tasklist);
-  const [mode, setMode] = useState("normal");
-  const [markdownText, setMarkdownText] = useState("");
-  const [markdownHtml, setMarkdownHtml] = useState("");
-  
+  const [ mode, setMode ] = useState("normal");
+  const [ markdownText, setMarkdownText ] = useState("");
+  const [ markdownHtml, setMarkdownHtml ] = useState("");
+  const [ timerTime, setTimerTime ] = useState(new Date().getTime());
+
   const onChange = useCallback((val: string) => {
     //console.log('val:', val);
     setMarkdownText(val);
@@ -41,7 +43,7 @@ export function ContentViewer(
   const loadData = async() => {
     //console.log("ContentViewer.loadData: START");
     setMode('load');
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}&user=${session?.user?.email}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     //console.log("json=", json_data);
@@ -52,14 +54,19 @@ export function ContentViewer(
     //console.log("ContentViewer.loadData: END");
   }
   
-  const saveData = async() => {
-    //console.log("ContentViewer.saveData: START");
-    //console.log("session=", session);
+  const saveData = async(rcscommit: boolean, userId: string | undefined | null) => {
+    console.log("ContentViewer.saveData: START");
+    console.log("session=", session);
+    if (session === undefined && userId === null) {
+      console.log("no session");
+      return;
+    }
     const markdown_data = {
-      "user": session?.user?.email,
       "target": targetPage,
+      "rcscommit": rcscommit,
       "markdown": markdownText
     };
+    console.log("markdown_data=", markdown_data);
     setMode('save');
     const response = await fetch(`${process.env.BASE_PATH}/api/markdown`, {
       method: 'POST',
@@ -68,9 +75,9 @@ export function ContentViewer(
     })
     if (response.ok) {
       //let jsonData = await response.json();
-      setMode('normal');
       calendarRefreshHook();
     }
+    setMode('normal');
     //console.log("ContentViewer.saveData: END");
   };
 
@@ -81,6 +88,26 @@ export function ContentViewer(
     }
     //console.log("ContentViewer.useEffect(): END");
   }, [targetPage, session]);
+
+  // タイマー時刻が更新された際にデータを保存する
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
+      console.log("タイマーによるsave起動");
+      saveData(false, session?.user?.email);
+    }
+  }, [timerTime]);
+  
+  // 定期的にタイマー時刻を更新する
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
+      const intervalTime: number = 1000 * 60; // 一分
+      const intervalId = setInterval(() => {
+        console.log("タイマー時刻更新");
+        setTimerTime(new Date().getTime());
+      }, intervalTime);
+      return () => clearInterval(intervalId);
+    }
+  }, []);
   
   return (
     <div className="container mx-auto">
@@ -93,8 +120,17 @@ export function ContentViewer(
                   <Input type="text" label="タイトル" value={targetPage} />
                 </div>
                 <div className="flex-none">
-                  <Button color="primary" size="lg" onPress={() => saveData()} isDisabled={mode != "normal"}>
-                    保存
+                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ? 
+                    <Button color={mode != "save" ? "primary" : "danger"} className="m-2"
+                      size="lg" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                      履歴
+                    </Button>
+                    : 
+                    <></>
+                  }
+                  <Button color={mode != "save" ? "primary" : "danger"}
+                    size="lg" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                    {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
                 </div>
               </div>

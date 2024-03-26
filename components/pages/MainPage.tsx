@@ -20,6 +20,7 @@ export function MainPage() {
   const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
   const [ scheduleData, setScheduleData ] = useState<ScheduleData | null>(null);
   const [ searchText, setSearchText ] = useState("");
+  const [ userId, setUserId ] = useState("user");
 
   // どこかでページが設定された際の処理
   const handleTargetPageChange = (newPage: string) => {
@@ -31,7 +32,7 @@ export function MainPage() {
   // カレンダーの日付が変更された際の処理
   const loadData = async() => {
     //console.log("STARTdata fetch");
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}&user=${session?.user?.email}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}`);
     const response = await fetch(uri);
     if (response.ok) {
       //console.log("END data fetch: OK ", response);
@@ -68,6 +69,7 @@ export function MainPage() {
 
   // セッション情報が設定されたときの処理
   useEffect(() => {
+    setUserId(session?.user?.email || "dummy");
     //console.log("MainPage.useEffect: START");
     if (session?.error == "refresh_access_token_error") {
       signIn();
@@ -92,7 +94,7 @@ export function MainPage() {
   const calendarRefreshHook = async () => {
     await loadData();
   };
-  
+
   //console.log("MainPage: END");
   return (
     <div>
@@ -142,7 +144,7 @@ export function MainPage() {
           </Tabs>
         </div>
         <div className="grow">
-          <ContentViewer targetPage={targetPage} calendarRefreshHook={calendarRefreshHook}/>
+          <ContentViewer targetPage={targetPage} calendarRefreshHook={calendarRefreshHook} userId={userId} />
         </div>
       </div>
     </div>
