@@ -89,24 +89,26 @@ export function ContentViewer(
     //console.log("ContentViewer.useEffect(): END");
   }, [targetPage, session]);
 
-  if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
-    // タイマー時刻が更新された際にデータを保存する
-    useEffect(() => {
+  // タイマー時刻が更新された際にデータを保存する
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       console.log("タイマーによるsave起動");
       saveData(false, session?.user?.email);
-    }, [timerTime]);
-
-    // 定期的にタイマー時刻を更新する
-    useEffect(() => {
+    }
+  }, [timerTime]);
+  
+  // 定期的にタイマー時刻を更新する
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       const intervalTime: number = 1000 * 60; // 一分
       const intervalId = setInterval(() => {
         console.log("タイマー時刻更新");
         setTimerTime(new Date().getTime());
       }, intervalTime);
       return () => clearInterval(intervalId);
-    }, []);
-  }
-
+    }
+  }, []);
+  
   return (
     <div className="container mx-auto">
       <Tabs aria-label="editor">
