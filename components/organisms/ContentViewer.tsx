@@ -11,9 +11,10 @@ import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
 
 export function ContentViewer(
-  { targetPage, calendarRefreshHook } : {
+  { targetPage, calendarRefreshHook, userId } : {
     targetPage: string;
     calendarRefreshHook: () => void;
+    userId: string;
   }
 ) {
   const { data: session, status } = useSession();
@@ -31,8 +32,6 @@ export function ContentViewer(
   const [ markdownHtml, setMarkdownHtml ] = useState("");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
 
-  const userId = useMemo(() => session?.user?.email, [session]);
-  
   const onChange = useCallback((val: string) => {
     //console.log('val:', val);
     setMarkdownText(val);
@@ -44,7 +43,7 @@ export function ContentViewer(
   const loadData = async() => {
     //console.log("ContentViewer.loadData: START");
     setMode('load');
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}&user=${userId}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}&user=${session?.user?.email}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     //console.log("json=", json_data);
@@ -55,15 +54,15 @@ export function ContentViewer(
     //console.log("ContentViewer.loadData: END");
   }
   
-  const saveData = async(rcscommit: boolean) => {
+  const saveData = async(rcscommit: boolean, userId: string | undefined | null) => {
     console.log("ContentViewer.saveData: START");
     console.log("session=", session);
-    if (session == null || session == undefined || !("user" in session) || ("user" in session && session["user"] != undefined && !("email" in session["user"]))) {
+    if (session === undefined && userId === null) {
       console.log("no session");
       return;
     }
     const markdown_data = {
-      "user": userId,
+      "user": session?.user?.email || userId,
       "target": targetPage,
       "rcscommit": rcscommit,
       "markdown": markdownText
@@ -90,12 +89,19 @@ export function ContentViewer(
     }
     //console.log("ContentViewer.useEffect(): END");
   }, [targetPage, session]);
-  
+
   if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
+    // タイマー時刻が更新された際にデータを保存する
+    useEffect(() => {
+      console.log("タイマーによるsave起動");
+      saveData(false, session?.user?.email);
+    }, [timerTime]);
+
+    // 定期的にタイマー時刻を更新する
     useEffect(() => {
       const intervalTime: number = 1000 * 60; // 一分
       const intervalId = setInterval(() => {
-        saveData(false);
+        console.log("タイマー時刻更新");
         setTimerTime(new Date().getTime());
       }, intervalTime);
       return () => clearInterval(intervalId);
@@ -113,8 +119,16 @@ export function ContentViewer(
                   <Input type="text" label="タイトル" value={targetPage} />
                 </div>
                 <div className="flex-none">
+                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ? 
+                    <Button color={mode != "save" ? "primary" : "danger"} className="m-2"
+                      size="lg" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                      履歴
+                    </Button>
+                    : 
+                    <></>
+                  }
                   <Button color={mode != "save" ? "primary" : "danger"}
-                    size="lg" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
+                    size="lg" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
                 </div>

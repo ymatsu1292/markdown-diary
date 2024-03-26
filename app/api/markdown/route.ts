@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { open, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { exec } from 'child_process';
+import { authOptions } from '@/app/authOptions';
+import { getServerSession } from 'next-auth/next';
 import moment from 'moment';
 
 const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
@@ -23,8 +25,13 @@ function build_path(base_directory: string, user_email: string) {
 
 export async function GET(req: NextRequest) {
   console.log("GET: START");
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({}, {status: 401});
+  }
+  const user = session.user.email;
+  
   const params = req.nextUrl.searchParams;
-  const user: string = params.has('user') ? params.get('user') || "" : 'user';
   const target: string = params.has('target') ? params.get('target') || "" : "";
   console.log(params, user, target);
 
@@ -43,10 +50,17 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
-  console.log("POST: START");
+  console.log("markdown POST: START");
+  const session = await getServerSession(authOptions);
+  console.log("session=", session);
+  if (!session) {
+    return NextResponse.json({}, {status: 401});
+  }
+  const user = session.user.email;
+  
   const json_data = await req.json();
   console.log(json_data);
-  const user = json_data['user'];
+  //const user = json_data['user'];
   const target = json_data['target'];
   const rcscommit = json_data['rcscommit']
   const markdown = json_data['markdown'];
@@ -59,14 +73,7 @@ export async function POST(req: Request) {
   const filename = directory + "/" + target + ".md";
 
   if (markdown != "") {
-    // ファイルを出力する
-    let fd;
-    try {
-      fd = await open(filename, 'w');
-      fd.writeFile(markdown);
-    } finally {
-      await fd?.close();
-    }
+    console.log("markdown is NOT NULL");
     if (useRcs && rcscommit) {
       console.log("use RCS");
       // RCSを利用する場合は以下を実行する
@@ -75,15 +82,36 @@ export async function POST(req: Request) {
         // mkdir RCS
         console.log("mkdir");
         await mkdir(directory + "/RCS", { recursive: true });
+        // co -l "日時" ファイル名
+        let cmd = 'co -l "' + target + '.md"'; 
+        console.log("co -l:", cmd);
+        exec(cmd, {"cwd": directory})
+        // ファイルを出力する
+        let fd;
+        try {
+          fd = await open(filename, 'w');
+          fd.writeFile(markdown);
+        } finally {
+          await fd?.close();
+        }
         // ci -m "日時" ファイル名
-        let cmd = 'ci -l -m"' + dtstr + '" ' + target + ".md"; 
+        cmd = 'echo . | ci -l -m"' + dtstr + '" "' + target + '".md'; 
         console.log("ci:", cmd);
         exec(cmd, {"cwd": directory})
       } finally {
       }
-    }
+    } else {
+      // ファイルを出力する
+      let fd;
+      try {
+        fd = await open(filename, 'w');
+        fd.writeFile(markdown);
+      } finally {
+        await fd?.close();
+      }
+    }      
   } else {
-    await rm(filename);
+    await rm(filename, {"force": true});
   }
   const res = NextResponse.json({});
   return res;

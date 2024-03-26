@@ -4,6 +4,8 @@ import { ScheduleData, MonthSchedule, WeekSchedule, DaySchedule } from '@/compon
 import { EventData } from '@/components/types/scheduleDataType';
 import { stat, writeFile, readFile, opendir } from 'node:fs/promises';
 import { Buffer } from 'node:buffer';
+import { authOptions } from '@/app/authOptions';
+import { getServerSession } from 'next-auth/next';
 
 function build_path(base_directory: string, user_email: string) {
   const words = user_email.split('@');
@@ -57,7 +59,7 @@ function create_calendar_base(check_month: any): MonthSchedule {
 }
 
 function parse_event_text(text: string): {[key: string]: string} {
-  console.log("parse_event_text: START ", text);
+  //console.log("parse_event_text: START ", text);
   const lines: string[] = text.split('\n');
   let res: {[key: string]: string} = {}
   lines.forEach((line) => {
@@ -69,13 +71,13 @@ function parse_event_text(text: string): {[key: string]: string} {
     }
   });
   
-  console.log("parse_event_text: END ", res);
+  //console.log("parse_event_text: END ", res);
   return res;
 }
 
 
 async function load_events(event_file: string, base_file: string | null): Promise<EventData> {
-  console.log("load_events: START -", event_file, base_file);
+  //console.log("load_events: START -", event_file, base_file);
   // イベント設定ファイルを読み込む
   let event_data: EventData = {"events": {}, "others": []};
   try {
@@ -89,18 +91,18 @@ async function load_events(event_file: string, base_file: string | null): Promis
         let event_buffer = await readFile(base_file);
         let event_text = event_buffer.toString();
         await writeFile(event_file, event_text);
-        console.log("copy events!");
+        //console.log("copy events!");
         event_data["events"] = parse_event_text(event_text);
       } catch (error) {
       }
     }
   }
-  console.log("load_events: END");
+  //console.log("load_events: END");
   return event_data;
 }
 
 async function check_diary_exists(target_month_list: string[], user: string | null): Promise<EventData> {
-  console.log("check_diary_exists: START");
+  //console.log("check_diary_exists: START");
   let event_data: EventData = {"events": {}, "others": []};
   try {
     const work_dir = build_path(process.env.DATA_DIRECTORY || "", user || "");
@@ -110,7 +112,7 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
     const filename_pattern_md = new RegExp("\.md$");
     const filename_pattern_cal = new RegExp("^" + month_list + "-[0-9]{2}\.md$");
     for await (const dirent of dir) {
-      console.log(dirent.name);
+      //console.log(dirent.name);
       if (filename_pattern_md.test(dirent.name)) {
         if (filename_pattern_cal.test(dirent.name)) {
           const date_str = dirent.name.slice(0, 10);
@@ -121,7 +123,7 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
       }
     }
   } catch (error) {}
-  console.log("check_diary_exists: END");
+  //console.log("check_diary_exists: END");
   return event_data;
 }
 
@@ -156,11 +158,15 @@ function set_schedule(calendars_base: ScheduleData, event_data: EventData, type:
 }
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
   const params = req.nextUrl.searchParams;
-  console.log("api/schedule GET: start - ", params);
+  console.log("api/schedule GET: start - ", params, session);
+  if (!session) {
+    return NextResponse.json({}, {status: 401});
+  }
+  const user = session.user.email;
   const today_str = moment().format("YYYY-MM-DD");
   const target_date_str = params.has('target') ? params.get('target') : today_str;
-  const user: string = params.has('user') ? params.get('user') || "" : 'user';
 
   // カレンダーの日付を計算する
   console.log("today_str=", today_str, ", target_date_str=", target_date_str);
@@ -199,7 +205,7 @@ export async function GET(req: NextRequest) {
       calendars_data["cal2"]["month"]
     ], 
     user);
-  console.log("diary_check_result=", diary_check_result);
+  //console.log("diary_check_result=", diary_check_result);
   set_schedule(calendars_data, diary_check_result, "diary");
 
   const res = NextResponse.json({"scheduleData": calendars_data});
