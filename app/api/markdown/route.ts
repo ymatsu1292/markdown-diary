@@ -26,7 +26,7 @@ function build_path(base_directory: string, user_email: string) {
 export async function GET(req: NextRequest) {
   console.log("GET: START");
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session || !session.user || !session.user.email) {
     return NextResponse.json({}, {status: 401});
   }
   const user = session.user.email;
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
   console.log("markdown POST: START");
   const session = await getServerSession(authOptions);
   console.log("session=", session);
-  if (!session) {
+  if (!session || !session.user || !session.user.email) {
     return NextResponse.json({}, {status: 401});
   }
   const user = session.user.email;

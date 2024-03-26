@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   const params = req.nextUrl.searchParams;
   console.log("api/schedule GET: start - ", params, session);
-  if (!session) {
+  if (!session || !session.user || !session.user.email) {
     return NextResponse.json({}, {status: 401});
   }
   const user = session.user.email;

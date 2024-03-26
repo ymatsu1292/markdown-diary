@@ -32,7 +32,7 @@ export function MainPage() {
   // カレンダーの日付が変更された際の処理
   const loadData = async() => {
     //console.log("STARTdata fetch");
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}&user=${userId}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}`);
     const response = await fetch(uri);
     if (response.ok) {
       //console.log("END data fetch: OK ", response);

@@ -43,7 +43,7 @@ export function ContentViewer(
   const loadData = async() => {
     //console.log("ContentViewer.loadData: START");
     setMode('load');
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}&user=${session?.user?.email}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     //console.log("json=", json_data);
@@ -62,7 +62,6 @@ export function ContentViewer(
       return;
     }
     const markdown_data = {
-      "user": session?.user?.email || userId,
       "target": targetPage,
       "rcscommit": rcscommit,
       "markdown": markdownText
