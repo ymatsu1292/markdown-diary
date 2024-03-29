@@ -122,10 +122,10 @@ export function MainPage() {
               <Button isIconOnly variant="light"><List size={24}/></Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="Profile" variant="flat">
-              <DropdownItem className="h-14 gap-2">
+              <DropdownItem className="h-14 gap-2" key="username">
                 <p>Signed in as</p><p className="font-semibold">{session?.user?.name}</p>
               </DropdownItem>
-              <DropdownItem color="danger" onPress={() => signOut()}>
+              <DropdownItem color="danger" onPress={() => signOut()} key="logout">
                 Logout
               </DropdownItem>
             </DropdownMenu>
