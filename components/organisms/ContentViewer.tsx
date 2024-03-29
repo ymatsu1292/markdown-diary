@@ -157,6 +157,29 @@ export function ContentViewer(
         <Tab key="viewer" title="参照">
           <Card>
             <CardBody>
+              <div className="flex">
+                <div className="grow" />
+                <div className="flex-none ml-2">
+                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                    <>
+                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
+                        size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                        履歴
+                      </Button>
+                      <Button color={dirty ? "danger" : "primary"} className="ml-2"
+                        size="sm">
+                        保存
+                      </Button>
+                    </>
+                    : 
+                    <></>
+                  }
+                  <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
+                    size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                    {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                  </Button>
+                </div>
+              </div>
               <div className="markdown-body" id="viewer"
                 dangerouslySetInnerHTML={{__html: markdownHtml}}>
               </div>
