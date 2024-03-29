@@ -31,6 +31,7 @@ export function ContentViewer(
   const [ markdownText, setMarkdownText ] = useState("");
   const [ markdownHtml, setMarkdownHtml ] = useState("");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
+  const [ dirty, setDirty ] = useState<boolean>(false);
 
   const onChange = useCallback((val: string) => {
     //console.log('val:', val);
@@ -57,7 +58,7 @@ export function ContentViewer(
   const saveData = async(rcscommit: boolean, userId: string | undefined | null) => {
     console.log("ContentViewer.saveData: START");
     console.log("session=", session);
-    if (session === undefined && userId === null) {
+    if (session == null && userId == null) {
       console.log("no session");
       return;
     }
@@ -120,16 +121,23 @@ export function ContentViewer(
                   <Input type="text" label="タイトル" value={targetPage} />
                 </div>
                 <div className="flex-none">
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ? 
-                    <Button color={mode != "save" ? "primary" : "danger"} className="m-2"
-                      size="lg" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
-                      履歴
-                    </Button>
+                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                    <>
+                      <Button color={dirty ? "danger" : "primary"}
+                        size="sm" isDisabled>
+                        要書込
+                      </Button>
+                        
+                      <Button color={mode != "save" ? "primary" : "danger"} className="m-2"
+                        size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                        履歴
+                      </Button>
+                    </>
                     : 
                     <></>
                   }
                   <Button color={mode != "save" ? "primary" : "danger"}
-                    size="lg" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                    size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
                 </div>

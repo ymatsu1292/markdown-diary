@@ -3,11 +3,15 @@ import { open, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { exec } from 'child_process';
 import { authOptions } from '@/app/authOptions';
 import { getServerSession } from 'next-auth/next';
+import { promisify } from 'node:util';
+
 import moment from 'moment';
 
 const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
   ? (process.env["NEXT_PUBLIC_USE_RCS"] == "true" ? true : false)
   : false;
+
+const aexec = promisify(exec);
 
 function build_path(base_directory: string, user_email: string) {
   const words = user_email.split('@');
@@ -78,26 +82,63 @@ export async function POST(req: Request) {
       console.log("use RCS");
       // RCSを利用する場合は以下を実行する
       try {
+        let cmd = "";
+        let res;
         const dtstr = moment().format();
         // mkdir RCS
         console.log("mkdir");
         await mkdir(directory + "/RCS", { recursive: true });
-        // co -l "日時" ファイル名
-        let cmd = 'co -l "' + target + '.md"'; 
-        console.log("co -l:", cmd);
-        exec(cmd, {"cwd": directory})
-        // ファイルを出力する
-        let fd;
+        // RCS logで履歴があるかどうかをチェックする
+        // 1の場合のみ新規チェックイン
         try {
-          fd = await open(filename, 'w');
-          fd.writeFile(markdown);
-        } finally {
-          await fd?.close();
+          cmd = 'rlog -R ' + target + '.md';
+          console.log('rlog: ', cmd);
+          res = await aexec(cmd, {"cwd": directory});
+          console.log('rlog: RESULT=', res);
+
+          try {
+            // 履歴が存在する場合はロックをとって書き込む
+            // co -l "日時" ファイル名
+            //cmd = 'co -l "' + target + '.md"'; 
+            //console.log("co -l:", cmd);
+            //res = await aexec(cmd, {"cwd": directory})
+            // ファイルを出力する
+            let fd;
+            try {
+              fd = await open(filename, 'w');
+              fd.writeFile(markdown);
+            } finally {
+              await fd?.close();
+            }
+            // ci -m "日時" ファイル名
+            cmd = 'echo . | ci -f -l -m"' + dtstr + '" "' + target + '.md"'; 
+            console.log("ci:", cmd);
+            res = await aexec(cmd, {"cwd": directory})
+            
+          } catch (err) {
+            console.log("ERROR!!!:", err);
+          }
+          
+        } catch (err) {
+          // 履歴が存在しない場合は新規登録する
+          try {
+            // ファイルを出力する
+            let fd;
+            try {
+              fd = await open(filename, 'w');
+              fd.writeFile(markdown);
+            } finally {
+              await fd?.close();
+            }
+            // 初期登録する
+            cmd = 'echo . | ci -i -l -m"' + dtstr + '" "' + target + '.md"';
+            console.log('initial ci: ', cmd);
+            res = await aexec(cmd, {"cwd": directory});
+            console.log('initial ci: RESULT=', res)
+          } catch (err) {
+            console.log('initial ci: FAIL!');
+          }
         }
-        // ci -m "日時" ファイル名
-        cmd = 'echo . | ci -l -m"' + dtstr + '" "' + target + '".md'; 
-        console.log("ci:", cmd);
-        exec(cmd, {"cwd": directory})
       } finally {
       }
     } else {
