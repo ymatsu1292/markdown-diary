@@ -1,3 +1,5 @@
+import styles from './ContentViewer.module.css';
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
 import { Input, Button } from '@nextui-org/react';
