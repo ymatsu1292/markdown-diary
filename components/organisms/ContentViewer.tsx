@@ -34,11 +34,12 @@ export function ContentViewer(
   const [ dirty, setDirty ] = useState<boolean>(false);
 
   const onChange = useCallback((val: string) => {
-    //console.log('val:', val);
+    console.log('val:', val);
     setMarkdownText(val);
     let base_text = targetPage + "\n=====\n" + val;
     //console.log('render raw:', base_text) 
     setMarkdownHtml(md.render(base_text));
+    setDirty(true);
   }, [md, targetPage]);
 
   const loadData = async() => {
@@ -78,6 +79,7 @@ export function ContentViewer(
       //let jsonData = await response.json();
       calendarRefreshHook();
     }
+    setDirty(false);
     setMode('normal');
     //console.log("ContentViewer.saveData: END");
   };
@@ -120,23 +122,22 @@ export function ContentViewer(
                 <div className="grow">
                   <Input type="text" label="タイトル" value={targetPage} />
                 </div>
-                <div className="flex-none">
+                <div className="flex-none ml-2">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
-                      <Button color={dirty ? "danger" : "primary"}
-                        size="sm" isDisabled>
-                        要書込
-                      </Button>
-                        
-                      <Button color={mode != "save" ? "primary" : "danger"} className="m-2"
+                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
                         size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
                         履歴
+                      </Button>
+                      <Button color={dirty ? "danger" : "primary"} className="ml-2"
+                        size="sm">
+                        保存
                       </Button>
                     </>
                     : 
                     <></>
                   }
-                  <Button color={mode != "save" ? "primary" : "danger"}
+                  <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
                     size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
