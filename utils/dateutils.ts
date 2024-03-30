@@ -35,7 +35,7 @@ export function fix_date(year: number, month: number, day: number, increment_fla
   }});
 
   let date_str = ""
-  let date: Date = null;
+  let date: Date | null = null;
   if (day < 1) {
     day = 31;
     month = month - 1;
