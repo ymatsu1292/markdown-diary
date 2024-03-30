@@ -8,7 +8,7 @@ export default defineConfig({
   },  
   resolve: {
     alias: {
-      "@": "/home/ymatsu/markdown-diary"
+      "@": __dirname
     }
   }
 });
