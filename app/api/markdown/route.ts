@@ -7,6 +7,9 @@ import { promisify } from 'node:util';
 
 import moment from 'moment';
 
+import base_logger from '@/components/utils/logger';
+const logger = base_logger.child({ filename: __filename });
+
 const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
   ? (process.env["NEXT_PUBLIC_USE_RCS"] == "true" ? true : false)
   : false;
@@ -14,6 +17,9 @@ const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
 const aexec = promisify(exec);
 
 function build_path(base_directory: string, user_email: string) {
+  const func_logger = logger.child({ "func": "build_path" });
+  func_logger.debug({"message": "START"});
+  func_logger.debug({"message": this});
   const words = user_email.split('@');
   let parent_dir = "common";
   let child_dir = "dummy";
@@ -24,11 +30,13 @@ function build_path(base_directory: string, user_email: string) {
     parent_dir = words[1];
     child_dir = words[0];
   }
-  return base_directory + "/" + parent_dir + "/" + child_dir;
+  const res = base_directory + "/" + parent_dir + "/" + child_dir;
+  func_logger.debug({"message": "END", "result": res});
+  return res;
 }
 
 export async function GET(req: NextRequest) {
-  console.log("GET: START");
+  logger.debug("app/api/markdown/route.ts - GET(): START");
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.email) {
     return NextResponse.json({}, {status: 401});
@@ -49,12 +57,12 @@ export async function GET(req: NextRequest) {
     // エラーが出ても気にしない
   }
   const res = NextResponse.json({"markdown": markdown});
-  console.log("GET: END ", markdown);
+  logger.debug("app/api/markdown/route.ts - GET(): END res=", res);
   return res;
 }
 
 export async function POST(req: Request) {
-  console.log("markdown POST: START");
+  logger.debug("app/api/markdown/route.ts - POST(): START");
   const session = await getServerSession(authOptions);
   console.log("session=", session);
   if (!session || !session.user || !session.user.email) {
@@ -155,6 +163,7 @@ export async function POST(req: Request) {
     await rm(filename, {"force": true});
   }
   const res = NextResponse.json({});
+  logger.debug("app/api/markdown/route.ts - POST(): END res=", res);
   return res;
 }
 
