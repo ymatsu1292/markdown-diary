@@ -28,37 +28,44 @@ export function getTodayMonth() {
   return today_month;
 }
 
-function fix_date(year: number, month: number, day: number, increment_flag: boolean): string {
+export function fix_date(year: number, month: number, day: number, increment_flag: boolean): string {
   const func_logger = logger.child({ "func": "fix_date"});
   func_logger.trace({"message": "START", "params": {
     "year": year, "month": month, "day": day, "increment_flag": increment_flag
   }});
-  
+
   let date_str = ""
-  while (true) {
+  let date: Date | null = null;
+  if (day < 1) {
+    day = 31;
+    month = month - 1;
+  }
+  if (month < 1) {
+    month = 12;
+    year = year - 1;
+  }
+  if (day > 31) {
+    day = 1;
+    month = month + 1;
+  }
+  if (month > 12) {
+    month = 1;
+    year = year + 1;
+  }
+  let count: number = 0;
+  while (count < 5) {
     date_str = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    func_logger.trace({"date_str": date_str});
-    console.log(date_str);
-    let date: Date = new Date(date_str);
-    if (!isNaN(date.getDate())) {
+    date = new Date(date_str);
+    if ((!isNaN(date.getDate()) && date.getDate() == day)) {
       break;
     }
-    day = day + (increment_flag ? 1 : -1);
-    if (day < 1) {
-      day = 31;
-      month = month - 1;
-      if (month < 1) {
-        month = 12;
-        year = year - 1;
-      }
-    } else if (day > 31) {
+    if (increment_flag) {
       day = 1;
       month = month + 1;
-      if (month > 12) {
-        month = 1;
-        year = year + 1;
-      }
+    } else {
+      day -= 1;
     }
+    count += 1;
   }
   func_logger.trace({"message": "END", "params": {
     "year": year, "month": month, "day": day, "increment_flag": increment_flag
@@ -70,13 +77,9 @@ export function getPrevMonth(targetDate: string): string {
   const func_logger = logger.child({ "func": "fix_date"});
   func_logger.trace({"message": "START", "params": { "targetDate": targetDate }});
   
-  let year: number = parseInt(targetDate.slice(0, 4));
-  let month: number = parseInt(targetDate.slice(5, 7)) - 1;
+  const year: number = parseInt(targetDate.slice(0, 4));
+  const month: number = parseInt(targetDate.slice(5, 7)) - 1;
   const day: number = parseInt(targetDate.slice(8, 10));
-  if (month < 1) {
-    month = 12;
-    year = year - 1
-  }
   const date_str = fix_date(year, month, day, false);
   
   func_logger.trace({"message": "END", "params": { "targetDate": targetDate }, "res": date_str});
@@ -98,14 +101,10 @@ export function getNextMonth(targetDate: string): string {
   const func_logger = logger.child({ "func": "getNextMonth"});
   func_logger.trace({"message": "START", "params": { "targetDate": targetDate }});
   
-  let year: number = parseInt(targetDate.slice(0, 4));
-  let month: number = parseInt(targetDate.slice(5, 7)) + 1;
+  const year: number = parseInt(targetDate.slice(0, 4));
+  const month: number = parseInt(targetDate.slice(5, 7)) + 1;
   const day: number = parseInt(targetDate.slice(8, 10));
-  if (month > 12) {
-    month = 1;
-    year = year + 1
-  }
-  const date_str = fix_date(year, month, day, true);
+  const date_str = fix_date(year, month, day, false);
   
   func_logger.trace({"message": "END", "params": { "targetDate": targetDate }, "res": date_str});
   return date_str;
