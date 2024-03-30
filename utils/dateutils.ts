@@ -62,10 +62,6 @@ export function fix_date(year: number, month: number, day: number, increment_fla
     if (increment_flag) {
       day = 1;
       month = month + 1;
-      if (month > 12) {
-        month = 1;
-        year = year + 1;
-      }
     } else {
       day -= 1;
     }
