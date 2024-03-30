@@ -115,6 +115,7 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
     const month_list = "(" + target_month_list.join("|") + ")";
     const filename_pattern_md = new RegExp("\.md$");
     const filename_pattern_cal = new RegExp("^" + month_list + "-[0-9]{2}\.md$");
+    const filename_pattern_cal2 = new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$");
     
     for await (const dirent of dir) {
       func_logger.trace({"dirent.name": dirent.name});
@@ -124,8 +125,10 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
           const date_str = dirent.name.slice(0, 10);
           event_data["events"][date_str] = "";
         } else {
-          func_logger.trace({"message": "add others", "file": dirent.name});
-          event_data["others"].push(dirent.name);
+          if (!filename_pattern_cal2.test(dirent.name)) {
+            func_logger.trace({"message": "add others", "file": dirent.name});
+            event_data["others"].push(dirent.name);
+          }
         }
       }
     }
