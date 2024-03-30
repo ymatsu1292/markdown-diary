@@ -54,6 +54,7 @@ export function ContentViewer(
     //setMarkdownText(json_data["markdown"]);
     onChange(json_data["markdown"]);
     setMode('normal');
+    setDirty(false);
     
     //console.log("ContentViewer.loadData: END");
   }
@@ -127,12 +128,14 @@ export function ContentViewer(
                 <div className="flex-none ml-2">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
+                      {/* 履歴機能ができるまではいったんコメントアウト
                       <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                        size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                        size="sm" isDisabled={mode != "normal"}>
                         履歴
                       </Button>
+                        */}
                       <Button color={dirty ? "danger" : "primary"} className="ml-2"
-                        size="sm">
+                        size="sm" onPress={() => saveData(false, session?.user?.email)} isDisabled={mode != "normal"}>
                         保存
                       </Button>
                     </>
