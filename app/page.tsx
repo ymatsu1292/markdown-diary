@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/authOptions';
 import { redirect } from 'next/navigation';
 import { MainPage } from '@/components/pages/MainPage';
-import logger from '@/components/utils/logger';
+import logger from '@/utils/logger';
 
 export default async function Home() {
   const session = await getServerSession(authOptions);

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { getTodayStr, getTodayMonth } from '@/components/utils/dateutils';
+import { getTodayStr, getTodayMonth } from '@/utils/dateutils';
 import { MiniCalendars } from '@/components/organisms/MiniCalendars';
 import { MarkdownFileList } from '@/components/organisms/MarkdownFileList';
 import { ContentViewer } from '@/components/organisms/ContentViewer';
