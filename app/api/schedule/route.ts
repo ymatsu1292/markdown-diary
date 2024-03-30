@@ -181,7 +181,7 @@ function set_schedule(calendars_base: ScheduleData, event_data: EventData, type:
 
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
-  func_logger.info({"message": "START", "params": {"req": req}});
+  func_logger.debug({"message": "START", "params": {"req": req}});
   
   const session = await getServerSession(authOptions);
   const params = req.nextUrl.searchParams;
@@ -189,7 +189,7 @@ export async function GET(req: NextRequest) {
   if (!session || !session.user || !session.user.email) {
     func_logger.info({"message": "SESSION Invalid"});
     const res = NextResponse.json({}, {status: 401});
-    func_logger.info({"message": "END", "params": {"req": req}, "res": res});
+    func_logger.debug({"message": "END", "params": {"req": req}, "res": res});
     return res;
   }
   const user = session.user.email;
@@ -237,7 +237,7 @@ export async function GET(req: NextRequest) {
   set_schedule(calendars_data, diary_check_result, "diary");
 
   const res = NextResponse.json({"scheduleData": calendars_data});
-  func_logger.info({"message": "END", "params": {"req": req}, "res": res});
+  func_logger.debug({"message": "END", "params": {"req": req}, "res": res});
   return res;
 }
 

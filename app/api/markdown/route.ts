@@ -88,7 +88,7 @@ export async function POST(req: Request) {
           cmd = 'rlog -R ' + target + '.md';
           func_logger.trace({"command": cmd, "message": "exec"});
           res = await aexec(cmd, {"cwd": directory});
-          func_logger.trace({"command": cmd, "res": res});
+          func_logger.info({"command": cmd, "res": res});
 
           try {
             // ファイルを出力する
@@ -100,11 +100,11 @@ export async function POST(req: Request) {
             } finally {
               await fd?.close();
             }
-            // ci -m "日時" ファイル名
+            // ci -f -l -m "日時" ファイル名
             cmd = 'echo . | ci -f -l -m"' + dtstr + '" "' + target + '.md"'; 
             func_logger.trace({"command": cmd, "message": "exec(ci)"});
             res = await aexec(cmd, {"cwd": directory})
-            func_logger.trace({"command": cmd, "res": res});
+            func_logger.info({"command": cmd, "res": res});
             
           } catch (err) {
             func_logger.warn({"command": cmd, "res": res, "error": err});
@@ -127,9 +127,9 @@ export async function POST(req: Request) {
             cmd = 'echo . | ci -i -l -m"' + dtstr + '" "' + target + '.md"';
             func_logger.trace({"command": cmd, "message": "exec(initial ci)"});
             res = await aexec(cmd, {"cwd": directory});
-            func_logger.trace({"command": cmd, "res": res});
+            func_logger.info({"command": cmd, "res": res});
           } catch (err) {
-            func_logger.trace({"command": cmd, "message": "initial ci fail", "error": err});
+            func_logger.warn({"command": cmd, "message": "initial ci fail", "error": err});
           }
         }
       } finally {

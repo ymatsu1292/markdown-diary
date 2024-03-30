@@ -3,6 +3,9 @@ import { Link, Tooltip } from '@nextui-org/react';
 import { getTodayStr } from '@/utils/dateutils';
 import { MonthSchedule, WeekSchedule, DaySchedule } from '@/components/types/scheduleDataType';
 
+import base_logger from '@/utils/logger';
+const logger = base_logger.child({ filename: __filename });
+
 export function MiniCalendar(
   { monthSchedule, handleTargetPageChange, calendarDate } : {
     monthSchedule: MonthSchedule,
@@ -10,12 +13,18 @@ export function MiniCalendar(
     calendarDate: string,
   }
 ) {
-  //console.log("MiniCalendar: START");
-  //console.log("monthSchedule:", monthSchedule);
+  const func_logger = logger.child({ "func": "MiniCalendar" });
+  func_logger.trace({"message": "START", "params": {
+    "monthSchedule": monthSchedule,
+    "handleTargetPageChange": handleTargetPageChange,
+    "calendarDate": calendarDate
+  }});
+  
+  func_logger.trace({"monthSchedule": monthSchedule});
   const weekday_color = ["bg-red-200", "", "", "", "", "", "bg-blue-200"];
 
   const changePage = (dateStr: string) => {
-    //console.log("changePage: dateStr=", dateStr);
+    func_logger.trace({"changePage": dateStr});
     handleTargetPageChange(dateStr);
   };
   
@@ -34,6 +43,9 @@ export function MiniCalendar(
   };
   
   const drawCell = (daySchedule: DaySchedule, monthStr: string, todayStr: string, weekday: number, calendarDate: string): JSX.Element => {
+    const func_logger = logger.child({ "func": "MiniCalendar.drawCell" });
+    func_logger.trace({"message": "START"})
+    
     //console.log("drawCell: START ", calendarDate);
     let fontStyle = "font-normal";
     //console.log(todayStr);
@@ -77,10 +89,16 @@ export function MiniCalendar(
     //console.log("res1=", res1);
     //console.log("drawCell: END");
     let res2 = <TableCell key={weekday} className={`m-0 p-0 text-center ${calcCellColor(daySchedule, weekday, otherMonth)}`}>{res1}</TableCell>;
+    func_logger.trace({"message": "END", "res": res2})
     return res2;
   }
   const todayStr = getTodayStr();
-  //console.log("MiniCalendar: END - ", monthSchedule);
+  
+  func_logger.trace({"message": "END", "params": {
+    "monthSchedule": monthSchedule,
+    "handleTargetPageChange": handleTargetPageChange,
+    "calendarDate": calendarDate
+  }});
   
   return (
     <div className="m-0 p-1">

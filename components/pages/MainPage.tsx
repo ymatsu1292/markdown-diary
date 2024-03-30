@@ -13,8 +13,13 @@ import { Tabs, Tab } from '@nextui-org/react';
 import { Listbox, ListboxSection, ListboxItem } from '@nextui-org/react';
 import { ScheduleData } from '@/components/types/scheduleDataType';
 
+import base_logger from '@/utils/logger';
+const logger = base_logger.child({ filename: __filename });
+
 export function MainPage() {
-  //console.log("MainPage: START");
+  const func_logger = logger.child({ "func": "MainPage" });
+  func_logger.trace({"message": "START"});
+
   const { data: session, status } = useSession();
   const [ targetPage, setTargetPage ] = useState(getTodayStr());
   const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
@@ -24,64 +29,90 @@ export function MainPage() {
 
   // どこかでページが設定された際の処理
   const handleTargetPageChange = (newPage: string) => {
+    const func_logger = logger.child({ "func": "MainPage.handleTargetPageChange" });
+    func_logger.debug({"message": "START", "params": {"newPage": newPage}});
     //console.log("MainPage.handleTargetPageChange() START:", newPage);
     setTargetPage(String(newPage));
     //console.log("MainPage.handleTargetPageChange() END");
+    func_logger.debug({"message": "END", "params": {"newPage": newPage}});
   };
 
   // カレンダーの日付が変更された際の処理
   const loadData = async() => {
-    //console.log("STARTdata fetch");
+    const func_logger = logger.child({ "func": "MainPage.loadData" });
+    func_logger.debug({"message": "START"});
+
     const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}`);
     const response = await fetch(uri);
     if (response.ok) {
-      //console.log("END data fetch: OK ", response);
+      func_logger.debug({"message": "fetch OK"});
       let jsonData = await response.json();
-      //console.log("JSON=", jsonData);
+      func_logger.trace({"jsonData": jsonData});
       setScheduleData(jsonData['scheduleData']);
     } else {
-      //console.log("END data fetch: NG ", response);
+      func_logger.debug({"message": "fetch NG"});
     }
+    func_logger.debug({"message": "END"});
   };
   
   const today_month = getTodayMonth();
   useEffect(() => {
-    //console.log("START: MiniCalendars.useEffect session=", session);
+    const func_logger = logger.child({ "func": "MainPage.useEffect[1]" });
+    func_logger.debug({"message": "START"});
+
     if (session?.user == undefined) {
-      //console.log("END: MiniCalendars.useEffect NO SESSION");
+      func_logger.debug({"message": "NO SESSION"});
       return;
     }
     // データを読み込んでscheduleDataに登録する
     loadData();
-    //console.log("END: MiniCalendars.useEffect");
+
+    func_logger.debug({"message": "END"});
   }, [session, calendarDate]);
   
   // ページが変更されたときの処理
   useEffect(() => {
+    const func_logger = logger.child({ "func": "MainPage.useEffect[2]" });
+    func_logger.debug({"message": "START"});
+
     const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
     if (!datePattern.test(targetPage)) {
       // 日付以外のページなら今日をターゲットにする
+      func_logger.debug({"message": "target is TODAY"});
       setCalendarDate(getTodayStr());
     } else {
+      func_logger.debug({"message": "target is " + targetPage});
       setCalendarDate(targetPage);
     }
+    func_logger.debug({"message": "END"});
   }, [targetPage]);
 
   // セッション情報が設定されたときの処理
   useEffect(() => {
+    const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
+    func_logger.debug({"message": "START"});
+
     setUserId(session?.user?.email || "dummy");
-    //console.log("MainPage.useEffect: START");
     if (session?.error == "refresh_access_token_error") {
+      func_logger.debug({"message": "TOKEN ERROR -> signIn"});
       signIn();
     }
-    //console.log("MainPage.useEffect: END");
+    func_logger.debug({"message": "END"});
   }, [session]);
 
   const isInvalid = useMemo(() => {
+    const func_logger = logger.child({ "func": "MainPage.isInvalid" });
+    func_logger.debug({"message": "START"});
+
     const filenameNgPattern = /[\\\/:\*\?\"<>\|]/;
-    console.log(searchText);
-    if (searchText === "") return false;
-    return filenameNgPattern.test(searchText) ? true : false;
+    if (searchText === "") {
+      func_logger.debug({"message": "END(searchText is null)", "res": false});
+      return false;
+    }
+
+    const res = filenameNgPattern.test(searchText) ? true : false;
+    func_logger.debug({"message": "END", "res": res});
+    return res;
   }, [searchText]);
   
   const doSearchIfNecessary = (key: string, page: string) => {
@@ -95,7 +126,8 @@ export function MainPage() {
     await loadData();
   };
 
-  //console.log("MainPage: END");
+  func_logger.trace({"message": "END"});
+
   return (
     <div>
       <Navbar position="sticky" height="3rem" isBordered className="bg-blue-200 min-w-fit mx-auto">

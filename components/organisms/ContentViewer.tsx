@@ -12,6 +12,9 @@ import { tasklist } from '@mdit/plugin-tasklist';
 import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
 
+import base_logger from '@/utils/logger';
+const logger = base_logger.child({ filename: __filename });
+
 export function ContentViewer(
   { targetPage, calendarRefreshHook, userId } : {
     targetPage: string;
@@ -19,6 +22,12 @@ export function ContentViewer(
     userId: string;
   }
 ) {
+  const func_logger = logger.child({ "func": "ContentViewer" });
+  func_logger.trace({"message": "START", "params": {
+    "targetPage": targetPage, 
+    "calendarRefreshHook": calendarRefreshHook,
+    "userId": userId
+  }});
   const { data: session, status } = useSession();
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
@@ -36,34 +45,44 @@ export function ContentViewer(
   const [ dirty, setDirty ] = useState<boolean>(false);
 
   const onChange = useCallback((val: string) => {
-    console.log('val:', val);
+    const func_logger = logger.child({ "func": "ContentViewer.onChange" });
+    func_logger.trace({"message": "START", "params": {"val": val}});
+    
     setMarkdownText(val);
     let base_text = targetPage + "\n=====\n" + val;
-    //console.log('render raw:', base_text) 
     setMarkdownHtml(md.render(base_text));
     setDirty(true);
+
+    func_logger.trace({"message": "END", "params": {"val": val}});
   }, [md, targetPage]);
 
   const loadData = async() => {
-    //console.log("ContentViewer.loadData: START");
+    const func_logger = logger.child({ "func": "ContentViewer.loadData" });
+    func_logger.debug({"message": "START"});
+    
     setMode('load');
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}`);
     const result = await fetch(uri);
     const json_data = await result.json();
-    //console.log("json=", json_data);
-    //setMarkdownText(json_data["markdown"]);
+    func_logger.trace({"json_data": json_data});
     onChange(json_data["markdown"]);
     setMode('normal');
     setDirty(false);
     
-    //console.log("ContentViewer.loadData: END");
+    func_logger.debug({"message": "END"});
   }
   
   const saveData = async(rcscommit: boolean, userId: string | undefined | null) => {
-    console.log("ContentViewer.saveData: START");
-    console.log("session=", session);
+    const func_logger = logger.child({ "func": "ContentViewer.saveData" });
+    func_logger.debug({"message": "START", "params": {"rcscommit": rcscommit, "userId": userId}});
+
+    func_logger.debug({"session": session});
     if (session == null && userId == null) {
-      console.log("no session");
+      func_logger.debug({
+        "message": "END", 
+        "params": {"rcscommit": rcscommit, "userId": userId},
+        "res": "no session"
+      });
       return;
     }
     const markdown_data = {
@@ -71,7 +90,7 @@ export function ContentViewer(
       "rcscommit": rcscommit,
       "markdown": markdownText
     };
-    console.log("markdown_data=", markdown_data);
+    func_logger.trace({ "markdown_data": markdown_data });
     setMode('save');
     const response = await fetch(`${process.env.BASE_PATH}/api/markdown`, {
       method: 'POST',
@@ -79,41 +98,64 @@ export function ContentViewer(
       body: JSON.stringify(markdown_data),
     })
     if (response.ok) {
-      //let jsonData = await response.json();
+      func_logger.trace({ "message": "POST OK", "response": response });
       calendarRefreshHook();
     }
     setDirty(false);
     setMode('normal');
-    //console.log("ContentViewer.saveData: END");
+
+    func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit, "userId": userId}});
   };
 
   useEffect(() => {
-    //console.log("ContentViewer.useEffect(): START");
+    const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
+    func_logger.debug({"message": "START"});
+    
     if (session != null) {
+      func_logger.debug({"message": "DO loadData()"});
       loadData();
+    } else {
+      func_logger.debug({"message": "SKIP loadData()"});
     }
-    //console.log("ContentViewer.useEffect(): END");
+    func_logger.debug({"message": "END"});
   }, [targetPage, session]);
 
   // タイマー時刻が更新された際にデータを保存する
   useEffect(() => {
+    const func_logger = logger.child({ "func": "ContentViewer.useEffect[2]" });
+    func_logger.debug({"message": "START"});
+    
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
-      console.log("タイマーによるsave起動");
+      func_logger.debug({"message": "DO autosave by timer"});
       saveData(false, session?.user?.email);
     }
+    
+    func_logger.debug({"message": "END"});
   }, [timerTime]);
   
   // 定期的にタイマー時刻を更新する
   useEffect(() => {
+    const func_logger = logger.child({ "func": "ContentViewer.useEffect[3]" });
+    func_logger.debug({"message": "START"});
+    
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
+      func_logger.debug({"message": "SET interval timer for autosave"});
       const intervalTime: number = 1000 * 60; // 一分
       const intervalId = setInterval(() => {
-        console.log("タイマー時刻更新");
+        func_logger.debug({"message": "DO interval timer for autosave"});
         setTimerTime(new Date().getTime());
       }, intervalTime);
       return () => clearInterval(intervalId);
     }
+    
+    func_logger.debug({"message": "END"});
   }, []);
+  
+  func_logger.trace({"message": "END", "params": {
+    "targetPage": targetPage, 
+    "calendarRefreshHook": calendarRefreshHook,
+    "userId": userId
+  }});
   
   return (
     <div className="container mx-auto">
