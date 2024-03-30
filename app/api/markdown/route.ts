@@ -4,8 +4,12 @@ import { exec } from 'child_process';
 import { authOptions } from '@/app/authOptions';
 import { getServerSession } from 'next-auth/next';
 import { promisify } from 'node:util';
+import { build_path } from '@/utils/buildPath';
 
 import moment from 'moment';
+
+import base_logger from '@/utils/logger';
+const logger = base_logger.child({ filename: __filename });
 
 const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
   ? (process.env["NEXT_PUBLIC_USE_RCS"] == "true" ? true : false)
@@ -13,22 +17,9 @@ const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
 
 const aexec = promisify(exec);
 
-function build_path(base_directory: string, user_email: string) {
-  const words = user_email.split('@');
-  let parent_dir = "common";
-  let child_dir = "dummy";
-  if (words.length == 1) {
-    parent_dir = "common";
-    child_dir = words[0];
-  } else if (words.length == 2) {
-    parent_dir = words[1];
-    child_dir = words[0];
-  }
-  return base_directory + "/" + parent_dir + "/" + child_dir;
-}
-
 export async function GET(req: NextRequest) {
-  console.log("GET: START");
+  const func_logger = logger.child({ "func": "GET" });
+  func_logger.trace({"message": "START"});
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.email) {
     return NextResponse.json({}, {status: 401});
@@ -37,7 +28,7 @@ export async function GET(req: NextRequest) {
   
   const params = req.nextUrl.searchParams;
   const target: string = params.has('target') ? params.get('target') || "" : "";
-  console.log(params, user, target);
+  func_logger.debug({"params": params, "user": user, "target": target});
 
   const directory = build_path(process.env.DATA_DIRECTORY || "", user);
   const filename = directory + "/" + target + ".md";
@@ -47,29 +38,32 @@ export async function GET(req: NextRequest) {
     markdown = await readFile(filename, { encoding: "utf-8" });
   } catch (error) {
     // エラーが出ても気にしない
+    func_logger.debug({"message": "IGNORE ERROR", "error": error})
   }
   const res = NextResponse.json({"markdown": markdown});
-  console.log("GET: END ", markdown);
+  func_logger.debug({"message": "END", "res": res});
   return res;
 }
 
 export async function POST(req: Request) {
-  console.log("markdown POST: START");
+  const func_logger = logger.child({ "func": "POST" });
+  func_logger.debug({"message": "START"});
   const session = await getServerSession(authOptions);
-  console.log("session=", session);
+  func_logger.trace({"session": session});
   if (!session || !session.user || !session.user.email) {
-    return NextResponse.json({}, {status: 401});
+    const res = NextResponse.json({}, {status: 401});
+    func_logger.trace({"message": "no session", "res": res});
+    return res;
   }
   const user = session.user.email;
   
   const json_data = await req.json();
-  console.log(json_data);
-  //const user = json_data['user'];
+  func_logger.trace({"json_data": json_data});
   const target = json_data['target'];
   const rcscommit = json_data['rcscommit']
   const markdown = json_data['markdown'];
   const directory = build_path(process.env.DATA_DIRECTORY || "", user);
-  console.log("directory=", directory);
+  func_logger.trace({"directory": directory});
   // ディレクトリを作り
   await mkdir(directory, { recursive: true });
   //console.log("mkdir done");
@@ -77,54 +71,53 @@ export async function POST(req: Request) {
   const filename = directory + "/" + target + ".md";
 
   if (markdown != "") {
-    console.log("markdown is NOT NULL");
+    func_logger.trace({"message": "markdown is NOT NULL"});
     if (useRcs && rcscommit) {
-      console.log("use RCS");
+      func_logger.trace({"message": "use RCS"});
       // RCSを利用する場合は以下を実行する
       try {
         let cmd = "";
         let res;
         const dtstr = moment().format();
         // mkdir RCS
-        console.log("mkdir");
+        func_logger.trace({"message": "mkdir"});
         await mkdir(directory + "/RCS", { recursive: true });
         // RCS logで履歴があるかどうかをチェックする
         // 1の場合のみ新規チェックイン
         try {
           cmd = 'rlog -R ' + target + '.md';
-          console.log('rlog: ', cmd);
+          func_logger.trace({"command": cmd, "message": "exec"});
           res = await aexec(cmd, {"cwd": directory});
-          console.log('rlog: RESULT=', res);
+          func_logger.info({"command": cmd, "res": res});
 
           try {
-            // 履歴が存在する場合はロックをとって書き込む
-            // co -l "日時" ファイル名
-            //cmd = 'co -l "' + target + '.md"'; 
-            //console.log("co -l:", cmd);
-            //res = await aexec(cmd, {"cwd": directory})
             // ファイルを出力する
             let fd;
             try {
+              func_logger.trace({"message": "write file"});
               fd = await open(filename, 'w');
               fd.writeFile(markdown);
             } finally {
               await fd?.close();
             }
-            // ci -m "日時" ファイル名
+            // ci -f -l -m "日時" ファイル名
             cmd = 'echo . | ci -f -l -m"' + dtstr + '" "' + target + '.md"'; 
-            console.log("ci:", cmd);
+            func_logger.trace({"command": cmd, "message": "exec(ci)"});
             res = await aexec(cmd, {"cwd": directory})
+            func_logger.info({"command": cmd, "res": res});
             
           } catch (err) {
-            console.log("ERROR!!!:", err);
+            func_logger.warn({"command": cmd, "res": res, "error": err});
           }
           
         } catch (err) {
           // 履歴が存在しない場合は新規登録する
+          func_logger.trace({"message": "no history"});
           try {
             // ファイルを出力する
             let fd;
             try {
+              func_logger.trace({"message": "write file"});
               fd = await open(filename, 'w');
               fd.writeFile(markdown);
             } finally {
@@ -132,19 +125,21 @@ export async function POST(req: Request) {
             }
             // 初期登録する
             cmd = 'echo . | ci -i -l -m"' + dtstr + '" "' + target + '.md"';
-            console.log('initial ci: ', cmd);
+            func_logger.trace({"command": cmd, "message": "exec(initial ci)"});
             res = await aexec(cmd, {"cwd": directory});
-            console.log('initial ci: RESULT=', res)
+            func_logger.info({"command": cmd, "res": res});
           } catch (err) {
-            console.log('initial ci: FAIL!');
+            func_logger.warn({"command": cmd, "message": "initial ci fail", "error": err});
           }
         }
       } finally {
       }
     } else {
+      func_logger.trace({"message": "no RCS or no COMMIT", "useRcs": useRcs, "rcscommit": rcscommit});
       // ファイルを出力する
       let fd;
       try {
+        func_logger.trace({"message": "write file"});
         fd = await open(filename, 'w');
         fd.writeFile(markdown);
       } finally {
@@ -152,9 +147,11 @@ export async function POST(req: Request) {
       }
     }      
   } else {
+    func_logger.trace({"message": "markdown is NULL"});
     await rm(filename, {"force": true});
   }
   const res = NextResponse.json({});
+  func_logger.debug({"message": "END", "res": res});
   return res;
 }
 

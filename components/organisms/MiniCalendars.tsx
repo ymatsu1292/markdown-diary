@@ -1,6 +1,6 @@
 import { Button } from '@nextui-org/react';
 import { MiniCalendar } from '@/components/molecules/MiniCalendar';
-import { getTodayStr, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from '@/components/utils/dateutils';
+import { getTodayStr, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from '@/utils/dateutils';
 import { ArrowFatLeft, ArrowFatRight } from '@phosphor-icons/react';
 import { ArrowFatLinesLeft, ArrowFatLinesRight } from '@phosphor-icons/react';
 import { ScheduleData } from '@/components/types/scheduleDataType';

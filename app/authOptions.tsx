@@ -6,6 +6,9 @@ import { jwtDecode } from 'jwt-decode';
 import { JWT } from 'next-auth/jwt';
 import { cookies } from 'next/headers';
 
+import base_logger from '@//utils/logger';
+const logger = base_logger.child({ filename: __filename });
+
 export const authOptions: NextAuthOptions = {
   debug: true,
   session: { strategy: "jwt" },
@@ -16,13 +19,16 @@ export const authOptions: NextAuthOptions = {
         password: { label: "パスワード", type: "password" }
       },
       async authorize(credentials, req) {
-        console.log("authorize:", credentials);
+        const func_logger = logger.child({ "func": "authorize" });
+        func_logger.debug({"message": "START", "params": {"credentials": credentials, "req": req}});
+        let res = null;
         if (credentials != undefined && credentials["password"] == process.env["AUTH_PASSWORD"]) {
           let userId = process.env["AUTH_USER"];
           const user: User = { id: userId || "", name: userId || "", email: userId || "", image: "" };
-          return user;
+          res = user;
         }
-        return null;
+        func_logger.debug({"message": "END", "params": {"credentials": credentials, "req": req}, "res": res});
+        return res;
       }
     }),
   ],
