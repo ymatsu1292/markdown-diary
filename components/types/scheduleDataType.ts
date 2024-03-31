@@ -26,4 +26,5 @@ export interface ScheduleData {
 export interface EventData {
   events: { [date: string]: string };
   others: string[];
+  templates: string[];
 };
