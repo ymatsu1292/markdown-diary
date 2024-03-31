@@ -176,8 +176,10 @@ export function MainPage() {
           </Tabs>
         </div>
         <div className="grow">
-          <ContentViewer targetPage={targetPage} calendarRefreshHook={calendarRefreshHook} 
-            templates={scheduleData?.templates || []} />
+          <ContentViewer
+            targetPage={targetPage}
+            calendarRefreshHook={calendarRefreshHook} 
+            templates={scheduleData?.templates || [] as string[]} />
         </div>
       </div>
     </div>

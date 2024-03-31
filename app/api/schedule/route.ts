@@ -219,7 +219,8 @@ export async function GET(req: NextRequest) {
     "cal1": create_calendar_base(prev_month),
     "cal2": create_calendar_base(target_month),
     "cal3": create_calendar_base(next_month),
-    "markdownFiles": []
+    "markdownFiles": [],
+    "templates": [],
   };
   
   // {"cal1": [{"id": "week1", "caldata": [["", "", "", 0], [""...]...

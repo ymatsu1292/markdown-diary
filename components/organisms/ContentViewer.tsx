@@ -146,7 +146,7 @@ export function ContentViewer(
     
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       func_logger.debug({"message": "DO autosave by timer"});
-      saveData(false, session?.user?.email);
+      saveData(false);
     }
     
     func_logger.debug({"message": "END"});
@@ -190,9 +190,9 @@ export function ContentViewer(
                   <Select label="テンプレート" className="ml-2"
                     selectionMode="single"
                     onSelectionChange={(keys) => {
-                      let keylist = [...keys];
+                      let keylist: React.Key[] = [...keys];
                       func_logger.trace({"keylist": keylist});
-                      keylist.length == 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0]);
+                      keylist.length == 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0] as string);
                     }}
                     selectedKeys={[selectedTemplate]} >
                     {templates != null ? templates.map((template) => (
@@ -224,7 +224,7 @@ export function ContentViewer(
                       </Button>
                         */}
                       <Button color={dirty ? "danger" : "primary"} className="ml-2 h-full"
-                        size="sm" onPress={() => saveData(false, session?.user?.email)} isDisabled={mode != "normal"}>
+                        size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
                       </Button>
                     </>
@@ -232,7 +232,7 @@ export function ContentViewer(
                     <></>
                   }
                   <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
-                    size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                    size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
                 </div>
@@ -256,12 +256,12 @@ export function ContentViewer(
                     <>
                       {/* 履歴機能ができるまでいったんコメントアウト
                       <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                        size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                        size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
                         */}
                       <Button color={dirty ? "danger" : "primary"} className="ml-2"
-                        size="sm" onPress={() => saveData(false, session?.user?.email)} isDisabled={mode != "normal"}>
+                        size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
                       </Button>
                     </>
@@ -269,7 +269,7 @@ export function ContentViewer(
                     <></>
                   }
                   <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                    size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                    size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
                 </div>
