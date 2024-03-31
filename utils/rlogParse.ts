@@ -1,4 +1,4 @@
-import History from '@/components/types/historyDataTypes';
+import { History } from '@/components/types/historyDataType';
 
 import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
@@ -38,4 +38,5 @@ export function rlog_parse(value: string): History[] {
   // 2. "revision "で始まる行の\tか\nまでの値をバージョンとして読み出す
   // 3. "date: "で始まる行の";"までの文字列を日付として読み出し、ローカルタイムに変換して保管する
   // 4. 1へ戻る
+  return [] as History[];
 }

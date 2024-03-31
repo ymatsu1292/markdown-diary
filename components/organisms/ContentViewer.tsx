@@ -3,6 +3,7 @@ import styles from './ContentViewer.module.css';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
 import { Input, Button } from '@nextui-org/react';
+import { Select, SelectSection, SelectItem } from '@nextui-org/react';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -16,17 +17,17 @@ import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
 
 export function ContentViewer(
-  { targetPage, calendarRefreshHook, userId } : {
+  { targetPage, calendarRefreshHook, templates } : {
     targetPage: string;
     calendarRefreshHook: () => void;
-    userId: string;
+    templates: string[];
   }
 ) {
   const func_logger = logger.child({ "func": "ContentViewer" });
-  func_logger.trace({"message": "START", "params": {
+  func_logger.debug({"message": "START", "params": {
     "targetPage": targetPage, 
     "calendarRefreshHook": calendarRefreshHook,
-    "userId": userId
+    "templates": templates
   }});
   const { data: session, status } = useSession();
   const md = markdownit({html: true, linkify: true, typographer: true, 
@@ -43,6 +44,7 @@ export function ContentViewer(
   const [ markdownHtml, setMarkdownHtml ] = useState("");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
   const [ dirty, setDirty ] = useState<boolean>(false);
+  const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
 
   const onChange = useCallback((val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
@@ -72,15 +74,15 @@ export function ContentViewer(
     func_logger.debug({"message": "END"});
   }
   
-  const saveData = async(rcscommit: boolean, userId: string | undefined | null) => {
+  const saveData = async(rcscommit: boolean) => {
     const func_logger = logger.child({ "func": "ContentViewer.saveData" });
-    func_logger.debug({"message": "START", "params": {"rcscommit": rcscommit, "userId": userId}});
+    func_logger.debug({"message": "START", "params": {"rcscommit": rcscommit}});
 
     func_logger.debug({"session": session});
-    if (session == null && userId == null) {
+    if (session == null) {
       func_logger.debug({
         "message": "END", 
-        "params": {"rcscommit": rcscommit, "userId": userId},
+        "params": {"rcscommit": rcscommit},
         "res": "no session"
       });
       return;
@@ -104,7 +106,7 @@ export function ContentViewer(
     setDirty(false);
     setMode('normal');
 
-    func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit, "userId": userId}});
+    func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit}});
   };
 
   const getHistory = async() => {
@@ -119,6 +121,23 @@ export function ContentViewer(
     func_logger.debug({"message": "END"});
   }
 
+  const appendTemplate = async() => {
+    const func_logger = logger.child({ "func": "ContentViewer.appendTemplate" });
+    func_logger.debug({"message": "START"});
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/template?target=${selectedTemplate}`);
+    const result = await fetch(uri);
+    const json_data = await result.json();
+    setMarkdownText(prev => {
+      if (prev.substr(-1) == "\n") {
+        return prev + json_data["template"];
+      } else {
+        return prev + "\n" + json_data["template"];
+      }
+    });
+    
+    func_logger.debug({"message": "END", "json_data": json_data});
+  }
+  
   useEffect(() => {
     const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
     func_logger.debug({"message": "START"});
@@ -139,7 +158,7 @@ export function ContentViewer(
     
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       func_logger.debug({"message": "DO autosave by timer"});
-      saveData(false, session?.user?.email);
+      saveData(false);
     }
     
     func_logger.debug({"message": "END"});
@@ -163,10 +182,10 @@ export function ContentViewer(
     func_logger.debug({"message": "END"});
   }, []);
   
-  func_logger.trace({"message": "END", "params": {
+  func_logger.debug({"message": "END", "params": {
     "targetPage": targetPage, 
     "calendarRefreshHook": calendarRefreshHook,
-    "userId": userId
+    "templates": templates
   }});
   
   return (
@@ -179,23 +198,51 @@ export function ContentViewer(
                 <div className="grow">
                   <Input type="text" label="タイトル" value={targetPage} />
                 </div>
-                <div className="flex-none ml-2">
+                <div className="flex min-w-60 w-60">
+                  <Select label="テンプレート" className="ml-2"
+                    selectionMode="single"
+                    onSelectionChange={(keys) => {
+                      let keylist: React.Key[] = [...keys];
+                      func_logger.trace({"keylist": keylist});
+                      keylist.length == 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0] as string);
+                    }}
+                    selectedKeys={[selectedTemplate]} >
+                    {templates != null ? templates.map((template) => (
+                      <SelectItem key={template} value={template}>
+                        {template}
+                      </SelectItem>
+                    ))
+                      :
+                      <></>
+                    }
+                  </Select>
+                  <Button color="primary" className="ml-2 h-full" size="sm"
+                    isDisabled={selectedTemplate === "" ? true : false}
+                    onPress={() => {
+                      console.log("onPress!");
+                      appendTemplate();
+                    }}
+                  >
+                    追記
+                  </Button>
+                </div>
+                <div className="flex-none">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
                       <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
                         size="sm" onPress={() => getHistory()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
-                      <Button color={dirty ? "danger" : "primary"} className="ml-2"
-                        size="sm" onPress={() => saveData(false, session?.user?.email)} isDisabled={mode != "normal"}>
+                      <Button color={dirty ? "danger" : "primary"} className="ml-2 h-full"
+                        size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
                       </Button>
                     </>
                     : 
                     <></>
                   }
-                  <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                    size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                  <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
+                    size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
                 </div>
@@ -222,7 +269,7 @@ export function ContentViewer(
                         履歴
                       </Button>
                       <Button color={dirty ? "danger" : "primary"} className="ml-2"
-                        size="sm" onPress={() => saveData(false, session?.user?.email)} isDisabled={mode != "normal"}>
+                        size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
                       </Button>
                     </>
@@ -230,7 +277,7 @@ export function ContentViewer(
                     <></>
                   }
                   <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                    size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                    size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
                 </div>
