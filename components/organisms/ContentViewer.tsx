@@ -61,7 +61,7 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
     
     setMode('load');
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text?target=${targetPage}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
@@ -92,7 +92,7 @@ export function ContentViewer(
     };
     func_logger.trace({ "markdown_data": markdown_data });
     setMode('save');
-    const response = await fetch(`${process.env.BASE_PATH}/api/markdown`, {
+    const response = await fetch(`${process.env.BASE_PATH}/api/markdown/text`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(markdown_data),
@@ -106,6 +106,18 @@ export function ContentViewer(
 
     func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit, "userId": userId}});
   };
+
+  const getHistory = async() => {
+    const func_logGer = logger.child({ "func": "ContentViewer.getHistory" });
+    func_logger.debug({"message": "START"});
+
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${targetPage}`);
+    const result = await fetch(uri);
+    const json_data = await result.json();
+    func_logger.info({"json_data": json_data});
+    
+    func_logger.debug({"message": "END"});
+  }
 
   useEffect(() => {
     const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
@@ -170,12 +182,10 @@ export function ContentViewer(
                 <div className="flex-none ml-2">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
-                      {/* 履歴機能ができるまではいったんコメントアウト
                       <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                        size="sm" isDisabled={mode != "normal"}>
+                        size="sm" onPress={() => getHistory()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
-                        */}
                       <Button color={dirty ? "danger" : "primary"} className="ml-2"
                         size="sm" onPress={() => saveData(false, session?.user?.email)} isDisabled={mode != "normal"}>
                         保存
@@ -207,12 +217,10 @@ export function ContentViewer(
                 <div className="flex-none ml-2">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
-                      {/* 履歴機能ができるまでいったんコメントアウト
                       <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                        size="sm" onPress={() => saveData(true, session?.user?.email)} isDisabled={mode != "normal"}>
+                        size="sm" onPress={() => getHistory()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
-                        */}
                       <Button color={dirty ? "danger" : "primary"} className="ml-2"
                         size="sm" onPress={() => saveData(false, session?.user?.email)} isDisabled={mode != "normal"}>
                         保存
