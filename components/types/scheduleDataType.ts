@@ -20,6 +20,7 @@ export interface ScheduleData {
   cal2: MonthSchedule;
   cal3: MonthSchedule;
   markdownFiles: string[];
+  templates: string[];
 };
 
 export interface EventData {

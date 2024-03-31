@@ -77,7 +77,7 @@ async function load_events(event_file: string, base_file: string | null): Promis
   func_logger.trace({"message": "START", "params": {"event_file": event_file, "base_file": base_file}});
 
   // イベント設定ファイルを読み込む
-  let event_data: EventData = {"events": {}, "others": []};
+  let event_data: EventData = {"events": {}, "others": [], "templates": []};
   try {
     let event_buffer = await readFile(event_file, { encoding: 'utf8' });
     let event_text = event_buffer.toString();
@@ -107,7 +107,7 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
     "target_month_list": target_month_list,
     "user": user}});
 
-  let event_data: EventData = {"events": {}, "others": []};
+  let event_data: EventData = {"events": {}, "others": [], "templates": []};
   try {
     const work_dir = build_path(process.env.DATA_DIRECTORY || "", user || "");
 
@@ -116,6 +116,7 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
     const filename_pattern_md = new RegExp("\.md$");
     const filename_pattern_cal = new RegExp("^" + month_list + "-[0-9]{2}\.md$");
     const filename_pattern_cal2 = new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$");
+    const filename_pattern_cal3 = new RegExp("\.template\.md$");
     
     for await (const dirent of dir) {
       func_logger.trace({"dirent.name": dirent.name});
@@ -125,7 +126,11 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
           const date_str = dirent.name.slice(0, 10);
           event_data["events"][date_str] = "";
         } else {
-          if (!filename_pattern_cal2.test(dirent.name)) {
+          if (filename_pattern_cal3.test(dirent.name)) {
+            func_logger.trace({"message": "add template", "file": dirent.name});
+            const template_name = dirent.name.slice(0, dirent.name.length - 12);
+            event_data["templates"].push(template_name);
+          } else if (!filename_pattern_cal2.test(dirent.name)) {
             func_logger.trace({"message": "add others", "file": dirent.name});
             event_data["others"].push(dirent.name);
           }
@@ -178,13 +183,15 @@ function set_schedule(calendars_base: ScheduleData, event_data: EventData, type:
   set_schedule_sub(calendars_base.cal3, event_data, type);
   event_data["others"].sort();
   calendars_base.markdownFiles = event_data["others"];
+  event_data["templates"].sort();
+  calendars_base.templates = event_data["templates"];
   
   func_logger.trace({"message": "END", "params": {"calendars_base": "calendars_base", "event_data": "event_data", "type": type}});
 }
 
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
-  func_logger.debug({"message": "START", "params": {"req": req}});
+  func_logger.info({"message": "START", "params": {"req": req}});
   
   const session = await getServerSession(authOptions);
   const params = req.nextUrl.searchParams;
@@ -212,7 +219,7 @@ export async function GET(req: NextRequest) {
     "cal1": create_calendar_base(prev_month),
     "cal2": create_calendar_base(target_month),
     "cal3": create_calendar_base(next_month),
-    "markdownFiles": []    
+    "markdownFiles": []
   };
   
   // {"cal1": [{"id": "week1", "caldata": [["", "", "", 0], [""...]...
@@ -240,7 +247,7 @@ export async function GET(req: NextRequest) {
   set_schedule(calendars_data, diary_check_result, "diary");
 
   const res = NextResponse.json({"scheduleData": calendars_data});
-  func_logger.debug({"message": "END", "params": {"req": req}, "res": res});
+  func_logger.info({"message": "END", "params": {"req": req}, "res": res});
   return res;
 }
 
