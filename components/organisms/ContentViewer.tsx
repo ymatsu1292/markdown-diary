@@ -2,8 +2,10 @@ import styles from './ContentViewer.module.css';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
-import { Input, Button } from '@nextui-org/react';
+import { Input, Button, Link } from '@nextui-org/react';
 import { Select, SelectSection, SelectItem } from '@nextui-org/react';
+import { Listbox, ListboxItem } from '@nextui-org/react';
+import { Popover, PopoverTrigger, PopoverContent } from '@nextui-org/react';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -12,6 +14,7 @@ import mdContainer from 'markdown-it-container';
 import { tasklist } from '@mdit/plugin-tasklist';
 import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
+import { History } from '@/components/types/historyDataType';
 
 import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
@@ -45,6 +48,8 @@ export function ContentViewer(
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
   const [ dirty, setDirty ] = useState<boolean>(false);
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
+  const [ showHistories, setShowHistories ] = useState<boolean>(false);
+  const [ histories, setHistories ] = useState<History[]>([] as History[]);
 
   const onChange = useCallback((val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
@@ -109,14 +114,16 @@ export function ContentViewer(
     func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit}});
   };
 
-  const getHistory = async() => {
-    const func_logGer = logger.child({ "func": "ContentViewer.getHistory" });
+  const getHistories = async() => {
+    const func_logGer = logger.child({ "func": "ContentViewer.getHistories" });
     func_logger.debug({"message": "START"});
 
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${targetPage}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.info({"json_data": json_data});
+    setHistories(json_data['histories']);
+    setShowHistories(true);
     
     func_logger.debug({"message": "END"});
   }
@@ -187,12 +194,14 @@ export function ContentViewer(
     "calendarRefreshHook": calendarRefreshHook,
     "templates": templates
   }});
+
+  console.log("histories=", histories);
   
   return (
     <div className="container mx-auto">
       <Tabs aria-label="editor">
-        <Tab key="editor" title="編集">
-          <Card>
+        <Tab key="editor" title="編集" className="flex">
+          <Card className="grow">
             <CardBody>
               <div className="flex">
                 <div className="grow">
@@ -223,14 +232,14 @@ export function ContentViewer(
                       appendTemplate();
                     }}
                   >
-                    追記
+                    テンプレ<br/>取込
                   </Button>
                 </div>
                 <div className="flex-none">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
-                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                        size="sm" onPress={() => getHistory()} isDisabled={mode != "normal"}>
+                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
+                        size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
                       <Button color={dirty ? "danger" : "primary"} className="ml-2 h-full"
@@ -255,6 +264,41 @@ export function ContentViewer(
               </div>
             </CardBody>
           </Card>
+          <Card className={showHistories ? "visible" : "hidden"}>
+            <CardBody>
+              <div>
+                バージョン一覧
+                <Link rel="me" onPress={() => setShowHistories(false)}>　》</Link>
+                <hr className="mt-2"/>
+                <div className="m-0">
+                  <Listbox aria-label="history-list" className="m-0 p-0">
+                    {histories && histories.map((history: History) => 
+                      <ListboxItem key={history["revision"]} 
+                        endContent={<span>{history["revision"]}</span>}
+                        className="m-0 p-0">
+                        <Popover placement="bottom" className="m-0 p-0">
+                          <PopoverTrigger className="m-0 p-0">
+                            <Button className="m-0 p-0" variant="light">{history["datetime"]}</Button>
+                          </PopoverTrigger>
+                          <PopoverContent>
+                            <div>
+                              <Button className="m-1 p-1">参照</Button>
+                              <Button className="m-1 p-1">取込</Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </ListboxItem>
+                    )}
+                  </Listbox>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+          <Card className={showHistories ? "hidden" : "visible"}>
+            <CardBody>
+              <div><Link rel="me" onPress={() => setShowHistories(true)}>《</Link></div>
+            </CardBody>
+          </Card>
         </Tab>
         <Tab key="viewer" title="参照">
           <Card>
@@ -264,11 +308,11 @@ export function ContentViewer(
                 <div className="flex-none ml-2">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
-                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                        size="sm" onPress={() => getHistory()} isDisabled={mode != "normal"}>
+                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
+                        size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
-                      <Button color={dirty ? "danger" : "primary"} className="ml-2"
+                      <Button color={dirty ? "danger" : "primary"} className="ml-2 h-full"
                         size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
                       </Button>

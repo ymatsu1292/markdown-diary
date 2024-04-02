@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { build_path } from '@/utils/buildPath';
 import { rlog_parse } from '@/utils/rlogParse';
 import { exec } from 'child_process';
+import { History } from '@/components/types/historyDataType';
 
 import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
@@ -31,20 +32,21 @@ export async function GET(req: NextRequest) {
   const directory = build_path(process.env.DATA_DIRECTORY || "", user);
   const filename = directory + "/" + target + ".md";
   
-  let history: History[] = [];
+  let histories: History[] = [];
   let cmd: string = 'rlog ' + target + '.md';
   try {
     // func_logger.trace({"command": cmd, "message": "exec"});
     func_logger.info({"command": cmd, "message": "exec"});
     let exec_res = await aexec(cmd, {"cwd": directory});
-    func_logger.info({"command": cmd, "res": res});
+    func_logger.info({"command": cmd, "res": exec_res});
 
-    let versions = rlog_parse(exec_res["stdout"]);
-    
+    histories = rlog_parse(exec_res["stdout"]);
+    func_logger.info({"histories": histories});
+        
   } catch (err) {
     func_logger.warn({"command": cmd, "res": res, "error": err});
   }  
-  res = NextResponse.json({"history": history});
+  res = NextResponse.json({"histories": histories});
   func_logger.debug({"message": "END", "res": res});
   return res;
 }

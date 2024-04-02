@@ -1,4 +1,4 @@
 export interface History {
   revision: string;
-  memo: string;
+  datetime: string;
 }
