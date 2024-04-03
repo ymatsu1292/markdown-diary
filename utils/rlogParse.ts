@@ -1,4 +1,5 @@
 import { History } from '@/components/types/historyDataType';
+import moment from 'moment';
 
 import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
@@ -39,24 +40,58 @@ export function rlog_parse(value: string): History[] {
   // 3. "date: "で始まる行の";"までの文字列を日付として読み出し、ローカルタイムに変換して保管する
   // 4. 1へ戻る
   
-  // const lines = value.split('\n');
-  // let status: number = 0; // 0: 初期状態、1: 最初の区切り文字が着た後
-  // for (const line of lines) {
-  //   switch (status) {
-  //     case 0:
-  //       if (line == '----------------------------') {
-  //         status = 1;
-  //       }
-  //       break;
-  //   }
-  // }
-  
-  
-
-  
   let res: History[] = [];
-  res.push({"revision": "1.1", "datetime": "2024/03/30T15:55:12+09:00"});
-  res.push({"revision": "1.2", "datetime": "2024/03/30T16:04:13+09:00"});
-  res.push({"revision": "1.3", "datetime": "2024/03/30T19:49:14+09:00"});
+  
+  const revision_regex = /^revision ([0-9.]+)/;
+  const date_regex = /^date: ([0-9/: ]+)/;
+  const lines = value.split('\n');
+  let status: number = 0; // 0: 初期状態、1: 最初の区切り文字が着た後
+  let revision = "";
+  let date_str = "";
+  for (const line of lines) {
+    switch (status) {
+      case 0: // 最初のデータの前
+        if (line === '----------------------------') {
+          status = 1;
+        }
+        break;
+
+      case 1: // データの一行目(リビジョンを収集する)
+        const revision_data = revision_regex.exec(line);
+        if (revision_data !== null) {
+          revision = revision_data[1];
+          status = 2;
+        } else {
+          status = 99;
+        }
+        break;
+
+      case 2: // データの二行目(日付を収集する)
+        try {
+        const date_data = date_regex.exec(line);
+        console.log("date_data=", date_data);
+        if (date_data !== null) {
+          let date_str = date_data[1];
+          let date_obj = moment(date_str, 'YYYY/MM/DD hh:mm:ss');
+          res.push({"revision": revision, "datetime": date_obj.format("YYYY-MM-DD hh:mm")});
+          date_obj.format()
+          status = 0;
+        } else {
+          status = 99;
+        }
+        } catch (err) {
+          console.log(err);
+        }
+        break;
+
+      case 99: // エラー発生時
+        break;
+    }
+  }
+  console.log(res);
+  
+  // res.push({"revision": "1.1", "datetime": "2024/03/30T15:55:12+09:00"});
+  // res.push({"revision": "1.2", "datetime": "2024/03/30T16:04:13+09:00"});
+  // res.push({"revision": "1.3", "datetime": "2024/03/30T19:49:14+09:00"});
   return res as History[];
 }

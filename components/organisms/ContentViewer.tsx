@@ -6,6 +6,7 @@ import { Input, Button, Link } from '@nextui-org/react';
 import { Select, SelectSection, SelectItem } from '@nextui-org/react';
 import { Listbox, ListboxItem } from '@nextui-org/react';
 import { Popover, PopoverTrigger, PopoverContent } from '@nextui-org/react';
+import { Textarea } from '@nextui-org/react';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -50,6 +51,7 @@ export function ContentViewer(
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
   const [ histories, setHistories ] = useState<History[]>([] as History[]);
+  const [ revisionText, setRevisionText ] = useState<string>("");
 
   const onChange = useCallback((val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
@@ -110,11 +112,12 @@ export function ContentViewer(
     }
     setDirty(false);
     setMode('normal');
+    getHistories(false);
 
     func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit}});
   };
 
-  const getHistories = async() => {
+  const getHistories = async(showToggle: boolean = true) => {
     const func_logGer = logger.child({ "func": "ContentViewer.getHistories" });
     func_logger.debug({"message": "START"});
 
@@ -123,7 +126,9 @@ export function ContentViewer(
     const json_data = await result.json();
     func_logger.info({"json_data": json_data});
     setHistories(json_data['histories']);
-    setShowHistories(true);
+    if (showToggle) {
+      setShowHistories(true);
+    }
     
     func_logger.debug({"message": "END"});
   }
@@ -152,6 +157,8 @@ export function ContentViewer(
     if (session != null) {
       func_logger.debug({"message": "DO loadData()"});
       loadData();
+      setHistories([] as History[]);
+      setShowHistories(false);
     } else {
       func_logger.debug({"message": "SKIP loadData()"});
     }
@@ -258,7 +265,6 @@ export function ContentViewer(
               </div>
               <div id="editor">
                 <CodeMirror value={markdownText} height="640px"
-                  extensions={[markdown({base: markdownLanguage, codeLanguages: languages})]}
                   onChange={onChange} 
                 />
               </div>
@@ -276,7 +282,7 @@ export function ContentViewer(
                       <ListboxItem key={history["revision"]} 
                         endContent={<span>{history["revision"]}</span>}
                         className="m-0 p-0">
-                        <Popover placement="bottom" className="m-0 p-0">
+                        <Popover placement="left" className="m-0 p-0">
                           <PopoverTrigger className="m-0 p-0">
                             <Button className="m-0 p-0" variant="light">{history["datetime"]}</Button>
                           </PopoverTrigger>
@@ -284,6 +290,7 @@ export function ContentViewer(
                             <div>
                               <Button className="m-1 p-1">参照</Button>
                               <Button className="m-1 p-1">取込</Button>
+                              <Textarea defaultValue={revisionText} />
                             </div>
                           </PopoverContent>
                         </Popover>
@@ -296,7 +303,7 @@ export function ContentViewer(
           </Card>
           <Card className={showHistories ? "hidden" : "visible"}>
             <CardBody>
-              <div><Link rel="me" onPress={() => setShowHistories(true)}>《</Link></div>
+              <div><Link rel="me" onPress={() => getHistories()}>《</Link></div>
             </CardBody>
           </Card>
         </Tab>
