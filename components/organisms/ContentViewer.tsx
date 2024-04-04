@@ -2,8 +2,11 @@ import styles from './ContentViewer.module.css';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
-import { Input, Button } from '@nextui-org/react';
+import { Input, Button, Link } from '@nextui-org/react';
 import { Select, SelectSection, SelectItem } from '@nextui-org/react';
+import { Listbox, ListboxItem } from '@nextui-org/react';
+import { Popover, PopoverTrigger, PopoverContent } from '@nextui-org/react';
+import { Textarea } from '@nextui-org/react';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -12,6 +15,7 @@ import mdContainer from 'markdown-it-container';
 import { tasklist } from '@mdit/plugin-tasklist';
 import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
+import { History } from '@/components/types/historyDataType';
 
 import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
@@ -44,7 +48,11 @@ export function ContentViewer(
   const [ markdownHtml, setMarkdownHtml ] = useState("");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
   const [ dirty, setDirty ] = useState<boolean>(false);
+  const [ commited, setCommited ] = useState<boolean>(false);
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
+  const [ showHistories, setShowHistories ] = useState<boolean>(false);
+  const [ histories, setHistories ] = useState<History[]>([] as History[]);
+  const [ revisionText, setRevisionText ] = useState<string>("");
 
   const onChange = useCallback((val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
@@ -63,13 +71,14 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
     
     setMode('load');
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown?target=${targetPage}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text?target=${targetPage}`);
     const result = await fetch(uri);
     const json_data = await result.json();
-    func_logger.trace({"json_data": json_data});
+    func_logger.info({"json_data": json_data});
     onChange(json_data["markdown"]);
     setMode('normal');
     setDirty(false);
+    setCommited(json_data["message"]["commited"]);
     
     func_logger.debug({"message": "END"});
   }
@@ -94,19 +103,39 @@ export function ContentViewer(
     };
     func_logger.trace({ "markdown_data": markdown_data });
     setMode('save');
-    const response = await fetch(`${process.env.BASE_PATH}/api/markdown`, {
+    const response = await fetch(`${process.env.BASE_PATH}/api/markdown/text`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(markdown_data),
     })
     if (response.ok) {
+      let res = await response.json();
+      setCommited(res["commited"]);
       func_logger.trace({ "message": "POST OK", "response": response });
+      func_logger.info({ "message": res });
       calendarRefreshHook();
     }
     setDirty(false);
     setMode('normal');
+    getHistories(false);
 
     func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit}});
+  };
+
+  const getHistories = async(showToggle: boolean = true) => {
+    const func_logger = logger.child({ "func": "ContentViewer.getHistories" });
+    func_logger.debug({"message": "START"});
+
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${targetPage}`);
+    const result = await fetch(uri);
+    const json_data = await result.json();
+    func_logger.info({"json_data": json_data});
+    setHistories(json_data['histories']);
+    if (showToggle) {
+      setShowHistories(true);
+    }
+    
+    func_logger.debug({"message": "END"});
   };
 
   const appendTemplate = async() => {
@@ -124,6 +153,42 @@ export function ContentViewer(
     });
     
     func_logger.debug({"message": "END", "json_data": json_data});
+  };
+
+  const getHistoryDetail = async(revision: string) => {
+    const func_logger = logger.child({ "func": "ContentViewer.getHistoryDetail" });
+    func_logger.info({"message": "START"});
+
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${targetPage}&revision=${revision}`);
+    const result = await fetch(uri);
+    const json_data = await result.json();
+    func_logger.info({"json_data": json_data});
+    setRevisionText(json_data['text']);
+    
+    func_logger.info({"message": "END"});
+  };
+
+  const appendHistoryDetail = async() => {
+    const func_logger = logger.child({ "func": "ContentViewer.appendHistoryDetail" });
+    func_logger.info({"message": "START"});
+
+    setMarkdownText(prev => {
+      if (prev.substr(-1) == "\n") {
+        return prev + revisionText;
+      } else {
+        return prev + "\n" + revisionText;
+      }
+    });
+    
+    func_logger.info({"message": "END"});
+  }
+  const replaceHistoryDetail = async() => {
+    const func_logger = logger.child({ "func": "ContentViewer.replaceHistoryDetail" });
+    func_logger.info({"message": "START"});
+
+    setMarkdownText(revisionText);
+    
+    func_logger.info({"message": "END"});
   }
   
   useEffect(() => {
@@ -133,6 +198,8 @@ export function ContentViewer(
     if (session != null) {
       func_logger.debug({"message": "DO loadData()"});
       loadData();
+      setHistories([] as History[]);
+      setShowHistories(false);
     } else {
       func_logger.debug({"message": "SKIP loadData()"});
     }
@@ -175,12 +242,15 @@ export function ContentViewer(
     "calendarRefreshHook": calendarRefreshHook,
     "templates": templates
   }});
+
+  console.log("histories=", histories);
+  console.log("commited=", commited);
   
   return (
     <div className="container mx-auto">
       <Tabs aria-label="editor">
-        <Tab key="editor" title="編集">
-          <Card>
+        <Tab key="editor" title="編集" className="flex">
+          <Card className="grow">
             <CardBody>
               <div className="flex">
                 <div className="grow">
@@ -211,18 +281,16 @@ export function ContentViewer(
                       appendTemplate();
                     }}
                   >
-                    追記
+                    テンプレ<br/>取込
                   </Button>
                 </div>
                 <div className="flex-none">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
-                      {/* 履歴機能ができるまではいったんコメントアウト
-                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                        size="sm" isDisabled={mode != "normal"}>
+                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
+                        size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
-                        */}
                       <Button color={dirty ? "danger" : "primary"} className="ml-2 h-full"
                         size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
@@ -231,7 +299,7 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
+                  <Button color={commited ? "primary" : "danger"} className="ml-2 h-full"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
@@ -239,10 +307,49 @@ export function ContentViewer(
               </div>
               <div id="editor">
                 <CodeMirror value={markdownText} height="640px"
-                  extensions={[markdown({base: markdownLanguage, codeLanguages: languages})]}
                   onChange={onChange} 
                 />
               </div>
+            </CardBody>
+          </Card>
+          <Card className={showHistories ? "visible" : "hidden"}>
+            <CardBody>
+              <div>
+                バージョン一覧
+                <Link rel="me" onPress={() => setShowHistories(false)}>　》</Link>
+                <hr className="mt-2"/>
+                <div className="m-0">
+                  <Listbox aria-label="history-list" className="m-0 p-0">
+                    {histories && histories.map((history: History) => 
+                      <ListboxItem key={history["revision"]} aria-label={history["revision"]}
+                        endContent={<span>{history["revision"]}</span>}
+                        className="m-0 p-0">
+                        <Popover placement="left" className="m-0 p-0" size="lg"
+                          onOpenChange={() => getHistoryDetail(history.revision)}>
+                          <PopoverTrigger className="m-0 p-0">
+                            <Button className="m-0 p-0" variant="light">
+                              {history["datetime"]}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent>
+                            <div>
+                              <Button className="m-1 p-1" onPress={() => appendHistoryDetail()}>取込</Button>
+                              <Button className="m-1 p-1" onPress={() => replaceHistoryDetail()}>差替</Button>
+                              <Textarea className="w-[600px]" minRows={10} value={revisionText}
+                                isReadOnly />
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </ListboxItem>
+                    )}
+                  </Listbox>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+          <Card className={showHistories ? "hidden" : "visible"}>
+            <CardBody>
+              <div><Link rel="me" onPress={() => getHistories()}>《</Link></div>
             </CardBody>
           </Card>
         </Tab>
@@ -254,13 +361,11 @@ export function ContentViewer(
                 <div className="flex-none ml-2">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <>
-                      {/* 履歴機能ができるまでいったんコメントアウト
-                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
-                        size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
+                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
+                        size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
-                        */}
-                      <Button color={dirty ? "danger" : "primary"} className="ml-2"
+                      <Button color={dirty ? "danger" : "primary"} className="ml-2 h-full"
                         size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
                       </Button>
@@ -268,10 +373,11 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
+                  <Button color={commited ? "primary" : "danger"} className="ml-2"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
+                  {commited}
                 </div>
               </div>
               <div className="markdown-body" id="viewer"

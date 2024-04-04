@@ -34,13 +34,29 @@ export async function GET(req: NextRequest) {
   const filename = directory + "/" + target + ".md";
   
   let markdown = "";
+  let commited = true;
   try {
     markdown = await readFile(filename, { encoding: "utf-8" });
+
+    if (useRcs) {
+      // RCSを利用している場合はrcsdiffでコミットされていない情報があるかどうかをチェック
+      let cmd: string = 'rcsdiff -r ' + target + '.md';
+      try {
+        func_logger.info({"command": cmd, "message": "exec"});
+        let exec_res = await aexec(cmd, {"cwd": directory});
+        func_logger.info({"command": cmd, "res": exec_res});
+        // 差分がない場合
+      } catch (error) {
+        // 差分がある場合(保存されていない)
+        func_logger.info({"command": cmd, "error": error});
+        commited = false;
+      }
+    }
   } catch (error) {
     // エラーが出ても気にしない
     func_logger.debug({"message": "IGNORE ERROR", "error": error})
   }
-  const res = NextResponse.json({"markdown": markdown});
+  const res = NextResponse.json({"markdown": markdown, "commited": commited});
   func_logger.debug({"message": "END", "res": res});
   return res;
 }
@@ -70,6 +86,8 @@ export async function POST(req: Request) {
   // ファイル名を作る
   const filename = directory + "/" + target + ".md";
 
+  let commited = true;
+  
   if (markdown != "") {
     func_logger.trace({"message": "markdown is NOT NULL"});
     if (useRcs && rcscommit) {
@@ -145,12 +163,15 @@ export async function POST(req: Request) {
       } finally {
         await fd?.close();
       }
+      if (useRcs) {
+        commited = false;
+      }
     }      
   } else {
     func_logger.trace({"message": "markdown is NULL"});
     await rm(filename, {"force": true});
   }
-  const res = NextResponse.json({});
+  const res = NextResponse.json({"commited": commited});
   func_logger.debug({"message": "END", "res": res});
   return res;
 }

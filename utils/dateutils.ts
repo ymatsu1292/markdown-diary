@@ -1,4 +1,4 @@
-import base_logger from '@//utils/logger';
+import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
 
 export function getTodayStr() {

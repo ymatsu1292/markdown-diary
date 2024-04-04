@@ -68,7 +68,7 @@ export function MiniCalendar(
       linkType = "always";
     }
     //console.log("drawCell.dateStr=", dateStr);
-    let res0 = <Link data-date={dateStr} size="sm" href="#" color="foreground" underline={linkType}
+    let res0 = <Link data-date={dateStr} size="sm" rel="me" color="foreground" underline={linkType}
                  className={fontStyle} onPress={(e) => {
                    if (e.target instanceof HTMLElement) {
                      changePage(String(e.target.dataset.date));
