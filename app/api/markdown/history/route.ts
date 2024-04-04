@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       let exec_res = await aexec(cmd, {"cwd": directory});
       func_logger.info({"command": cmd, "res": exec_res});
       
-      text = "dummy";
+      text = exec_res["stdout"];
       func_logger.info({"text": text});
       
     } catch (err) {

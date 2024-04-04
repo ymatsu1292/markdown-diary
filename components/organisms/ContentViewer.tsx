@@ -48,6 +48,7 @@ export function ContentViewer(
   const [ markdownHtml, setMarkdownHtml ] = useState("");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
   const [ dirty, setDirty ] = useState<boolean>(false);
+  const [ commited, setCommited ] = useState<boolean>(false);
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
   const [ histories, setHistories ] = useState<History[]>([] as History[]);
@@ -73,10 +74,11 @@ export function ContentViewer(
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text?target=${targetPage}`);
     const result = await fetch(uri);
     const json_data = await result.json();
-    func_logger.trace({"json_data": json_data});
+    func_logger.info({"json_data": json_data});
     onChange(json_data["markdown"]);
     setMode('normal');
     setDirty(false);
+    setCommited(json_data["message"]["commited"]);
     
     func_logger.debug({"message": "END"});
   }
@@ -107,7 +109,10 @@ export function ContentViewer(
       body: JSON.stringify(markdown_data),
     })
     if (response.ok) {
+      let res = await response.json();
+      setCommited(res["commited"]);
       func_logger.trace({ "message": "POST OK", "response": response });
+      func_logger.info({ "message": res });
       calendarRefreshHook();
     }
     setDirty(false);
@@ -118,7 +123,7 @@ export function ContentViewer(
   };
 
   const getHistories = async(showToggle: boolean = true) => {
-    const func_logGer = logger.child({ "func": "ContentViewer.getHistories" });
+    const func_logger = logger.child({ "func": "ContentViewer.getHistories" });
     func_logger.debug({"message": "START"});
 
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${targetPage}`);
@@ -131,7 +136,7 @@ export function ContentViewer(
     }
     
     func_logger.debug({"message": "END"});
-  }
+  };
 
   const appendTemplate = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.appendTemplate" });
@@ -148,6 +153,42 @@ export function ContentViewer(
     });
     
     func_logger.debug({"message": "END", "json_data": json_data});
+  };
+
+  const getHistoryDetail = async(revision: string) => {
+    const func_logger = logger.child({ "func": "ContentViewer.getHistoryDetail" });
+    func_logger.info({"message": "START"});
+
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${targetPage}&revision=${revision}`);
+    const result = await fetch(uri);
+    const json_data = await result.json();
+    func_logger.info({"json_data": json_data});
+    setRevisionText(json_data['text']);
+    
+    func_logger.info({"message": "END"});
+  };
+
+  const appendHistoryDetail = async() => {
+    const func_logger = logger.child({ "func": "ContentViewer.appendHistoryDetail" });
+    func_logger.info({"message": "START"});
+
+    setMarkdownText(prev => {
+      if (prev.substr(-1) == "\n") {
+        return prev + revisionText;
+      } else {
+        return prev + "\n" + revisionText;
+      }
+    });
+    
+    func_logger.info({"message": "END"});
+  }
+  const replaceHistoryDetail = async() => {
+    const func_logger = logger.child({ "func": "ContentViewer.replaceHistoryDetail" });
+    func_logger.info({"message": "START"});
+
+    setMarkdownText(revisionText);
+    
+    func_logger.info({"message": "END"});
   }
   
   useEffect(() => {
@@ -203,6 +244,7 @@ export function ContentViewer(
   }});
 
   console.log("histories=", histories);
+  console.log("commited=", commited);
   
   return (
     <div className="container mx-auto">
@@ -257,7 +299,7 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
+                  <Button color={commited ? "primary" : "danger"} className="ml-2 h-full"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
@@ -279,18 +321,22 @@ export function ContentViewer(
                 <div className="m-0">
                   <Listbox aria-label="history-list" className="m-0 p-0">
                     {histories && histories.map((history: History) => 
-                      <ListboxItem key={history["revision"]} 
+                      <ListboxItem key={history["revision"]} aria-label={history["revision"]}
                         endContent={<span>{history["revision"]}</span>}
                         className="m-0 p-0">
-                        <Popover placement="left" className="m-0 p-0">
+                        <Popover placement="left" className="m-0 p-0" size="lg"
+                          onOpenChange={() => getHistoryDetail(history.revision)}>
                           <PopoverTrigger className="m-0 p-0">
-                            <Button className="m-0 p-0" variant="light">{history["datetime"]}</Button>
+                            <Button className="m-0 p-0" variant="light">
+                              {history["datetime"]}
+                            </Button>
                           </PopoverTrigger>
                           <PopoverContent>
                             <div>
-                              <Button className="m-1 p-1">参照</Button>
-                              <Button className="m-1 p-1">取込</Button>
-                              <Textarea defaultValue={revisionText} />
+                              <Button className="m-1 p-1" onPress={() => appendHistoryDetail()}>取込</Button>
+                              <Button className="m-1 p-1" onPress={() => replaceHistoryDetail()}>差替</Button>
+                              <Textarea className="w-[600px]" minRows={10} value={revisionText}
+                                isReadOnly />
                             </div>
                           </PopoverContent>
                         </Popover>
@@ -327,10 +373,11 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={mode != "save" ? "primary" : "danger"} className="ml-2"
+                  <Button color={commited === "true" ? "primary" : "danger"} className="ml-2"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
+                  {commited}
                 </div>
               </div>
               <div className="markdown-body" id="viewer"
