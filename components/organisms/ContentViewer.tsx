@@ -78,7 +78,7 @@ export function ContentViewer(
     onChange(json_data["markdown"]);
     setMode('normal');
     setDirty(false);
-    setCommited(json_data["message"]["commited"]);
+    setCommited(json_data["commited"]);
     
     func_logger.debug({"message": "END"});
   }

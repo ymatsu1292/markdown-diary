@@ -164,7 +164,18 @@ export async function POST(req: Request) {
         await fd?.close();
       }
       if (useRcs) {
-        commited = false;
+        // RCSを利用している場合はrcsdiffでコミットされていない情報があるかどうかをチェック
+        let cmd: string = 'rcsdiff -r ' + target + '.md';
+        try {
+          func_logger.info({"command": cmd, "message": "exec"});
+          let exec_res = await aexec(cmd, {"cwd": directory});
+          func_logger.info({"command": cmd, "res": exec_res});
+          // 差分がない場合
+        } catch (error) {
+          // 差分がある場合(保存されていない)
+          func_logger.info({"command": cmd, "error": error});
+          commited = false;
+        }
       }
     }      
   } else {
