@@ -373,7 +373,7 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={commited === "true" ? "primary" : "danger"} className="ml-2"
+                  <Button color={commited ? "primary" : "danger"} className="ml-2"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
