@@ -48,6 +48,7 @@ export function MainPage() {
       func_logger.debug({"message": "fetch OK"});
       let jsonData = await response.json();
       func_logger.trace({"jsonData": jsonData});
+      // func_logger.info({"message": "スケジュールデータ更新", "scheduleData": jsonData["scheduleData"]});
       setScheduleData(jsonData['scheduleData']);
     } else {
       func_logger.debug({"message": "fetch NG"});

@@ -206,6 +206,8 @@ export async function GET(req: NextRequest) {
   const today_str = moment().format("YYYY-MM-DD");
   const target_date_str = params.has('target') ? params.get('target') : today_str;
 
+  // func_logger.info({"message": "GET呼び出し", "target_date_str": target_date_str});
+  
   // カレンダーの日付を計算する
   func_logger.trace({"today_str": today_str, "target_date_str": target_date_str});
   const target_date = moment(target_date_str, "YYYY-MM-DD");
@@ -241,7 +243,7 @@ export async function GET(req: NextRequest) {
     [
       calendars_data["cal1"]["month"],
       calendars_data["cal2"]["month"],
-      calendars_data["cal2"]["month"]
+      calendars_data["cal3"]["month"]
     ], 
     user);
   //console.log("diary_check_result=", diary_check_result);
