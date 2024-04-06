@@ -103,7 +103,7 @@ export function ContentViewer(
     func_logger.debug({"message": "START", "params": {"rcscommit": rcscommit}});
 
     func_logger.debug({"session": session});
-    if (session == null) {
+    if (session === null) {
       func_logger.debug({
         "message": "END", 
         "params": {"rcscommit": rcscommit},
@@ -165,7 +165,7 @@ export function ContentViewer(
     const json_data = await result.json();
 
     let text = editData.text;
-    if (text.substr(-1) == "\n") {
+    if (text.substr(-1) === "\n") {
       text = text + json_data["template"];
     } else {
       text = text + "\n" + json_data["template"];
@@ -193,7 +193,7 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
 
     let new_text;
-    if (editData.text.substr(-1) == "\n") {
+    if (editData.text.substr(-1) === "\n") {
       new_text = editData.text + revisionText;
     } else {
       new_text = editData.text + "\n" + revisionText;
@@ -286,7 +286,7 @@ export function ContentViewer(
                     onSelectionChange={(keys) => {
                       let keylist: React.Key[] = [...keys];
                       func_logger.trace({"keylist": keylist});
-                      keylist.length == 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0] as string);
+                      keylist.length === 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0] as string);
                     }}
                     selectedKeys={[selectedTemplate]} 
                   >
@@ -302,7 +302,6 @@ export function ContentViewer(
                   <Button color="primary" className="ml-2 h-full" size="sm"
                     isDisabled={selectedTemplate === "" ? true : false}
                     onPress={() => {
-                      //console.log("onPress!");
                       appendTemplate();
                     }}
                   >
@@ -311,23 +310,25 @@ export function ContentViewer(
                 </div>
                 <div className="flex-none">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <>
-                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
-                        size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
-                        履歴
-                      </Button>
-                      <Button color={editData.originalText == editData.text ? "primary": "danger"} className="ml-2 h-full"
-                        size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
-                        保存
-                      </Button>
-                    </>
-                    : 
+                    <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
+                      size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
+                      履歴
+                    </Button>
+                    :
                     <></>
                   }
-                  <Button color={editData.committed ? "primary" : "danger"} className="ml-2 h-full"
-                    size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
-                    {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                  <Button color={editData.originalText === editData.text ? "primary": "danger"} className="ml-2 h-full"
+                    size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
+                    保存
                   </Button>
+                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                    <Button color={editData.committed ? "primary" : "danger"} className="ml-2 h-full"
+                      size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
+                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                    </Button>
+                    :
+                    <></>
+                  }
                 </div>
               </div>
               <div id="editor">
@@ -337,46 +338,52 @@ export function ContentViewer(
               </div>
             </CardBody>
           </Card>
-          <Card className={showHistories ? "visible" : "hidden"}>
-            <CardBody>
-              <div>
-                バージョン一覧
-                <Link rel="me" onPress={() => setShowHistories(false)}>　》</Link>
-                <hr className="mt-2"/>
-                <div className="m-0">
-                  <Listbox aria-label="history-list" className="m-0 p-0">
-                    {histories && histories.map((history: History) => 
-                      <ListboxItem key={history["revision"]} aria-label={history["revision"]}
-                        endContent={<span>{history["revision"]}</span>}
-                        className="m-0 p-0">
-                        <Popover placement="left" className="m-0 p-0" size="lg"
-                          onOpenChange={() => getHistoryDetail(history.revision)}>
-                          <PopoverTrigger className="m-0 p-0">
-                            <Button className="m-0 p-0" variant="light">
-                              {history["datetime"]}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent>
-                            <div>
-                              <Button className="m-1 p-1" onPress={() => appendHistoryDetail()}>取込</Button>
-                              <Button className="m-1 p-1" onPress={() => replaceHistoryDetail()}>差替</Button>
-                              <Textarea className="w-[600px]" minRows={10} value={revisionText}
-                                isReadOnly />
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </ListboxItem>
-                    )}
-                  </Listbox>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-          <Card className={showHistories ? "hidden" : "visible"}>
-            <CardBody>
-              <div><Link rel="me" onPress={() => getHistories()}>《</Link></div>
-            </CardBody>
-          </Card>
+          {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+            <>
+              <Card className={showHistories ? "visible" : "hidden"}>
+                <CardBody>
+                  <div>
+                    バージョン一覧
+                    <Link rel="me" onPress={() => setShowHistories(false)}>　》</Link>
+                    <hr className="mt-2"/>
+                    <div className="m-0">
+                      <Listbox aria-label="history-list" className="m-0 p-0">
+                        {histories && histories.map((history: History) => 
+                          <ListboxItem key={history["revision"]} aria-label={history["revision"]}
+                            endContent={<span>{history["revision"]}</span>}
+                            className="m-0 p-0">
+                            <Popover placement="left" className="m-0 p-0" size="lg"
+                              onOpenChange={() => getHistoryDetail(history.revision)}>
+                              <PopoverTrigger className="m-0 p-0">
+                                <Button className="m-0 p-0" variant="light">
+                                  {history["datetime"]}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent>
+                                <div>
+                                  <Button className="m-1 p-1" onPress={() => appendHistoryDetail()}>取込</Button>
+                                  <Button className="m-1 p-1" onPress={() => replaceHistoryDetail()}>差替</Button>
+                                  <Textarea className="w-[600px]" minRows={10} value={revisionText}
+                                    isReadOnly />
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </ListboxItem>
+                        )}
+                      </Listbox>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+              <Card className={showHistories ? "hidden" : "visible"}>
+                <CardBody>
+                  <div><Link rel="me" onPress={() => getHistories()}>《</Link></div>
+                </CardBody>
+              </Card>
+            </>
+            :
+            <></>
+          }
         </Tab>
         <Tab key="viewer" title="参照">
           <Card>
@@ -385,24 +392,25 @@ export function ContentViewer(
                 <div className="grow" />
                 <div className="flex-none ml-2">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <>
-                      <Button color={mode != "save" ? "primary" : "danger"} className="ml-2 h-full"
-                        size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
-                        履歴
-                      </Button>
-                      <Button color={editData.originalText == editData.text ? "primary": "danger"} className="ml-2 h-full"
-                        size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
-                        保存
-                      </Button>
-                    </>
-                    : 
+                    <Button color={mode !== "save" ? "primary" : "danger"} className="ml-2 h-full"
+                      size="sm" onPress={() => getHistories()} isDisabled={mode !== "normal"}>
+                      履歴
+                    </Button>
+                    :
                     <></>
                   }
-                  <Button color={editData.committed ? "primary" : "danger"} className="ml-2"
-                    size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
-                    {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                  <Button color={editData.originalText === editData.text ? "primary": "danger"} className="ml-2 h-full"
+                    size="sm" onPress={() => saveData(false)} isDisabled={mode !== "normal"}>
+                    保存
                   </Button>
-                  {editData.committed}
+                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                    <Button color={editData.committed ? "primary" : "danger"} className="ml-2"
+                      size="sm" onPress={() => saveData(true)} isDisabled={mode !== "normal"}>
+                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                    </Button>
+                    :
+                    <></>
+                  }
                 </div>
               </div>
               <div className="markdown-body" id="viewer"
