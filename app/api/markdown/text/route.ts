@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const filename = directory + "/" + target + ".md";
   
   let markdown = "";
-  let commited = true;
+  let committed = true;
   try {
     markdown = await readFile(filename, { encoding: "utf-8" });
 
@@ -49,21 +49,21 @@ export async function GET(req: NextRequest) {
       } catch (error) {
         // 差分がある場合(保存されていない)
         func_logger.info({"command": cmd, "error": error});
-        commited = false;
+        committed = false;
       }
     }
   } catch (error) {
     // エラーが出ても気にしない
     func_logger.debug({"message": "IGNORE ERROR", "error": error})
   }
-  const res = NextResponse.json({"markdown": markdown, "commited": commited});
+  const res = NextResponse.json({"markdown": markdown, "committed": committed});
   func_logger.debug({"message": "END", "res": res});
   return res;
 }
 
 export async function POST(req: Request) {
   const func_logger = logger.child({ "func": "POST" });
-  func_logger.debug({"message": "START"});
+  func_logger.info({"message": "START"});
   const session = await getServerSession(authOptions);
   func_logger.trace({"session": session});
   if (!session || !session.user || !session.user.email) {
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   // ファイル名を作る
   const filename = directory + "/" + target + ".md";
 
-  let commited = true;
+  let committed = true;
   
   if (markdown != "") {
     func_logger.trace({"message": "markdown is NOT NULL"});
@@ -174,7 +174,7 @@ export async function POST(req: Request) {
         } catch (error) {
           // 差分がある場合(保存されていない)
           func_logger.info({"command": cmd, "error": error});
-          commited = false;
+          committed = false;
         }
       }
     }      
@@ -182,8 +182,8 @@ export async function POST(req: Request) {
     func_logger.trace({"message": "markdown is NULL"});
     await rm(filename, {"force": true});
   }
-  const res = NextResponse.json({"commited": commited});
-  func_logger.debug({"message": "END", "res": res});
+  const res = NextResponse.json({"committed": committed});
+  func_logger.info({"message": "END", "res": res});
   return res;
 }
 

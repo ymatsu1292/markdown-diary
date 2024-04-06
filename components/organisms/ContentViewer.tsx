@@ -16,24 +16,31 @@ import { tasklist } from '@mdit/plugin-tasklist';
 import hljs from 'highlight.js';
 import { useSession } from 'next-auth/react';
 import { History } from '@/components/types/historyDataType';
+import { PageData } from '@/components/types/pageDataType';
+import { EditData } from '@/components/types/editDataType';
 
 import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
 
 export function ContentViewer(
-  { targetPage, calendarRefreshHook, templates } : {
-    targetPage: string;
+  { pageData, setPageData, editData, setEditData, calendarRefreshHook, templates } : {
+    pageData: PageData;
+    setPageData: (pageData: PageData) => void;
+    editData: EditData;
+    setEditData: (editData: EditData) => void;
     calendarRefreshHook: () => void;
     templates: string[];
   }
 ) {
   const func_logger = logger.child({ "func": "ContentViewer" });
   func_logger.debug({"message": "START", "params": {
-    "targetPage": targetPage, 
+    "pageData": pageData,
+    "editData": editData,
     "calendarRefreshHook": calendarRefreshHook,
     "templates": templates
   }});
   const { data: session, status } = useSession();
+  
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
       if (lang && hljs.getLanguage(lang)) {
@@ -44,41 +51,45 @@ export function ContentViewer(
       return '';
     }}).use(mdContainer, 'info').use(tasklist);
   const [ mode, setMode ] = useState("normal");
-  const [ markdownText, setMarkdownText ] = useState("");
-  const [ markdownHtml, setMarkdownHtml ] = useState("");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
-  const [ dirty, setDirty ] = useState<boolean>(false);
-  const [ committed, setCommitted ] = useState<boolean>(false);
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
-  const [ histories, setHistories ] = useState<History[]>([] as History[]);
   const [ revisionText, setRevisionText ] = useState<string>("");
+
+  const updateEditData = (newText: string, originalUpdate: boolean, commitFlag: boolean) => {
+    const func_logger = logger.child({ "func": "ContentViewer.updateEditData" });
+    func_logger.trace({"message": "START", "params": {"newText": newText, "originalUpdate": originalUpdate, "commitFlag": commitFlag}});
+    
+    const base_text = pageData.title + "\n=====\n" + newText;
+    const html_data = md.render(base_text);
+
+    if (originalUpdate) {
+      setEditData({...editData, text: newText, originalText: newText, html: html_data, committed: commitFlag} as EditData);
+    } else {
+      setEditData({...editData, text: newText, html: html_data, committed: commitFlag} as EditData);
+    }
+
+    func_logger.trace({"message": "END", "params": {"newText": newText, "originalUpdate": originalUpdate, "commitFlag": commitFlag}});
+  }
 
   const onChange = useCallback((val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
     func_logger.trace({"message": "START", "params": {"val": val}});
-    
-    setMarkdownText(val);
-    let base_text = targetPage + "\n=====\n" + val;
-    setMarkdownHtml(md.render(base_text));
-    setDirty(true);
-
+    updateEditData(val, false, false);
     func_logger.trace({"message": "END", "params": {"val": val}});
-  }, [md, targetPage]);
-
+  }, [md, pageData.title]);
+  
   const loadData = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.loadData" });
     func_logger.debug({"message": "START"});
     
     setMode('load');
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text?target=${targetPage}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text?target=${pageData.title}`);
     const result = await fetch(uri);
     const json_data = await result.json();
-    func_logger.info({"json_data": json_data});
-    onChange(json_data["markdown"]);
+    func_logger.trace({"json_data": json_data});
+    updateEditData(json_data["markdown"], true, json_data["committed"]);
     setMode('normal');
-    setDirty(false);
-    setCommitted(json_data["committed"]);
     
     func_logger.debug({"message": "END"});
   }
@@ -97,11 +108,12 @@ export function ContentViewer(
       return;
     }
     const markdown_data = {
-      "target": targetPage,
+      "target": pageData.title,
       "rcscommit": rcscommit,
-      "markdown": markdownText
+      "markdown": editData.text,
     };
     func_logger.trace({ "markdown_data": markdown_data });
+    func_logger.debug({ "markdown_data": markdown_data });
     setMode('save');
     const response = await fetch(`${process.env.BASE_PATH}/api/markdown/text`, {
       method: 'POST',
@@ -109,15 +121,16 @@ export function ContentViewer(
       body: JSON.stringify(markdown_data),
     })
     if (response.ok) {
-      let res = await response.json();
-      setCommitted(res["committed"]);
-      func_logger.trace({ "message": "POST OK", "response": response });
-      //func_logger.info({ "message": res });
+      const res = await response.json();
+      const committed = res["committed"];
+      func_logger.trace({ "message": "POST OK", "response": response, "res": res });
       calendarRefreshHook();
+      setEditData({...editData, originalText: editData.text, committed: committed});
+      if (showHistories) {
+        getHistories(false);
+      }
     }
-    setDirty(false);
     setMode('normal');
-    getHistories(false);
 
     func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit}});
   };
@@ -126,11 +139,11 @@ export function ContentViewer(
     const func_logger = logger.child({ "func": "ContentViewer.getHistories" });
     func_logger.debug({"message": "START"});
 
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${targetPage}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${pageData.title}`);
     const result = await fetch(uri);
     const json_data = await result.json();
-    func_logger.info({"json_data": json_data});
-    setHistories(json_data['histories']);
+    func_logger.trace({"json_data": json_data});
+    setPageData({...pageData, histories: json_data['histories']});
     if (showToggle) {
       setShowHistories(true);
     }
@@ -144,68 +157,70 @@ export function ContentViewer(
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/template?target=${selectedTemplate}`);
     const result = await fetch(uri);
     const json_data = await result.json();
-    setMarkdownText(prev => {
-      if (prev.substr(-1) == "\n") {
-        return prev + json_data["template"];
-      } else {
-        return prev + "\n" + json_data["template"];
-      }
-    });
+
+    let text = editData.text;
+    if (text.substr(-1) == "\n") {
+      text = text + json_data["template"];
+    } else {
+      text = text + "\n" + json_data["template"];
+    }
+    updateEditData(text, false, false);
     
     func_logger.debug({"message": "END", "json_data": json_data});
   };
 
   const getHistoryDetail = async(revision: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.getHistoryDetail" });
-    func_logger.info({"message": "START"});
+    func_logger.debug({"message": "START"});
 
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${targetPage}&revision=${revision}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${pageData.title}&revision=${revision}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.info({"json_data": json_data});
     setRevisionText(json_data['text']);
     
-    func_logger.info({"message": "END"});
+    func_logger.debug({"message": "END"});
   };
 
   const appendHistoryDetail = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.appendHistoryDetail" });
-    func_logger.info({"message": "START"});
+    func_logger.debug({"message": "START"});
 
-    setMarkdownText(prev => {
-      if (prev.substr(-1) == "\n") {
-        return prev + revisionText;
-      } else {
-        return prev + "\n" + revisionText;
-      }
-    });
+    let new_text;
+    if (editData.text.substr(-1) == "\n") {
+      new_text = editData.text + revisionText;
+    } else {
+      new_text = editData.text + "\n" + revisionText;
+    }
+    updateEditData(new_text, false, false);
     
-    func_logger.info({"message": "END"});
+    func_logger.debug({"message": "END"});
   }
+  
   const replaceHistoryDetail = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.replaceHistoryDetail" });
-    func_logger.info({"message": "START"});
+    func_logger.debug({"message": "START"});
 
-    setMarkdownText(revisionText);
+    updateEditData(revisionText, false, false);
     
-    func_logger.info({"message": "END"});
+    func_logger.debug({"message": "END"});
   }
   
   useEffect(() => {
     const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
     func_logger.debug({"message": "START"});
-    func_logger.info({"message": "ページかセッションが更新された", "targetPage": targetPage});
+    //func_logger.info({"message": "ページかセッションが更新された", "targetPage": pageData.title});
     
     if (session != null) {
       func_logger.debug({"message": "DO loadData()"});
       loadData();
-      setHistories([] as History[]);
+      //setHistories([] as History[]);
       setShowHistories(false);
     } else {
       func_logger.debug({"message": "SKIP loadData()"});
     }
     func_logger.debug({"message": "END"});
-  }, [targetPage, session]);
+  }, [pageData.title, session]);
 
   // タイマー時刻が更新された際にデータを保存する
   useEffect(() => {
@@ -214,8 +229,12 @@ export function ContentViewer(
     // func_logger.info({"message": "タイマー保存"});
     
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
-      func_logger.debug({"message": "DO autosave by timer"});
-      saveData(false);
+      if (editData.originalText != editData.text) {
+        func_logger.debug({"message": "DO autosave by timer"});
+        saveData(false);
+      } else {
+        func_logger.debug({"message": "タイマー保存スキップ"});
+      }
     }
     
     func_logger.debug({"message": "END"});
@@ -241,13 +260,14 @@ export function ContentViewer(
   }, []);
   
   func_logger.debug({"message": "END", "params": {
-    "targetPage": targetPage, 
+    "targetPage": pageData.title, 
     "calendarRefreshHook": calendarRefreshHook,
     "templates": templates
   }});
 
   //console.log("histories=", histories);
   //console.log("committed=", committed);
+  //console.log("editData:", editData);
   
   return (
     <div className="container mx-auto">
@@ -257,7 +277,7 @@ export function ContentViewer(
             <CardBody>
               <div className="flex">
                 <div className="grow">
-                  <Input type="text" label="タイトル" value={targetPage} />
+                  <Input type="text" label="タイトル" value={pageData.title} />
                 </div>
                 <div className="flex min-w-60 w-60">
                   <Select label="テンプレート" className="ml-2"
@@ -294,7 +314,7 @@ export function ContentViewer(
                         size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
-                      <Button color={dirty ? "danger" : "primary"} className="ml-2 h-full"
+                      <Button color={editData.originalText == editData.text ? "primary": "danger"} className="ml-2 h-full"
                         size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
                       </Button>
@@ -302,14 +322,14 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={committed ? "primary" : "danger"} className="ml-2 h-full"
+                  <Button color={editData.committed ? "primary" : "danger"} className="ml-2 h-full"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
                 </div>
               </div>
               <div id="editor">
-                <CodeMirror value={markdownText} height="640px"
+                <CodeMirror value={editData.text} height="640px"
                   onChange={onChange} 
                 />
               </div>
@@ -323,7 +343,7 @@ export function ContentViewer(
                 <hr className="mt-2"/>
                 <div className="m-0">
                   <Listbox aria-label="history-list" className="m-0 p-0">
-                    {histories && histories.map((history: History) => 
+                    {pageData.histories && pageData.histories.map((history: History) => 
                       <ListboxItem key={history["revision"]} aria-label={history["revision"]}
                         endContent={<span>{history["revision"]}</span>}
                         className="m-0 p-0">
@@ -368,7 +388,7 @@ export function ContentViewer(
                         size="sm" onPress={() => getHistories()} isDisabled={mode != "normal"}>
                         履歴
                       </Button>
-                      <Button color={dirty ? "danger" : "primary"} className="ml-2 h-full"
+                      <Button color={editData.originalText == editData.text ? "primary": "danger"} className="ml-2 h-full"
                         size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
                         保存
                       </Button>
@@ -376,15 +396,15 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={committed ? "primary" : "danger"} className="ml-2"
+                  <Button color={editData.committed ? "primary" : "danger"} className="ml-2"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
-                  {committed}
+                  {editData.committed}
                 </div>
               </div>
               <div className="markdown-body" id="viewer"
-                dangerouslySetInnerHTML={{__html: markdownHtml}}>
+                dangerouslySetInnerHTML={{__html: editData.html}}>
               </div>
             </CardBody>
           </Card>
