@@ -46,10 +46,10 @@ export function MiniCalendar(
     const func_logger = logger.child({ "func": "MiniCalendar.drawCell" });
     func_logger.trace({"message": "START"})
     
-    //console.log("drawCell: START ", calendarDate);
     let fontStyle = "font-normal";
     //console.log(todayStr);
     let dateStr: string = monthStr + "-" + String(daySchedule.date).padStart(2, "0");
+    //console.log("drawCell: START ", calendarDate, dateStr);
     let key: string = dateStr;
     let otherMonth: boolean = false;
     if (daySchedule.date == "") {

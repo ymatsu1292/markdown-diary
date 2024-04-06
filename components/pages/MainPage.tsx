@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { getTodayStr, getTodayMonth } from '@/utils/dateutils';
 import { MiniCalendars } from '@/components/organisms/MiniCalendars';
@@ -11,10 +11,8 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@
 import { Book, List } from '@phosphor-icons/react';
 import { Tabs, Tab } from '@nextui-org/react';
 import { Listbox, ListboxSection, ListboxItem } from '@nextui-org/react';
-import { ScheduleData } from '@/components/types/scheduleDataType';
 import { PageData } from '@/components/types/pageDataType';
-import { EditData } from '@/components/types/editDataType';
-import { History } from '@/components/types/historyDataType';
+import { ScheduleData } from '@/components/types/scheduleDataType';
 
 import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
@@ -27,78 +25,76 @@ export function MainPage() {
   const [ pageData, setPageData ] = useState<PageData>({
     title: getTodayStr(),
     calendarDate: getTodayStr(),
-    histories: [] as History[],
+    scheduleData: null,
   });
-  const [ editData, setEditData ] = useState<EditData>({
-    originalText: "",
-    text: "",
-    html: "",
-    committed: true,
-  });
-  const [ scheduleData, setScheduleData ] = useState<ScheduleData | null>(null);
   const [ searchText, setSearchText ] = useState<string>("");
   const [ userId, setUserId ] = useState("user");
 
-  // どこかでページが設定された際の処理
-  const handleTargetPageChange = (newPage: string) => {
-    const func_logger = logger.child({ "func": "MainPage.handleTargetPageChange" });
-    func_logger.debug({"message": "START", "params": {"newPage": newPage}});
-    //console.log("MainPage.handleTargetPageChange() START:", newPage);
-    if (editData.originalText != editData.text) {
-      const answer = window.confirm('ページを移動してもよろしいですか?')
-      if (!answer) {
-        return
-      }
-    }
-    //let title = String(newPage);
-    //setPageData((orig) => ({...orig, title: title, originalText: "", text: "", saved: true, committed: true}));
-    setPage(newPage);
-    
-    //console.log("MainPage.handleTargetPageChange() END");
-    func_logger.debug({"message": "END", "params": {"newPage": newPage}});
-  };
+  const dirty = useRef<boolean>(false);
 
+  const today_month = getTodayMonth();
+  
   // カレンダーの日付が変更された際の処理
-  const loadData = async() => {
+  const loadSchedule = async(targetDate: string): Promise<ScheduleData | null> => {
     const func_logger = logger.child({ "func": "MainPage.loadData" });
     func_logger.debug({"message": "START"});
 
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${pageData.calendarDate}`);
+    let res = null;
+    
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${targetDate}`);
     const response = await fetch(uri);
     if (response.ok) {
       func_logger.debug({"message": "fetch OK"});
       let jsonData = await response.json();
       func_logger.trace({"jsonData": jsonData});
-      // func_logger.info({"message": "スケジュールデータ更新", "scheduleData": jsonData["scheduleData"]});
-      setScheduleData(jsonData['scheduleData']);
+      res = jsonData['scheduleData'];
     } else {
       func_logger.debug({"message": "fetch NG"});
     }
     func_logger.debug({"message": "END"});
+    return res;
   };
   
-  const today_month = getTodayMonth();
-  
   // ページが変更されたときの処理
-  const setPage = (newTitle: string) => {
-    const func_logger = logger.child({ "func": "MainPage.useEffect[2]" });
+  const setPage = async (
+    newTitle: string, 
+  ) => {
+    const func_logger = logger.child({ "func": "MainPage.setPage" });
     func_logger.debug({"message": "START"});
-
+    func_logger.info({"message": "START", "dirty.current": dirty.current});
+    
+    if (dirty.current && newTitle != pageData.title) {
+      const answer = window.confirm('ページを移動してもよろしいですか?')
+      if (!answer) {
+        return
+      }
+    }
+    
+    let newPageData = pageData;
+    func_logger.info({"newPageData": newPageData});
+    
     const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
     if (datePattern.test(newTitle)) {
       func_logger.debug({"message": "target is " + newTitle});
-      setPageData({...pageData, title: newTitle, calendarDate: newTitle});
+      newPageData["title"] = newTitle;
+      newPageData["calendarDate"] = newTitle;
+      //setPageData({...pageData, title: newTitle, calendarDate: newTitle});
     } else {
       // 日付以外のページなら今日をターゲットにする
       func_logger.debug({"message": "target is TODAY"});
-      setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
+      newPageData["title"] = newTitle;
+      newPageData["calendarDate"] = getTodayStr();
+      //setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
     }
+    let sched = await loadSchedule(newTitle);
+    newPageData["scheduleData"] = sched;
+    func_logger.info({"pageData": newPageData});
+    setPageData(newPageData);
+    
     if (session?.user == undefined) {
       func_logger.debug({"message": "NO SESSION"});
       return;
     }
-    // データを読み込んでscheduleDataに登録する
-    loadData();
     func_logger.debug({"message": "END"});
   }
 
@@ -112,7 +108,7 @@ export function MainPage() {
       func_logger.debug({"message": "TOKEN ERROR -> signIn"});
       signIn();
     }
-    loadData();
+    setPage(getTodayStr());
     func_logger.debug({"message": "END"});
   }, [session]);
 
@@ -138,11 +134,7 @@ export function MainPage() {
     }
   };
 
-  const calendarRefreshHook = async () => {
-    await loadData();
-  };
-
-  func_logger.trace({"message": "END"});
+  //console.log(pageData);
 
   return (
     <div>
@@ -184,23 +176,20 @@ export function MainPage() {
         <div className="flex-basis-220">
           <Tabs>
             <Tab key="calendar" title={<div className="flex items-center space-x-2"><span>カレンダー</span></div>}>
-              <MiniCalendars calendarDate={pageData.calendarDate}
-                scheduleData={scheduleData}
-                handleTargetPageChange={handleTargetPageChange} />
+              <MiniCalendars
+                pageData={pageData}
+                setPage={setPage} />
             </Tab>
             <Tab key="files" title={<div className="flex items-center space-x-2"><span>ファイル</span></div>}>
-              <MarkdownFileList scheduleData={scheduleData} handleTargetPageChange={handleTargetPageChange} />
+              <MarkdownFileList pageData={pageData} setPage={setPage} />
             </Tab>
           </Tabs>
         </div>
         <div className="grow">
           <ContentViewer
+            dirty={dirty}
             pageData={pageData}
-            setPageData={setPageData}
-            editData={editData}
-            setEditData={setEditData}
-            calendarRefreshHook={calendarRefreshHook} 
-            templates={scheduleData?.templates || [] as string[]} />
+            setPage={setPage} />
         </div>
       </div>
     </div>

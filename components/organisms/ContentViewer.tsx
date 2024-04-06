@@ -1,6 +1,6 @@
 import styles from './ContentViewer.module.css';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, MutableRefObject } from 'react';
 import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
 import { Input, Button, Link } from '@nextui-org/react';
 import { Select, SelectSection, SelectItem } from '@nextui-org/react';
@@ -23,23 +23,23 @@ import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
 
 export function ContentViewer(
-  { pageData, setPageData, editData, setEditData, calendarRefreshHook, templates } : {
+  { dirty, pageData, setPage } : {
+    dirty: MutableRefObject<boolean>;
     pageData: PageData;
-    setPageData: (pageData: PageData) => void;
-    editData: EditData;
-    setEditData: (editData: EditData) => void;
-    calendarRefreshHook: () => void;
-    templates: string[];
+    setPage: (page: string) => void,
   }
 ) {
   const func_logger = logger.child({ "func": "ContentViewer" });
   func_logger.debug({"message": "START", "params": {
     "pageData": pageData,
-    "editData": editData,
-    "calendarRefreshHook": calendarRefreshHook,
-    "templates": templates
   }});
   const { data: session, status } = useSession();
+  const [ editData, setEditData ] = useState<EditData>({
+    originalText: "",
+    text: "",
+    html: "",
+    committed: true,
+  });
   
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
@@ -53,6 +53,7 @@ export function ContentViewer(
   const [ mode, setMode ] = useState("normal");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
+  const [ histories, setHistories ] = useState<History[]>([]);
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
   const [ revisionText, setRevisionText ] = useState<string>("");
 
@@ -65,9 +66,12 @@ export function ContentViewer(
 
     if (originalUpdate) {
       setEditData({...editData, text: newText, originalText: newText, html: html_data, committed: commitFlag} as EditData);
+      dirty.current = false;
     } else {
       setEditData({...editData, text: newText, html: html_data, committed: commitFlag} as EditData);
+      dirty.current = (newText != editData.originalText);
     }
+    func_logger.info({"dirty.current": dirty.current});
 
     func_logger.trace({"message": "END", "params": {"newText": newText, "originalUpdate": originalUpdate, "commitFlag": commitFlag}});
   }
@@ -124,8 +128,8 @@ export function ContentViewer(
       const res = await response.json();
       const committed = res["committed"];
       func_logger.trace({ "message": "POST OK", "response": response, "res": res });
-      calendarRefreshHook();
       setEditData({...editData, originalText: editData.text, committed: committed});
+      dirty.current = false;
       if (showHistories) {
         getHistories(false);
       }
@@ -143,7 +147,9 @@ export function ContentViewer(
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
-    setPageData({...pageData, histories: json_data['histories']});
+    // setPage(pageData.title);
+    // Historiesの処理が必要, json_data['histories'], null, null);
+    setHistories(json_data['histories']);
     if (showToggle) {
       setShowHistories(true);
     }
@@ -261,13 +267,14 @@ export function ContentViewer(
   
   func_logger.debug({"message": "END", "params": {
     "targetPage": pageData.title, 
-    "calendarRefreshHook": calendarRefreshHook,
-    "templates": templates
   }});
 
   //console.log("histories=", histories);
   //console.log("committed=", committed);
   //console.log("editData:", editData);
+  
+  //  console.log("scheduleData=", pageData.scheduleData);
+  console.log("pageData=", pageData);
   
   return (
     <div className="container mx-auto">
@@ -280,6 +287,7 @@ export function ContentViewer(
                   <Input type="text" label="タイトル" value={pageData.title} />
                 </div>
                 <div className="flex min-w-60 w-60">
+                  {(pageData.scheduleData != null && pageData.scheduleData?.templates != null) ?
                   <Select label="テンプレート" className="ml-2"
                     selectionMode="single"
                     onSelectionChange={(keys) => {
@@ -287,16 +295,17 @@ export function ContentViewer(
                       func_logger.trace({"keylist": keylist});
                       keylist.length == 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0] as string);
                     }}
-                    selectedKeys={[selectedTemplate]} >
-                    {templates != null ? templates.map((template) => (
+                    selectedKeys={[selectedTemplate]} 
+                  >
+                    {pageData.scheduleData.templates.map((template) => (
                       <SelectItem key={template} value={template}>
                         {template}
                       </SelectItem>
-                    ))
-                      :
-                      <></>
-                    }
+                    ))}
                   </Select>
+                  :
+                  <></>
+                  }
                   <Button color="primary" className="ml-2 h-full" size="sm"
                     isDisabled={selectedTemplate === "" ? true : false}
                     onPress={() => {
@@ -343,7 +352,7 @@ export function ContentViewer(
                 <hr className="mt-2"/>
                 <div className="m-0">
                   <Listbox aria-label="history-list" className="m-0 p-0">
-                    {pageData.histories && pageData.histories.map((history: History) => 
+                    {histories && histories.map((history: History) => 
                       <ListboxItem key={history["revision"]} aria-label={history["revision"]}
                         endContent={<span>{history["revision"]}</span>}
                         className="m-0 p-0">
