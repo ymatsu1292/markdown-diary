@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
   const directory = build_path(process.env.DATA_DIRECTORY || "", user);
   const filename = directory + "/" + target + ".md";
-  
+
   let markdown = "";
   let committed = true;
   try {
