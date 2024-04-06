@@ -94,9 +94,9 @@ export function MainPage() {
         newPageData["calendarDate"] = getTodayStr();
         //setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
       }
-      let sched = await loadSchedule(newTitle);
+      let sched = await loadSchedule(newPageData["calendarDate"]);
       newPageData["scheduleData"] = sched;
-      func_logger.info({"pageData": newPageData});
+      //func_logger.info({"pageData": newPageData});
       setPageData(newPageData);
       
       if (session?.user == undefined) {
