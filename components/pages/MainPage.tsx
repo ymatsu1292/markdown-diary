@@ -12,6 +12,9 @@ import { Book, List } from '@phosphor-icons/react';
 import { Tabs, Tab } from '@nextui-org/react';
 import { Listbox, ListboxSection, ListboxItem } from '@nextui-org/react';
 import { ScheduleData } from '@/components/types/scheduleDataType';
+import { PageData } from '@/components/types/pageDataType';
+import { EditData } from '@/components/types/editDataType';
+import { History } from '@/components/types/historyDataType';
 
 import base_logger from '@/utils/logger';
 const logger = base_logger.child({ filename: __filename });
@@ -21,10 +24,20 @@ export function MainPage() {
   func_logger.trace({"message": "START"});
 
   const { data: session, status } = useSession();
-  const [ targetPage, setTargetPage ] = useState(getTodayStr());
-  const [ calendarDate, setCalendarDate ] = useState(getTodayStr());
+  const [ pageData, setPageData ] = useState<PageData>({
+    title: getTodayStr(),
+    calendarDate: getTodayStr(),
+    histories: [] as History[],
+  });
+  const [ editData, setEditData ] = useState<EditData>({
+    originalText: "",
+    text: "",
+    html: "",
+    saved: true,
+    committed: true,
+  });
   const [ scheduleData, setScheduleData ] = useState<ScheduleData | null>(null);
-  const [ searchText, setSearchText ] = useState("");
+  const [ searchText, setSearchText ] = useState<string>("");
   const [ userId, setUserId ] = useState("user");
 
   // どこかでページが設定された際の処理
@@ -32,7 +45,16 @@ export function MainPage() {
     const func_logger = logger.child({ "func": "MainPage.handleTargetPageChange" });
     func_logger.debug({"message": "START", "params": {"newPage": newPage}});
     //console.log("MainPage.handleTargetPageChange() START:", newPage);
-    setTargetPage(String(newPage));
+    if (editData.originalText != editData.text) {
+      const answer = window.confirm('ページを移動してもよろしいですか?')
+      if (!answer) {
+        return
+      }
+    }
+    //let title = String(newPage);
+    //setPageData((orig) => ({...orig, title: title, originalText: "", text: "", saved: true, committed: true}));
+    setPage(newPage);
+    
     //console.log("MainPage.handleTargetPageChange() END");
     func_logger.debug({"message": "END", "params": {"newPage": newPage}});
   };
@@ -42,7 +64,7 @@ export function MainPage() {
     const func_logger = logger.child({ "func": "MainPage.loadData" });
     func_logger.debug({"message": "START"});
 
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${calendarDate}`);
+    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${pageData.calendarDate}`);
     const response = await fetch(uri);
     if (response.ok) {
       func_logger.debug({"message": "fetch OK"});
@@ -57,36 +79,29 @@ export function MainPage() {
   };
   
   const today_month = getTodayMonth();
-  useEffect(() => {
-    const func_logger = logger.child({ "func": "MainPage.useEffect[1]" });
+  
+  // ページが変更されたときの処理
+  const setPage = (newTitle: string) => {
+    const func_logger = logger.child({ "func": "MainPage.useEffect[2]" });
     func_logger.debug({"message": "START"});
 
+    const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+    if (datePattern.test(newTitle)) {
+      func_logger.debug({"message": "target is " + newTitle});
+      setPageData({...pageData, title: newTitle, calendarDate: newTitle});
+    } else {
+      // 日付以外のページなら今日をターゲットにする
+      func_logger.debug({"message": "target is TODAY"});
+      setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
+    }
     if (session?.user == undefined) {
       func_logger.debug({"message": "NO SESSION"});
       return;
     }
     // データを読み込んでscheduleDataに登録する
     loadData();
-
     func_logger.debug({"message": "END"});
-  }, [session, calendarDate]);
-  
-  // ページが変更されたときの処理
-  useEffect(() => {
-    const func_logger = logger.child({ "func": "MainPage.useEffect[2]" });
-    func_logger.debug({"message": "START"});
-
-    const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
-    if (!datePattern.test(targetPage)) {
-      // 日付以外のページなら今日をターゲットにする
-      func_logger.debug({"message": "target is TODAY"});
-      setCalendarDate(getTodayStr());
-    } else {
-      func_logger.debug({"message": "target is " + targetPage});
-      setCalendarDate(targetPage);
-    }
-    func_logger.debug({"message": "END"});
-  }, [targetPage]);
+  }
 
   // セッション情報が設定されたときの処理
   useEffect(() => {
@@ -98,6 +113,7 @@ export function MainPage() {
       func_logger.debug({"message": "TOKEN ERROR -> signIn"});
       signIn();
     }
+    loadData();
     func_logger.debug({"message": "END"});
   }, [session]);
 
@@ -119,7 +135,7 @@ export function MainPage() {
   const doSearchIfNecessary = (key: string, page: string) => {
     if (key == 'Enter' && !isInvalid) {
       // ページを設定する
-      setTargetPage(page);
+      setPage(page);
     }
   };
 
@@ -169,7 +185,9 @@ export function MainPage() {
         <div className="flex-basis-220">
           <Tabs>
             <Tab key="calendar" title={<div className="flex items-center space-x-2"><span>カレンダー</span></div>}>
-              <MiniCalendars calendarDate={calendarDate} scheduleData={scheduleData} handleTargetPageChange={handleTargetPageChange} />
+              <MiniCalendars calendarDate={pageData.calendarDate}
+                scheduleData={scheduleData}
+                handleTargetPageChange={handleTargetPageChange} />
             </Tab>
             <Tab key="files" title={<div className="flex items-center space-x-2"><span>ファイル</span></div>}>
               <MarkdownFileList scheduleData={scheduleData} handleTargetPageChange={handleTargetPageChange} />
@@ -178,7 +196,10 @@ export function MainPage() {
         </div>
         <div className="grow">
           <ContentViewer
-            targetPage={targetPage}
+            pageData={pageData}
+            setPageData={setPageData}
+            editData={editData}
+            setEditData={setEditData}
             calendarRefreshHook={calendarRefreshHook} 
             templates={scheduleData?.templates || [] as string[]} />
         </div>
