@@ -33,7 +33,6 @@ export function MainPage() {
     originalText: "",
     text: "",
     html: "",
-    saved: true,
     committed: true,
   });
   const [ scheduleData, setScheduleData ] = useState<ScheduleData | null>(null);
