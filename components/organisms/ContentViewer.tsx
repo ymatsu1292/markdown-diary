@@ -48,7 +48,7 @@ export function ContentViewer(
   const [ markdownHtml, setMarkdownHtml ] = useState("");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
   const [ dirty, setDirty ] = useState<boolean>(false);
-  const [ commited, setCommited ] = useState<boolean>(false);
+  const [ committed, setCommitted ] = useState<boolean>(false);
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
   const [ histories, setHistories ] = useState<History[]>([] as History[]);
@@ -78,7 +78,7 @@ export function ContentViewer(
     onChange(json_data["markdown"]);
     setMode('normal');
     setDirty(false);
-    setCommited(json_data["commited"]);
+    setCommitted(json_data["committed"]);
     
     func_logger.debug({"message": "END"});
   }
@@ -110,9 +110,9 @@ export function ContentViewer(
     })
     if (response.ok) {
       let res = await response.json();
-      setCommited(res["commited"]);
+      setCommitted(res["committed"]);
       func_logger.trace({ "message": "POST OK", "response": response });
-      func_logger.info({ "message": res });
+      //func_logger.info({ "message": res });
       calendarRefreshHook();
     }
     setDirty(false);
@@ -194,6 +194,7 @@ export function ContentViewer(
   useEffect(() => {
     const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
     func_logger.debug({"message": "START"});
+    func_logger.info({"message": "ページかセッションが更新された", "targetPage": targetPage});
     
     if (session != null) {
       func_logger.debug({"message": "DO loadData()"});
@@ -210,6 +211,7 @@ export function ContentViewer(
   useEffect(() => {
     const func_logger = logger.child({ "func": "ContentViewer.useEffect[2]" });
     func_logger.debug({"message": "START"});
+    // func_logger.info({"message": "タイマー保存"});
     
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       func_logger.debug({"message": "DO autosave by timer"});
@@ -223,6 +225,7 @@ export function ContentViewer(
   useEffect(() => {
     const func_logger = logger.child({ "func": "ContentViewer.useEffect[3]" });
     func_logger.debug({"message": "START"});
+    // func_logger.info({"message": "タイマー時刻更新"});
     
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       func_logger.debug({"message": "SET interval timer for autosave"});
@@ -243,8 +246,8 @@ export function ContentViewer(
     "templates": templates
   }});
 
-  console.log("histories=", histories);
-  console.log("commited=", commited);
+  //console.log("histories=", histories);
+  //console.log("committed=", committed);
   
   return (
     <div className="container mx-auto">
@@ -299,7 +302,7 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={commited ? "primary" : "danger"} className="ml-2 h-full"
+                  <Button color={committed ? "primary" : "danger"} className="ml-2 h-full"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
@@ -373,11 +376,11 @@ export function ContentViewer(
                     : 
                     <></>
                   }
-                  <Button color={commited ? "primary" : "danger"} className="ml-2"
+                  <Button color={committed ? "primary" : "danger"} className="ml-2"
                     size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
                     {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
-                  {commited}
+                  {committed}
                 </div>
               </div>
               <div className="markdown-body" id="viewer"
