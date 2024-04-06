@@ -269,13 +269,6 @@ export function ContentViewer(
     "targetPage": pageData.title, 
   }});
 
-  //console.log("histories=", histories);
-  //console.log("committed=", committed);
-  //console.log("editData:", editData);
-  
-  //  console.log("scheduleData=", pageData.scheduleData);
-  console.log("pageData=", pageData);
-  
   return (
     <div className="container mx-auto">
       <Tabs aria-label="editor">
@@ -309,7 +302,7 @@ export function ContentViewer(
                   <Button color="primary" className="ml-2 h-full" size="sm"
                     isDisabled={selectedTemplate === "" ? true : false}
                     onPress={() => {
-                      console.log("onPress!");
+                      //console.log("onPress!");
                       appendTemplate();
                     }}
                   >

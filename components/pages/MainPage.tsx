@@ -36,6 +36,7 @@ export function MainPage() {
   
   // カレンダーの日付が変更された際の処理
   const loadSchedule = async(targetDate: string): Promise<ScheduleData | null> => {
+    //console.log("loadSchedule開始");
     const func_logger = logger.child({ "func": "MainPage.loadData" });
     func_logger.debug({"message": "START"});
 
@@ -52,57 +53,66 @@ export function MainPage() {
       func_logger.debug({"message": "fetch NG"});
     }
     func_logger.debug({"message": "END"});
+    //console.log("loadSchedule終了");
     return res;
   };
   
   // ページが変更されたときの処理
-  const setPage = async (
+  const setPage = (
     newTitle: string, 
   ) => {
-    const func_logger = logger.child({ "func": "MainPage.setPage" });
-    func_logger.debug({"message": "START"});
-    func_logger.info({"message": "START", "dirty.current": dirty.current});
+    //console.log("setPage開始");
+    (async () => {
+      const func_logger = logger.child({ "func": "MainPage.setPage" });
+      func_logger.debug({"message": "START"});
+      func_logger.info({"message": "START", "dirty.current": dirty.current});
     
-    if (dirty.current && newTitle != pageData.title) {
-      const answer = window.confirm('ページを移動してもよろしいですか?')
-      if (!answer) {
-        return
+      if (dirty.current && newTitle != pageData.title) {
+        const answer = window.confirm('ページを移動してもよろしいですか?')
+        if (!answer) {
+          return
+        }
       }
-    }
-    
-    let newPageData = pageData;
-    func_logger.info({"newPageData": newPageData});
-    
-    const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
-    if (datePattern.test(newTitle)) {
-      func_logger.debug({"message": "target is " + newTitle});
-      newPageData["title"] = newTitle;
-      newPageData["calendarDate"] = newTitle;
-      //setPageData({...pageData, title: newTitle, calendarDate: newTitle});
-    } else {
-      // 日付以外のページなら今日をターゲットにする
-      func_logger.debug({"message": "target is TODAY"});
-      newPageData["title"] = newTitle;
-      newPageData["calendarDate"] = getTodayStr();
-      //setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
-    }
-    let sched = await loadSchedule(newTitle);
-    newPageData["scheduleData"] = sched;
-    func_logger.info({"pageData": newPageData});
-    setPageData(newPageData);
-    
-    if (session?.user == undefined) {
-      func_logger.debug({"message": "NO SESSION"});
-      return;
-    }
-    func_logger.debug({"message": "END"});
+      
+      let newPageData = {
+        title: pageData.title,
+        calendarDate: pageData.calendarDate,
+        scheduleData: pageData.scheduleData,
+      }
+      func_logger.info({"newPageData": newPageData});
+      
+      const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+      if (datePattern.test(newTitle)) {
+        func_logger.debug({"message": "target is " + newTitle});
+        newPageData["title"] = newTitle;
+        newPageData["calendarDate"] = newTitle;
+        //setPageData({...pageData, title: newTitle, calendarDate: newTitle});
+      } else {
+        // 日付以外のページなら今日をターゲットにする
+        func_logger.debug({"message": "target is TODAY"});
+        newPageData["title"] = newTitle;
+        newPageData["calendarDate"] = getTodayStr();
+        //setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
+      }
+      let sched = await loadSchedule(newTitle);
+      newPageData["scheduleData"] = sched;
+      func_logger.info({"pageData": newPageData});
+      setPageData(newPageData);
+      
+      if (session?.user == undefined) {
+        func_logger.debug({"message": "NO SESSION"});
+        return;
+      }
+      func_logger.debug({"message": "END"});
+    })();
+    //console.log("setPage終了");
   }
 
   // セッション情報が設定されたときの処理
   useEffect(() => {
     const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
     func_logger.debug({"message": "START"});
-
+    
     setUserId(session?.user?.email || "dummy");
     if (session?.error == "refresh_access_token_error") {
       func_logger.debug({"message": "TOKEN ERROR -> signIn"});
@@ -111,7 +121,7 @@ export function MainPage() {
     setPage(getTodayStr());
     func_logger.debug({"message": "END"});
   }, [session]);
-
+  
   const isInvalid = useMemo(() => {
     const func_logger = logger.child({ "func": "MainPage.isInvalid" });
     func_logger.debug({"message": "START"});
@@ -127,7 +137,7 @@ export function MainPage() {
     return res;
   }, [searchText]);
   
-  const doSearchIfNecessary = (key: string, page: string) => {
+  const doSearchIfNecessary = async (key: string, page: string) => {
     if (key == 'Enter' && !isInvalid) {
       // ページを設定する
       setPage(page);

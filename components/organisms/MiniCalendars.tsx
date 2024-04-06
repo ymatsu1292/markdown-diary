@@ -21,7 +21,7 @@ export function MiniCalendars(
   
   const handleTargetPageChange = (newPage: string) => {
     // ページ遷移時の処理
-    console.log("MiniCalendars.handleTargetPageChange()");
+    //console.log("MiniCalendars.handleTargetPageChange()");
     setPage(newPage);
   };
 
