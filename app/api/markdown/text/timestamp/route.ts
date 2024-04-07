@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     func_logger.debug({"message": "IGNORE ERROR", "error": error})
   }
   const res = NextResponse.json({"timestamp": mtime});
-  func_logger.info({"message": "タイムスタンプ取得", "mtime": mtime});
+  func_logger.trace({"message": "タイムスタンプ取得", "mtime": mtime});
   func_logger.debug({"message": "END", "res": res});
   return res;
 }

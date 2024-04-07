@@ -1,6 +1,6 @@
 import styles from './ContentViewer.module.css';
 
-import { useState, useEffect, useCallback, useMemo, MutableRefObject } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, MutableRefObject } from 'react';
 import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
 import { Input, Button, Link, Switch } from '@nextui-org/react';
 import { Select, SelectSection, SelectItem } from '@nextui-org/react';
@@ -43,6 +43,8 @@ export function ContentViewer(
     conflicted: false, // コンフリクトしているときはoriginalTextはサーバに保存されていない状態
     timestamp: -1.0,
   });
+  const [ autosave, setAutosave ] = useState<boolean>(true);
+  const autosaveTimestamp = useRef<number>(new Date().getTime());
   
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
@@ -74,7 +76,7 @@ export function ContentViewer(
       setEditData({...editData, text: newText, html: html_data, committed: commitFlag} as EditData);
       dirty.current = (newText != editData.originalText);
     }
-    func_logger.info({"dirty.current": dirty.current});
+    func_logger.trace({"dirty.current": dirty.current});
 
     func_logger.trace({"message": "END", "params": {"newText": newText, "originalUpdate": originalUpdate, "commitFlag": commitFlag}});
   }
@@ -88,23 +90,23 @@ export function ContentViewer(
   
   const checkData = async(): Promise<boolean> => {
     const func_logger = logger.child({ "func": "ContentViewer.checkData" });
-    func_logger.info({"message": "START"});
+    func_logger.debug({"message": "START"});
     
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text/timestamp?target=${pageData.title}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
-    func_logger.info({"タイムスタンプ": json_data["timestamp"]});
+    func_logger.trace({"タイムスタンプ": json_data["timestamp"]});
     const res = (editData["timestamp"] !== json_data["timestamp"]);
     
-    func_logger.info({"message": "END", "res": res});
+    func_logger.debug({"message": "END", "res": res});
     return res;
   };
   
   const loadData = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.loadData" });
     func_logger.debug({"message": "START"});
-    func_logger.info({"message": "マークダウン読み込み開始"});
+    func_logger.trace({"message": "マークダウン読み込み開始"});
     
     setMode('load');
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text?target=${pageData.title}`);
@@ -114,7 +116,7 @@ export function ContentViewer(
     updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
     setMode('normal');
     
-    func_logger.info({"message": "マークダウン読み込み終了"});
+    func_logger.trace({"message": "マークダウン読み込み終了"});
     func_logger.debug({"message": "END"});
   }
   
@@ -157,7 +159,7 @@ export function ContentViewer(
       const timestamp = res["timestamp"];
       const markdown = res["markdown"];
       const conflicted = res["conflicted"];
-      func_logger.info({"markdown": markdown});
+      func_logger.trace({"markdown": markdown});
       func_logger.trace({ "message": "POST OK", "response": response, "res": res });
       if (conflicted) {
         // コンフリクトした場合はオリジナルは書き換えない
@@ -220,7 +222,7 @@ export function ContentViewer(
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${pageData.title}&revision=${revision}`);
     const result = await fetch(uri);
     const json_data = await result.json();
-    func_logger.info({"json_data": json_data});
+    func_logger.trace({"json_data": json_data});
     setRevisionText(json_data['text']);
     
     func_logger.debug({"message": "END"});
@@ -254,7 +256,7 @@ export function ContentViewer(
     (async() => {
       const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
       func_logger.debug({"message": "START"});
-      func_logger.info({"message": "ページかセッションが更新された", "targetPage": pageData.title});
+      func_logger.trace({"message": "ページかセッションが更新された", "targetPage": pageData.title});
       
       if (session != null) {
         func_logger.debug({"message": "DO loadData()"});
@@ -265,7 +267,7 @@ export function ContentViewer(
         func_logger.debug({"message": "SKIP loadData()"});
       }
       func_logger.debug({"message": "END"});
-      func_logger.info({"message": "ページ情報読み込み完了", "targetPage": pageData.title});
+      func_logger.trace({"message": "ページ情報読み込み完了", "targetPage": pageData.title});
     })()
   }, [pageData.title, session]);
 
@@ -274,41 +276,48 @@ export function ContentViewer(
     (async() => {
       const func_logger = logger.child({ "func": "ContentViewer.useEffect[2]" });
       func_logger.debug({"message": "START"});
-      func_logger.info({"message": "タイマーチェック/保存"});
+      func_logger.trace({"message": "タイマーチェック/保存"});
 
       if (editData.timestamp < 0.0) {
         // 読み込み前なのでなにもしない
-        func_logger.info({"message": "データ読み込み前なので何もしない"});
+        func_logger.trace({"message": "データ読み込み前なので何もしない"});
+        return;
+      }
+
+      if (!autosave) {
+        func_logger.trace({"message": "オートセーブでない場合は保存しない"});
         return;
       }
 
       if (editData.conflicted) {
-        func_logger.info({"message": "コンフリクトしている場合は保存しない"});
+        func_logger.trace({"message": "コンフリクトしている場合は保存しない"});
         return;
       }
 
       if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
         if (await checkData()) {
           // 変更されていた場合
-          func_logger.info({"message": "サーバ側変更あり"});
+          func_logger.trace({"message": "サーバ側変更あり"});
           if (editData.originalText != editData.text) {
             // ローカルでも変更されていたら保存(マージ)する
-            func_logger.info({"message": "クライアント側でも側変更あり->保存(マージ)実行"});
+            func_logger.trace({"message": "クライアント側でも側変更あり->保存(マージ)実行"});
             func_logger.debug({"message": "DO autosave by timer"});
             await saveData(false);
           } else {
-            func_logger.info({"message": "クライアント側では変更ないがマージ実行"});
+            func_logger.trace({"message": "クライアント側では変更ないがマージ実行"});
             await saveData(false);
           }
         }
-        if (true) {
+        const nowTimestamp = new Date().getTime();
+        if (nowTimestamp - autosaveTimestamp.current > 60 * 1000) {
+          autosaveTimestamp.current = nowTimestamp;
           // 保存間隔を超えていて、書き換えていた場合は保存する
           func_logger.info({"message": "保存実行間隔超過"});
           if (editData.originalText != editData.text) {
-            func_logger.info({"message": "保存実行"});
+            func_logger.trace({"message": "保存実行"});
             await saveData(false);
           } else {
-            func_logger.info({"message": "保存スキップ"});
+            func_logger.trace({"message": "保存スキップ"});
           }
         }
       }
@@ -324,7 +333,7 @@ export function ContentViewer(
     
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       func_logger.debug({"message": "SET interval timer for autosave"});
-      const intervalTime: number = 1000 * 60; // 一分
+      const intervalTime: number = 1000 * 10; // 10秒
       const intervalId = setInterval(() => {
         func_logger.debug({"message": "DO interval timer for autosave"});
         setTimerTime(new Date().getTime());
@@ -378,7 +387,15 @@ export function ContentViewer(
                     テンプレ<br/>取込
                   </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Switch defaultSelected size="lg" className="ml-2 h-full" startContent={<FloppyDisk />} isDisabled={editData.conflicted} />
+                    <Switch
+                      isSelected={autosave}
+                      onValueChange={setAutosave}
+                      size="lg"
+                      className="ml-2 h-full"
+                      startContent={<FloppyDisk />}
+                      endContent={<FloppyDisk />}
+                      disabled={editData.conflicted}
+                    />
                     :
                     <></>
                   }
@@ -457,7 +474,15 @@ export function ContentViewer(
                 <div className="grow" />
                 <div className="flex-none ml-2">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Switch defaultSelected size="lg" className="ml-2 h-full" startContent={<FloppyDisk />} disabled={editData.conflicted} />
+                    <Switch
+                      isSelected={autosave}
+                      onValueChange={setAutosave}
+                      size="lg"
+                      className="ml-2 h-full"
+                      startContent={<FloppyDisk />}
+                      endContent={<FloppyDisk />}
+                      disabled={editData.conflicted}
+                    />
                     :
                     <></>
                   }
