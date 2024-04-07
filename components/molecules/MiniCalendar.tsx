@@ -102,16 +102,16 @@ export function MiniCalendar(
   
   return (
     <div className="m-0 p-1">
-      <Table aria-label="cal-aria1" isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-2"
-        topContent=<span className="m-0 p-0 text-center text-sm">{monthSchedule.month}</span>>
-	<TableHeader className="m-0 p-0">
-	  <TableColumn className="m-0 p-0 text-center"><span className="text-red-900">日</span></TableColumn>
-	  <TableColumn className="m-0 p-0 text-center">月</TableColumn>
-	  <TableColumn className="m-0 p-0 text-center">火</TableColumn>
-	  <TableColumn className="m-0 p-0 text-center">水</TableColumn>
-	  <TableColumn className="m-0 p-0 text-center">木</TableColumn>
-	  <TableColumn className="m-0 p-0 text-center">金</TableColumn>
-	  <TableColumn className="m-0 p-0 text-center"><span className="text-blue-900">土</span></TableColumn>
+      <Table aria-label="cal-aria1" isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-0"
+        topContent=<span className="h-1 gap-0 m-0 p-0 text-center text-sm">{monthSchedule.month}</span>>
+	<TableHeader className="m-0 p-0 gap-0 h-6">
+	  <TableColumn className="m-0 p-0 h-6 text-center"><span className="text-red-900">日</span></TableColumn>
+	  <TableColumn className="m-0 p-0 h-6 text-center">月</TableColumn>
+	  <TableColumn className="m-0 p-0 h-6 text-center">火</TableColumn>
+	  <TableColumn className="m-0 p-0 h-6 text-center">水</TableColumn>
+	  <TableColumn className="m-0 p-0 h-6 text-center">木</TableColumn>
+	  <TableColumn className="m-0 p-0 h-6 text-center">金</TableColumn>
+	  <TableColumn className="m-0 p-0 h-6 text-center"><span className="text-blue-900">土</span></TableColumn>
 	</TableHeader>
 	<TableBody>
 	  {monthSchedule.data.map((item: WeekSchedule) => (
