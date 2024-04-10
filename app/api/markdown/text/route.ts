@@ -195,15 +195,15 @@ export async function POST(req: Request) {
         func_logger.trace({"message": "競合しているので更新しない", "old": oldtimestamp, "new": mtime});
         conflicted = true;
       }
-      // タイムスタンプを読み込む
-      try {
-        const stat_data = await stat(filename);
-        mtime = stat_data.mtimeMs;
-      } catch (error) {
-        func_logger.info({"message": "cannot stat"});
-      }
-      func_logger.trace({"message": "タイムスタンプ", "timestamp": mtime});
     }      
+    // タイムスタンプを読み込む
+    try {
+      const stat_data = await stat(filename);
+      mtime = stat_data.mtimeMs;
+    } catch (error) {
+      func_logger.info({"message": "cannot stat"});
+    }
+    func_logger.trace({"message": "タイムスタンプ", "timestamp": mtime});
     if (useRcs) {
       // RCSを利用している場合はrcsdiffでコミットされていない情報があるかどうかをチェック
       let cmd: string = 'rcsdiff -r ' + target + '.md';
