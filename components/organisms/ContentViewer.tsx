@@ -63,7 +63,7 @@ export function ContentViewer(
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
   const [ revisionText, setRevisionText ] = useState<string>("");
 
-  const compareText = (serverText, localText): boolean => {
+  const compareText = (serverText: string, localText: string): boolean => {
     let fixed = localText;
     if (fixed.substr(-1) !== "\n") {
       fixed = localText + "\n";
@@ -180,7 +180,7 @@ export function ContentViewer(
         setEditData({...editData, committed: committed, timestamp: timestamp, conflicted: conflicted});
         console.log("text", text)
         console.log("orig", editData.originalText)
-        setMessages(["コンフリクトしたよ"]);
+        setMessages(["他の画面から更新されたため自動保存を停止しています"]);
       } else {
         console.log("コンフリクトしてない");
         setEditData({...editData, originalText: tmpText, committed: committed, timestamp: timestamp, conflicted: conflicted});
@@ -379,33 +379,40 @@ export function ContentViewer(
                   <Input type="text" label="タイトル" value={pageData.title} />
                 </div>
                 <div className="flex min-w-60">
-                  {(pageData.scheduleData != null && pageData.scheduleData?.templates != null) ?
-                  <Select label="テンプレート" className="ml-2 min-w-40"
-                    selectionMode="single"
-                    onSelectionChange={(keys) => {
-                      let keylist: React.Key[] = [...keys];
-                      func_logger.trace({"keylist": keylist});
-                      keylist.length === 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0] as string);
-                    }}
-                    selectedKeys={[selectedTemplate]} 
-                  >
-                    {pageData.scheduleData.templates.map((template) => (
-                      <SelectItem key={template} value={template}>
-                        {template}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                  :
-                  <></>
+                  {(pageData.scheduleData != null && pageData.scheduleData?.templates != null && pageData.scheduleData.templates.length > 0) ?
+                    <>
+                      <Select label="テンプレート" className="ml-2 min-w-40"
+                        selectionMode="single"
+                        onSelectionChange={(keys) => {
+                          let keylist: React.Key[] = [...keys];
+                          func_logger.trace({"keylist": keylist});
+                          keylist.length === 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0] as string);
+                        }}
+                        selectedKeys={[selectedTemplate]} 
+                      >
+                        {pageData.scheduleData.templates.map((template) => (
+                          <SelectItem key={template} value={template}>
+                            {template}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                      <Button color="primary" className="ml-2 h-full" size="sm"
+                        isDisabled={selectedTemplate === "" ? true : false}
+                        onPress={() => {
+                          appendTemplate();
+                        }}
+                      >
+                        テンプレ<br/>取込
+                      </Button>
+                    </>
+                    :
+                    <></>
                   }
-                  <Button color="primary" className="ml-2 h-full" size="sm"
-                    isDisabled={selectedTemplate === "" ? true : false}
-                    onPress={() => {
-                      appendTemplate();
-                    }}
-                  >
-                    テンプレ<br/>取込
+                  <Button color="primary" className="ml-0 h-full"
+                    size="sm" onPress={() => loadData()}>
+                    リセット
                   </Button>
+
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Switch
                       isSelected={autosave}

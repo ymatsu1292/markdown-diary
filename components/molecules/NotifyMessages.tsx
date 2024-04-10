@@ -1,26 +1,20 @@
 import { Card, CardBody, CardHeader } from '@nextui-org/react';
-import { Button } from '@nextui-org/react';
-import { XSquare } from '@phosphor-icons/react';
+import type { PressEvent } from '@react-types/shared';
 
 export function NotifyMessages(
-  { messages } : {
-    messages: string[]
+  { messages, onPress } : {
+    messages: string[];
   }
 ) {
   return (
     <>
     {(messages.length > 0) ?
       <div className="fixed bottom-8 right-8">
-        <Card>
-          <CardHeader>
-            <Button isIconOnly aria-label="close"className="sm">
-              <XSquare size={12} />
-            </Button>
-          </CardHeader>
+        <Card className="bg-red-300">
           <CardBody>
             <>
-              {messages.map(message => (
-                <p>{message}</p>
+              {messages.map((message, index) => (
+                <p key={index}>{message}</p>
               ))}
             </>
           </CardBody>
