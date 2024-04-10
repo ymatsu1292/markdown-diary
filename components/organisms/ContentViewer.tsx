@@ -56,7 +56,6 @@ export function ContentViewer(
       }
       return '';
     }}).use(mdContainer, 'info').use(tasklist);
-  const [ mode, setMode ] = useState("normal");
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
   const [ histories, setHistories ] = useState<History[]>([]);
@@ -122,13 +121,11 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
     func_logger.info({"message": "マークダウン読み込み開始", "title": pageData.title});
     
-    setMode('load');
     const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text?target=${pageData.title}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
     updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
-    setMode('normal');
     
     func_logger.info({"message": "マークダウン読み込み終了"});
     func_logger.debug({"message": "END"});
@@ -162,7 +159,6 @@ export function ContentViewer(
       "timestamp": editData.timestamp,
     };
     func_logger.trace({ "markdown_data": markdown_data });
-    setMode('save');
     const response = await fetch(`${process.env.BASE_PATH}/api/markdown/text`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -193,7 +189,6 @@ export function ContentViewer(
         getHistories(false);
       }
     }
-    setMode('normal');
 
     func_logger.info({"message": "マークダウン保存終了"});
     func_logger.debug({"message": "END", "params": {"rcscommit": rcscommit}});
@@ -409,6 +404,7 @@ export function ContentViewer(
                     <></>
                   }
                   <Button color="primary" className="ml-0 h-full"
+                    isDisabled={!editData.conflicted && compareText(editData.originalText, text)}
                     size="sm" onPress={() => loadData()}>
                     リセット
                   </Button>
@@ -427,12 +423,12 @@ export function ContentViewer(
                     <></>
                   }
                   <Button color={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-0 h-full"
-                    size="sm" onPress={() => saveData(false)} isDisabled={mode != "normal"}>
+                    size="sm" onPress={() => saveData(false)}>
                     保存
                   </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Button color={editData.committed ? "primary" : "danger"} className="ml-2 h-full"
-                      size="sm" onPress={() => saveData(true)} isDisabled={mode != "normal"}>
+                      size="sm" onPress={() => saveData(true)}>
                       {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                     </Button>
                     :
@@ -514,12 +510,12 @@ export function ContentViewer(
                     <></>
                   }
                   <Button color={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-0 h-full"
-                    size="sm" onPress={() => saveData(false)} isDisabled={mode !== "normal"}>
+                    size="sm" onPress={() => saveData(false)}>
                     保存
                   </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Button color={editData.committed ? "primary" : "danger"} className="ml-2 h-full"
-                      size="sm" onPress={() => saveData(true)} isDisabled={mode !== "normal"}>
+                      size="sm" onPress={() => saveData(true)}>
                       {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                     </Button>
                     :
