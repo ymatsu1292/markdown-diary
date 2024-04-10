@@ -43,7 +43,7 @@ export function rlog_parse(value: string): History[] {
   let res: History[] = [];
   
   const revision_regex = /^revision ([0-9.]+)/;
-  const date_regex = /^date: ([0-9/: ]+)/;
+  const date_regex = /^date: ([0-9/: +]+)/;
   const lines = value.split('\n');
   let status: number = 0; // 0: 初期状態、1: 最初の区切り文字が着た後
   let revision = "";
@@ -72,9 +72,8 @@ export function rlog_parse(value: string): History[] {
         console.log("date_data=", date_data);
         if (date_data !== null) {
           let date_str = date_data[1];
-          let date_obj = moment(date_str, 'YYYY/MM/DD hh:mm:ss');
-          res.push({"revision": revision, "datetime": date_obj.format("YYYY-MM-DD hh:mm")});
-          date_obj.format()
+          let date_obj = moment.utc(date_str);
+          res.push({"revision": revision, "datetime": date_obj.local().format("YYYY-MM-DD HH:mm")});
           status = 0;
         } else {
           status = 99;
