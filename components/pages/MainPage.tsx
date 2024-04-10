@@ -7,6 +7,7 @@ import { MarkdownFileList } from '@/components/organisms/MarkdownFileList';
 import { ContentViewer } from '@/components/organisms/ContentViewer';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
 import { Link, Button, Input } from "@nextui-org/react";
+import { Card, CardBody } from "@nextui-org/react";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@nextui-org/react";
 import { Book, List } from '@phosphor-icons/react';
 import { Tabs, Tab } from '@nextui-org/react';
@@ -29,7 +30,6 @@ export function MainPage() {
   });
   const [ searchText, setSearchText ] = useState<string>("");
   const [ userId, setUserId ] = useState("user");
-
   const dirty = useRef<boolean>(false);
 
   const today_month = getTodayMonth();
@@ -112,13 +112,16 @@ export function MainPage() {
   useEffect(() => {
     const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
     func_logger.debug({"message": "START"});
-    
-    setUserId(session?.user?.email || "dummy");
+
     if (session?.error == "refresh_access_token_error") {
       func_logger.debug({"message": "TOKEN ERROR -> signIn"});
       signIn();
     }
-    setPage(getTodayStr());
+    
+    if (userId != session?.user?.email) {
+      setUserId(session?.user?.email || "dummy");
+      setPage(getTodayStr());
+    }
     func_logger.debug({"message": "END"});
   }, [session]);
   
@@ -199,7 +202,7 @@ export function MainPage() {
           <ContentViewer
             dirty={dirty}
             pageData={pageData}
-            setPage={setPage} />
+          />
         </div>
       </div>
     </div>

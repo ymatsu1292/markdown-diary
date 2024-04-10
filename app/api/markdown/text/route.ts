@@ -113,7 +113,6 @@ export async function POST(req: Request) {
 
   let committed = true;
   let mtime = 0;
-  let new_markdown: string | null = null;
   let conflicted = false;
 
   try {
@@ -125,10 +124,8 @@ export async function POST(req: Request) {
 
   if (markdown != "") {
     func_logger.trace({"message": "マークダウン更新/新規追加"});
-    func_logger.trace({"message": "markdown is NOT NULL"});
     if (useRcs && rcscommit) {
       func_logger.trace({"message": "RCSは利用する"});
-      func_logger.trace({"message": "use RCS"});
       // RCSを利用する場合は以下を実行する
       try {
         let cmd = "";
@@ -139,42 +136,40 @@ export async function POST(req: Request) {
         await mkdir(directory + "/RCS", { recursive: true });
         // RCS logで履歴があるかどうかをチェックする
         // 1の場合のみ新規チェックイン
+        let historyExisted = true;
         try {
           cmd = 'rlog -R ' + target + '.md';
           func_logger.trace({"command": cmd, "message": "exec"});
           res = await aexec(cmd, {"cwd": directory});
           func_logger.trace({"command": cmd, "res": res});
-
+        } catch (err) {
+          // rlogがエラーになったらRCS未登録
+          historyExisted = false;
+        }
+        if (historyExisted) {
+          // 履歴がある場合はファイルを通常更新する
+          func_logger.trace({"message": "履歴があるので通常更新を行う(RCS登録)"});
           try {
             // ファイルを出力する
             if (mtime == oldtimestamp) {
               func_logger.trace({"message": "タイムスタンプが変わってないので通常の更新を行う", "old": oldtimestamp, "new": mtime});
               await writeFileLocal(filename, markdown);
+              // ci -f -l -m "日時" ファイル名
+              cmd = 'echo . | ci -f -l -m"' + dtstr + '" "' + target + '.md"'; 
+              func_logger.trace({"command": cmd, "message": "exec(ci)"});
+              res = await aexec(cmd, {"cwd": directory})
+              func_logger.trace({"command": cmd, "res": res});
             } else {
-              func_logger.trace({"message": "タイムスタンプが変わっているのでマージ処理を行う", "old": oldtimestamp, "new": mtime});
-              // タイムスタンプがほかのクライアントに更新されていたらマージする
-              func_logger.trace({"message": "merge file"});
-              // 作業用ディレクトリを作成
-              const mkdtemp_result = await mkdtemp(join(tmpdir(), 'mdiary'));
-              func_logger.trace({"mkdtemp_result": mkdtemp_result});
-              // オリジナルファイルを一時ファイルに出力
-              // 新規ファイルを一時ファイルに出力
-              // マージコマンドを実行
+              func_logger.trace({"message": "タイムスタンプが変わっているので更新しない", "old": oldtimestamp, "new": mtime});
+              conflicted = true;
             }
-
-            // ci -f -l -m "日時" ファイル名
-            cmd = 'echo . | ci -f -l -m"' + dtstr + '" "' + target + '.md"'; 
-            func_logger.trace({"command": cmd, "message": "exec(ci)"});
-            res = await aexec(cmd, {"cwd": directory})
-            func_logger.trace({"command": cmd, "res": res});
-            
           } catch (err) {
-            func_logger.warn({"command": cmd, "res": res, "error": err});
+            // 何かエラーが出た
+            func_logger.warn({"command": cmd, "message": "通常更新失敗(RCS登録)", "error": err});
           }
-          
-        } catch (err) {
+        } else {
           // 履歴が存在しない場合は新規登録する
-          func_logger.trace({"message": "no history"});
+          func_logger.trace({"message": "履歴がないので新規登録する(RCS登録)"});
           try {
             // ファイルを出力する
             await writeFileLocal(filename, markdown);
@@ -184,91 +179,46 @@ export async function POST(req: Request) {
             res = await aexec(cmd, {"cwd": directory});
             func_logger.trace({"command": cmd, "res": res});
           } catch (err) {
-            func_logger.warn({"command": cmd, "message": "initial ci fail", "error": err});
+            func_logger.warn({"command": cmd, "message": "初期登録失敗(RCS登録)", "error": err});
           }
         }
       } finally {
+        // ディレクトリ生成に失敗
       }
     } else {
       func_logger.trace({"message": "RCSコミットは行わずファイル更新のみ行う"});
-      func_logger.trace({"message": "no RCS or no COMMIT", "useRcs": useRcs, "rcscommit": rcscommit});
       // ファイルを出力する
       if (mtime == oldtimestamp) {
-        func_logger.trace({"message": "マージ不要なので通常のファイル更新を行う", "old": oldtimestamp, "new": mtime});
+        func_logger.trace({"message": "競合していないので通常のファイル更新を行う", "old": oldtimestamp, "new": mtime});
         await writeFileLocal(filename, markdown);
       } else {
-        func_logger.trace({"message": "マージが必要", "old": oldtimestamp, "new": mtime});
-        // タイムスタンプがほかのクライアントに更新されていたらマージする
-        func_logger.trace({"message": "merge file"});
-        // 作業用ディレクトリを作成
-        const mkdtemp_result = await mkdtemp(join(tmpdir(), 'mdiary'));
-        func_logger.trace({"mkdtemp_result": mkdtemp_result});
-        // ベースファイルをコピー
-        const base_filename = join(mkdtemp_result, 'base');
-        func_logger.trace({"copyFile": base_filename});
-        await cp(filename, base_filename);
-        // オリジナルファイルを一時ファイルに出力
-        const orig_filename = join(mkdtemp_result, 'original');
-        func_logger.info({"writeFileLocal": orig_filename, "data": original});
-        await writeFileLocal(orig_filename, original);
-        // 新規ファイルを一時ファイルに出力
-        const new_filename = join(mkdtemp_result, 'markdown');
-        func_logger.info({"writeFileLocal": new_filename, "data": markdown});
-        await writeFileLocal(new_filename, markdown);
-        // マージコマンドを実行
-        let cmd: string = 'merge ' + base_filename + ' ' + orig_filename + ' ' + new_filename;
-        try {
-          func_logger.info({"command": cmd, "message": "exec"});
-          let exec_res = await aexec(cmd, {"cwd": directory});
-          func_logger.info({"command": cmd, "res": exec_res});
-          // コンフリクトしなかった場合はファイルをコピー
-          func_logger.info({"copyFile": base_filename});
-          await cp(base_filename, filename);          
-          // 結果を読み込む
-          func_logger.trace({"message": "マージ結果読み込み"});
-          new_markdown = await readFile(filename, { encoding: "utf-8" });
-          func_logger.trace({"message": "マージ結果読み込み - 成功"});
-        } catch (error) {
-          // コンフリクト時は結果を読み込んで返却する
-          func_logger.info({"command": cmd, "error": error});
-          new_markdown = await readFile(base_filename, { encoding: "utf-8" });
-          func_logger.info({"message": "コンフリクトしたのでファイルを読み込んで返却する", "text": new_markdown});
-          conflicted = true;
-        }
-        // 一時ディレクトリを削除する
-        cmd = 'rm -rf ' + mkdtemp_result;
-        try {
-          func_logger.info({"command": cmd, "message": "exec"});
-          let exec_res = await aexec(cmd, {"cwd": directory});
-          func_logger.info({"command": cmd, "res": exec_res});
-        } catch (error) {
-          func_logger.info({"command": cmd, "error": error});
-        }
+        func_logger.trace({"message": "競合しているので更新しない", "old": oldtimestamp, "new": mtime});
+        conflicted = true;
       }
-      // マージ後のタイムスタンプは読み込む
+      // タイムスタンプを読み込む
       try {
         const stat_data = await stat(filename);
         mtime = stat_data.mtimeMs;
       } catch (error) {
         func_logger.info({"message": "cannot stat"});
       }
-      func_logger.trace({"message": "マージ後のタイムスタンプ", "timestamp": mtime});
-      if (useRcs) {
-        // RCSを利用している場合はrcsdiffでコミットされていない情報があるかどうかをチェック
-        let cmd: string = 'rcsdiff -r ' + target + '.md';
-        try {
-          func_logger.info({"command": cmd, "message": "exec"});
-          let exec_res = await aexec(cmd, {"cwd": directory});
-          func_logger.info({"command": cmd, "res": exec_res});
-          // 差分がない場合
-        } catch (error) {
-          // 差分がある場合(保存されていない)
-          func_logger.info({"command": cmd, "error": error});
-          committed = false;
-        }
-        func_logger.trace({"message": "コミットされていない情報があるかどうかをチェック", "committed": committed});
-      }
+      func_logger.trace({"message": "タイムスタンプ", "timestamp": mtime});
     }      
+    if (useRcs) {
+      // RCSを利用している場合はrcsdiffでコミットされていない情報があるかどうかをチェック
+      let cmd: string = 'rcsdiff -r ' + target + '.md';
+      try {
+        func_logger.info({"command": cmd, "message": "exec"});
+        let exec_res = await aexec(cmd, {"cwd": directory});
+        func_logger.info({"command": cmd, "res": exec_res});
+        // 差分がない場合
+      } catch (error) {
+        // 差分がある場合(保存されていない)
+        func_logger.info({"command": cmd, "error": error});
+        committed = false;
+      }
+      func_logger.trace({"message": "コミットされていない情報があるかどうかをチェック", "committed": committed});
+    }
   } else {
     func_logger.trace({"message": "マークダウンファイル削除"});
     func_logger.trace({"message": "markdown is NULL"});
@@ -276,13 +226,11 @@ export async function POST(req: Request) {
   }
   const res = NextResponse.json({
     "committed": committed, 
-    "markdown": new_markdown, 
     "timestamp": mtime,
     "conflicted": conflicted,
   });
   func_logger.info({"message": "END",
     "committed": committed, 
-    "markdown": new_markdown, 
     "timestamp": mtime,
     "conflicted": conflicted,
   });
