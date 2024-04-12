@@ -1,4 +1,4 @@
-import styles from './ContentViewer.module.css';
+import './ContentViewer.css';
 
 import { useState, useEffect, useCallback, useMemo, useRef, MutableRefObject } from 'react';
 import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
@@ -351,7 +351,7 @@ export function ContentViewer(
       const intervalTime: number = 1000 * 10; // 10秒
       const intervalId = setInterval(() => {
         func_logger.debug({"message": "DO interval timer for autosave"});
-        setTimerTime(new Date().getTime());
+        //setTimerTime(new Date().getTime());
       }, intervalTime);
       return () => clearInterval(intervalId);
     }
@@ -403,7 +403,7 @@ export function ContentViewer(
                     :
                     <></>
                   }
-                  <Button color="primary" className="ml-0 h-full"
+                  <Button color="primary" className="ml-1 h-full"
                     isDisabled={!editData.conflicted && compareText(editData.originalText, text)}
                     size="sm" onPress={() => loadData()}>
                     リセット
@@ -414,7 +414,7 @@ export function ContentViewer(
                       isSelected={autosave}
                       onValueChange={setAutosave}
                       size="lg"
-                      className="ml-2 h-full"
+                      className="ml-1 h-full"
                       startContent={<FloppyDisk />}
                       endContent={<FloppyDisk />}
                       isDisabled={editData.conflicted}
@@ -427,7 +427,7 @@ export function ContentViewer(
                     保存
                   </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Button color={editData.committed ? "primary" : "danger"} className="ml-2 h-full"
+                    <Button color={editData.committed ? "primary" : "danger"} className="ml-1 h-full"
                       size="sm" onPress={() => saveData(true)}>
                       {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                     </Button>
@@ -501,7 +501,7 @@ export function ContentViewer(
                       isSelected={autosave}
                       onValueChange={setAutosave}
                       size="lg"
-                      className="ml-2 h-full"
+                      className="ml-1 h-full"
                       startContent={<FloppyDisk />}
                       endContent={<FloppyDisk />}
                       disabled={editData.conflicted}
@@ -514,7 +514,7 @@ export function ContentViewer(
                     保存
                   </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Button color={editData.committed ? "primary" : "danger"} className="ml-2 h-full"
+                    <Button color={editData.committed ? "primary" : "danger"} className="ml-1 h-full"
                       size="sm" onPress={() => saveData(true)}>
                       {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                     </Button>
@@ -523,7 +523,7 @@ export function ContentViewer(
                   }
                 </div>
               </div>
-              <div className="markdown-body" id="viewer"
+              <div className="markdown-body"
                 dangerouslySetInnerHTML={{__html: editData.html}}>
               </div>
             </CardBody>
