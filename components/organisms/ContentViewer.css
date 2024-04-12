@@ -1,0 +1,58 @@
+div.markdown-body {
+    @apply bg-white md:p-2 p-1 shadow-md text-sm;
+}
+div.markdown-body h1 {
+    @apply mt-1 p-1 bg-blue-200;
+    margin: 2px 0px 2px 0px;
+}
+div.markdown-body h2 {
+    @apply mt-1 p-1 bg-slate-200;
+    margin: 2px 0px 2px 0px;
+}
+div.markdown-body h3 {
+    @apply bg-gray-200 mt-1 p-1;
+    margin: 2px 2px 2px 2px;
+}
+div.markdown-body p {
+    @apply leading-normal;
+}
+div.markdown-body table{
+    @apply table w-full;
+}
+div.markdown-body tr {
+    @apply table-row;
+}
+div.markdown-body th, div.markdown-body td {
+    @apply table-cell;
+}
+div.markdown-body ul li {
+    /*@apply relative -left-3 list-disc;*/
+    @apply relative list-disc;
+    margin-top: 0px;
+}
+div.markdown-body ol li {
+    /*@apply relative -left-3 list-decimal;*/
+    @apply relative list-decimal;
+    margin-top: 0px;
+}
+div.markdown-body ui li.task-list-item {
+    @apply list-none;
+}
+div.markdown-body.info a{
+    @apply block border bg-blue-500 transition duration-300 font-semibold shadow-sm text-sm;
+    @apply text-white text-center py-2 px-4 rounded-lg cursor-pointer;
+    @apply hover:bg-blue-600 hover:no-underline;
+}
+div.markdown-body .info p {
+    @apply leading-tight;
+    margin: 2px 2px 2px 2px;
+}
+div.markdown-body .info {
+    position: relative;
+    margin: 0 0;
+    padding: 2px 2px 2px 2px;
+    border-radius: 6px;
+    background: #eff7ff;
+    color: rgba(0,0,0,.65);
+    line-height: 1;
+}
