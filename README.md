@@ -11,6 +11,7 @@ markdown-diary
 -----
 *   node.js/next-authが対応している認証基盤が必要 → ユーザ・パスワードを設定ファイルに書く形で動作するような設定としている。authOptions.tsファイルを書き換えればNext-Authが対応している認証基盤を利用することができる
 *   環境設定後 npm run build、npm run startで起動
+    *   Node 20.11.1で動作確認を実施
 
 環境設定(.envファイルに記載する)
 -----
