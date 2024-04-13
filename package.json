@@ -1,0 +1,50 @@
+{
+  "name": "markdown-diary",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0 -p 3002",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0 -p 3002",
+    "lint": "next lint",
+    "test": "vitest",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@codemirror/lang-markdown": "^6.2.4",
+    "@codemirror/language-data": "^6.5.0",
+    "@mdit/plugin-tasklist": "^0.8.0",
+    "@nextui-org/react": "^2.2.10",
+    "@phosphor-icons/react": "^2.1.4",
+    "@uiw/react-codemirror": "^4.21.25",
+    "framer-motion": "^10.12.16",
+    "highlight.js": "^11.9.0",
+    "jwt-decode": "^4.0.0",
+    "markdown-it": "^14.1.0",
+    "markdown-it-container": "^4.0.0",
+    "moment": "^2.30.1",
+    "next": "14.1.4",
+    "next-auth": "^4.24.7",
+    "pino": "^8.19.0",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^14.3.0",
+    "@types/markdown-it": "^14.0.0",
+    "@types/markdown-it-container": "^2.0.10",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^1.4.0",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.1.4",
+    "jsdom": "^24.0.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5",
+    "vitest": "^1.4.0"
+  }
+}
