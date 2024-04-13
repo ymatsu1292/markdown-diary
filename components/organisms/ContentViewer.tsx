@@ -351,7 +351,7 @@ export function ContentViewer(
       const intervalTime: number = 1000 * 10; // 10秒
       const intervalId = setInterval(() => {
         func_logger.debug({"message": "DO interval timer for autosave"});
-        //setTimerTime(new Date().getTime());
+        setTimerTime(new Date().getTime());
       }, intervalTime);
       return () => clearInterval(intervalId);
     }
