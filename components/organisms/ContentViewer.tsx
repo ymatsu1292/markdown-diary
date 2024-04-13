@@ -411,6 +411,7 @@ export function ContentViewer(
 
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Switch
+                      name="autosaveSwitch"
                       isSelected={autosave}
                       onValueChange={setAutosave}
                       size="lg"

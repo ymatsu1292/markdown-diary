@@ -29,18 +29,23 @@ export function MiniCalendars(
     <div className="h-dvh bg-blue-50 w-200">
       <div className="p-0 m-0">
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          aria-label="prev-month"
           onPress={() => handleTargetPageChange(getPrevMonth(pageData.calendarDate))}
         ><ArrowFatLinesLeft /></Button>
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          aria-label="prev-day"
           onPress={() => handleTargetPageChange(getPrevDay(pageData.calendarDate))}
         ><ArrowFatLeft /></Button>
         <Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          aria-label="today"
           onPress={() => handleTargetPageChange(getTodayStr())}
         >今日</Button>
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          aria-label="next-day"
           onPress={() => handleTargetPageChange(getNextDay(pageData.calendarDate))}
         ><ArrowFatRight/></Button>
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
+          aria-label="next-month"
           onPress={() => handleTargetPageChange(getNextMonth(pageData.calendarDate))}
         ><ArrowFatLinesRight/></Button>
       </div>
