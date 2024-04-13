@@ -1,4 +1,5 @@
 'use client';
+import Script from 'next/script';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { getTodayStr, getTodayMonth } from '@/utils/dateutils';
@@ -170,19 +171,21 @@ export function MainPage() {
               className="max-w-xs"
             />
           </NavbarItem>
-          <Dropdown placement="bottom-end">
-            <DropdownTrigger>
-              <Button isIconOnly variant="light"><List size={24}/></Button>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Profile" variant="flat">
-              <DropdownItem className="h-14 gap-2" key="username">
-                <p>Signed in as</p><p className="font-semibold">{session?.user?.name}</p>
-              </DropdownItem>
-              <DropdownItem color="danger" onPress={() => signOut()} key="logout">
-                Logout
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
+          <NavbarItem key="menu">
+            <Dropdown placement="bottom-end">
+              <DropdownTrigger>
+                <Button isIconOnly variant="light" title="menu"><List size={24}/></Button>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Profile" variant="flat">
+                <DropdownItem className="h-14 gap-2" key="username">
+                  <p>Signed in as</p><p className="font-semibold">{session?.user?.name}</p>
+                </DropdownItem>
+                <DropdownItem color="danger" onPress={() => signOut()} key="logout">
+                  Logout
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          </NavbarItem>
         </NavbarContent>
       </Navbar>
       <div className="flex">
@@ -205,6 +208,7 @@ export function MainPage() {
           />
         </div>
       </div>
+      <Script src="https://cdn.jsdelivr.net/combine/npm/markdown-it@12/dist/markdown-it.min.js,npm/markdown-it-container@3/dist/markdown-it-container.min.js" />
     </div>
   );
 }

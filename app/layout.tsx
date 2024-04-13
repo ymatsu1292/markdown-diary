@@ -17,10 +17,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <head>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown.min.css" />
-        <script src="https://cdn.jsdelivr.net/combine/npm/markdown-it@12/dist/markdown-it.min.js,npm/markdown-it-container@3/dist/markdown-it-container.min.js" async />
-      </head>
       <body className={inter.className}>
 	<Providers>
 	  {children}
