@@ -9,9 +9,32 @@ markdown-diary
 
 実行方法
 -----
-*   node.js/next-authが対応している認証基盤が必要 → ユーザ・パスワードを設定ファイルに書く形で動作するような設定としている。authOptions.tsファイルを書き換えればNext-Authが対応している認証基盤を利用することができる
-*   環境設定後 npm run build、npm run startで起動
-    *   Node 20.11.1で動作確認を実施
+1.  Node.js 20.11.1をインストールしたLinux環境を用意する
+    できればRCSもインストールする(ubuntuであればapt install rcsでインストール)
+2.  git cloneでリポジトリをクローンする
+3.  設定ファイル(markdown-diary/.env)を設定する
+    ```
+    $ cd markdown-diary
+    $ vi .env
+    ```
+    デフォルトでは3002ポートで実行されるので、必要に応じてpackage.jsonの-H 0.0.0.0、-p 3002の部分を修正する
+    
+4.  動作確認する
+    ```
+    $ npm run dev
+    ```
+    ブラウザで"http://サーバのIPアドレス/mdiary"を開く
+
+5.  問題なければビルドする
+    ```
+    $ npm run build
+    ```
+
+6.  手動で起動するか、systemdに登録するなどして起動する
+    手動起動の場合
+    ```
+    $ npm run start
+    ```
 
 環境設定(.envファイルに記載する)
 -----
@@ -38,3 +61,9 @@ NEXT_PUBLIC_LOG_LEVEL=info
 #NEXT_PUBLIC_LOG_LEVEL=debug
 #NEXT_PUBLIC_LOG_LEVEL=trace
 ```
+
+TODO
+-----
+*   不要なログ出力・コンソール出力を除去する
+*   ドキュメントを整備する
+*   固定的にポート指定しているところを修正する
