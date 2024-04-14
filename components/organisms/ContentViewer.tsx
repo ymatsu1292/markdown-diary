@@ -466,9 +466,7 @@ export function ContentViewer(
                 </div>
               </div>
               <div id="editor">
-                <CodeMirror value={text} height="640px"
-                  onChange={onChange} 
-                />
+                <CodeMirror value={text} onChange={onChange} height="calc(100dvh - 200px)"/>
               </div>
             </CardBody>
           </Card>
