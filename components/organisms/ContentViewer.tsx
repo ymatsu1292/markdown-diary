@@ -404,7 +404,7 @@ export function ContentViewer(
                 <div className="grow">
                   <Input type="text" label="タイトル" value={pageData.title} />
                 </div>
-                <div className="flex min-w-60">
+                <div className="flex">
                   {(pageData.scheduleData != null && pageData.scheduleData?.templates != null && pageData.scheduleData.templates.length > 0) ?
                     <>
                       <Select label="テンプレート" className="ml-2 min-w-40"
@@ -454,7 +454,7 @@ export function ContentViewer(
                       <div className="text-xs text-center">自動保存</div>
                     </div>
                     :
-                    <></>
+                    <div className="ml-1"></div>
                   }
                   <Button color={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-0 h-full"
                     size="sm" onPress={() => saveData(false)}>
@@ -530,6 +530,10 @@ export function ContentViewer(
               <div className="flex">
                 <div className="grow" />
                 <div className="flex">
+                  <Button color="primary" className="ml-1 h-full"
+                    size="sm" onPress={() => loadData()}>
+                    読込
+                  </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Switch
                       name="autosaveSwitch"
@@ -542,7 +546,7 @@ export function ContentViewer(
                       disabled={editData.conflicted}
                     />
                     :
-                    <></>
+                    <div className="ml-1"></div>
                   }
                   <Button color={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-0 h-full"
                     size="sm" onPress={() => saveData(false)}>
