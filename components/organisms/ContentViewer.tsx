@@ -45,9 +45,6 @@ export function ContentViewer(
   });
   const [ autosave, setAutosave ] = useState<boolean>(true);
   const autosaveTimestamp = useRef<number>(new Date().getTime());
-<<<<<<< HEAD
-  const [ messages, setMessages ] = useState<string[]>([]);
-=======
   const conflictCheckTimestamp = useRef<number>(new Date().getTime());
   const [ messages, setMessages ] = useState<string[]>([]);
 
@@ -65,7 +62,6 @@ export function ContentViewer(
   const timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_TIME || "", 30, 1), []);
   const conflict_check_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_CHECK || "", 30, 10), []);
   const autosave_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_AUTOSAVE || "", 30, 10), []);
->>>>>>> main
   
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
