@@ -83,11 +83,15 @@ export function ContentViewer(
   const [ revisionText, setRevisionText ] = useState<string>("");
 
   const compareText = (serverText: string, localText: string): boolean => {
-    let fixed = localText;
-    if (fixed.substr(-1) !== "\n") {
-      fixed = localText + "\n";
+    let fixed1 = localText;
+    if (fixed1.substr(-1) !== "\n" && fixed1.length > 0) {
+      fixed1 = localText + "\n";
     }
-    return serverText === fixed;
+    let fixed2 = serverText;
+    if (fixed2.substr(-1) !== "\n" && fixed2.length > 0) {
+      fixed2 = localText + "\n";
+    }
+    return fixed1 === fixed2;
   };
   
   const updateEditData = (newText: string, originalUpdate: boolean, commitFlag: boolean, timestamp: number) => {
@@ -175,15 +179,10 @@ export function ContentViewer(
       return;
     }
 
-    let tmpText = text;
-    if (tmpText.substr(-1) !== "\n") {
-      tmpText = text + "\n";
-      setText(tmpText);
-    }
     const markdown_data = {
       "target": pageData.title,
       "rcscommit": rcscommit,
-      "markdown": tmpText,
+      "markdown": text,
       "original": editData.originalText,
       "timestamp": editData.timestamp,
     };
@@ -206,7 +205,7 @@ export function ContentViewer(
         setConflictMessage();
       } else {
         func_logger.debug({ "message": "コンフリクトなし"});
-        setEditData({...editData, originalText: tmpText, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
+        setEditData({...editData, originalText: text, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
         setMessages([]);
       }
       dirty.current = false;
@@ -243,7 +242,7 @@ export function ContentViewer(
     const json_data = await result.json();
 
     let tmpText;
-    if (text.substr(-1) === "\n") {
+    if (text.substr(-1) === "\n" || text.length == 0) {
       tmpText = text + json_data["template"];
     } else {
       tmpText = text + "\n" + json_data["template"];
@@ -271,7 +270,7 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
 
     let new_text;
-    if (text.substr(-1) === "\n") {
+    if (text.substr(-1) === "\n" || text.length == 0) {
       new_text = text + revisionText;
     } else {
       new_text = text + "\n" + revisionText;
