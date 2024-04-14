@@ -45,9 +45,6 @@ export function ContentViewer(
   });
   const [ autosave, setAutosave ] = useState<boolean>(true);
   const autosaveTimestamp = useRef<number>(new Date().getTime());
-<<<<<<< HEAD
-  const [ messages, setMessages ] = useState<string[]>([]);
-=======
   const conflictCheckTimestamp = useRef<number>(new Date().getTime());
   const [ messages, setMessages ] = useState<string[]>([]);
 
@@ -65,7 +62,6 @@ export function ContentViewer(
   const timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_TIME || "", 30, 1), []);
   const conflict_check_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_CHECK || "", 30, 10), []);
   const autosave_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_AUTOSAVE || "", 30, 10), []);
->>>>>>> main
   
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
@@ -83,11 +79,15 @@ export function ContentViewer(
   const [ revisionText, setRevisionText ] = useState<string>("");
 
   const compareText = (serverText: string, localText: string): boolean => {
-    let fixed = localText;
-    if (fixed.substr(-1) !== "\n") {
-      fixed = localText + "\n";
+    let fixed1 = localText;
+    if (fixed1.substr(-1) !== "\n" && fixed1.length > 0) {
+      fixed1 = localText + "\n";
     }
-    return serverText === fixed;
+    let fixed2 = serverText;
+    if (fixed2.substr(-1) !== "\n" && fixed2.length > 0) {
+      fixed2 = localText + "\n";
+    }
+    return fixed1 === fixed2;
   };
   
   const updateEditData = (newText: string, originalUpdate: boolean, commitFlag: boolean, timestamp: number) => {
@@ -175,15 +175,10 @@ export function ContentViewer(
       return;
     }
 
-    let tmpText = text;
-    if (tmpText.substr(-1) !== "\n") {
-      tmpText = text + "\n";
-      setText(tmpText);
-    }
     const markdown_data = {
       "target": pageData.title,
       "rcscommit": rcscommit,
-      "markdown": tmpText,
+      "markdown": text,
       "original": editData.originalText,
       "timestamp": editData.timestamp,
     };
@@ -206,7 +201,7 @@ export function ContentViewer(
         setConflictMessage();
       } else {
         func_logger.debug({ "message": "コンフリクトなし"});
-        setEditData({...editData, originalText: tmpText, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
+        setEditData({...editData, originalText: text, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
         setMessages([]);
       }
       dirty.current = false;
@@ -243,7 +238,7 @@ export function ContentViewer(
     const json_data = await result.json();
 
     let tmpText;
-    if (text.substr(-1) === "\n") {
+    if (text.substr(-1) === "\n" || text.length == 0) {
       tmpText = text + json_data["template"];
     } else {
       tmpText = text + "\n" + json_data["template"];
@@ -271,7 +266,7 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
 
     let new_text;
-    if (text.substr(-1) === "\n") {
+    if (text.substr(-1) === "\n" || text.length == 0) {
       new_text = text + revisionText;
     } else {
       new_text = text + "\n" + revisionText;
@@ -404,7 +399,7 @@ export function ContentViewer(
                 <div className="grow">
                   <Input type="text" label="タイトル" value={pageData.title} />
                 </div>
-                <div className="flex min-w-60">
+                <div className="flex">
                   {(pageData.scheduleData != null && pageData.scheduleData?.templates != null && pageData.scheduleData.templates.length > 0) ?
                     <>
                       <Select label="テンプレート" className="ml-2 min-w-40"
@@ -454,7 +449,7 @@ export function ContentViewer(
                       <div className="text-xs text-center">自動保存</div>
                     </div>
                     :
-                    <></>
+                    <div className="ml-1"></div>
                   }
                   <Button color={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-0 h-full"
                     size="sm" onPress={() => saveData(false)}>
@@ -530,6 +525,10 @@ export function ContentViewer(
               <div className="flex">
                 <div className="grow" />
                 <div className="flex">
+                  <Button color="primary" className="ml-1 h-full"
+                    size="sm" onPress={() => loadData()}>
+                    読込
+                  </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Switch
                       name="autosaveSwitch"
@@ -542,7 +541,7 @@ export function ContentViewer(
                       disabled={editData.conflicted}
                     />
                     :
-                    <></>
+                    <div className="ml-1"></div>
                   }
                   <Button color={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-0 h-full"
                     size="sm" onPress={() => saveData(false)}>

@@ -1,5 +1,8 @@
 image: node:20-alpine
 
+variables:
+  GIT_STRATEGY: fetch
+
 stages:          # List of stages for jobs, and their order of execution
   - build
   - test
