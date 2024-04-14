@@ -45,7 +45,27 @@ export function ContentViewer(
   });
   const [ autosave, setAutosave ] = useState<boolean>(true);
   const autosaveTimestamp = useRef<number>(new Date().getTime());
+<<<<<<< HEAD
   const [ messages, setMessages ] = useState<string[]>([]);
+=======
+  const conflictCheckTimestamp = useRef<number>(new Date().getTime());
+  const [ messages, setMessages ] = useState<string[]>([]);
+
+  const calc_timer_time = (value_str: string, default_value: number, min_value: number): number => {
+    const time_value = Number(value_str);
+    if (isNaN(time_value)) {
+      return default_value;
+    } else if(time_value < min_value) {
+      return min_value;
+    }
+    return time_value;
+  }
+
+  // タイマーの値を設定
+  const timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_TIME || "", 30, 1), []);
+  const conflict_check_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_CHECK || "", 30, 10), []);
+  const autosave_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_AUTOSAVE || "", 30, 10), []);
+>>>>>>> main
   
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
@@ -79,7 +99,7 @@ export function ContentViewer(
 
     if (originalUpdate) {
       setText(newText);
-      setEditData({...editData, originalText: newText, html: html_data, committed: commitFlag, timestamp: timestamp} as EditData);
+      setEditData({...editData, originalText: newText, html: html_data, committed: commitFlag, timestamp: timestamp, conflicted: false} as EditData);
       dirty.current = false;
     } else {
       setText(newText);
@@ -126,10 +146,19 @@ export function ContentViewer(
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
     updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
+    setMessages([]);
     
     func_logger.info({"message": "マークダウン読み込み終了"});
     func_logger.debug({"message": "END"});
   }
+
+  const setConflictMessage = () => {
+    setMessages([
+      "他の画面から更新されたため自動保存を停止しています",
+      "上書きする場合はもう一度保存ボタンを押してください",
+      "他で更新された情報を読み込む場合は読込ボタンを押してください",
+    ]);
+  };
   
   const saveData = async(rcscommit: boolean) => {
     const func_logger = logger.child({ "func": "ContentViewer.saveData" });
@@ -169,19 +198,15 @@ export function ContentViewer(
       const committed = res["committed"];
       const timestamp = res["timestamp"];
       const conflicted = res["conflicted"];
-      func_logger.trace({ "message": "POST OK", "response": response, "res": res });
+      func_logger.debug({ "message": "POST OK", "response": response, "res": res });
       if (conflicted) {
         // コンフリクトした場合はオリジナルは書き換えない
-        console.log("コンフリクトした");
-        setEditData({...editData, committed: committed, timestamp: timestamp, conflicted: conflicted});
-        console.log("text", text)
-        console.log("orig", editData.originalText)
-        setMessages(["他の画面から更新されたため自動保存を停止しています"]);
+        func_logger.debug({ "message": "コンフリクト発生"});
+        setEditData({...editData, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
+        setConflictMessage();
       } else {
-        console.log("コンフリクトしてない");
-        setEditData({...editData, originalText: tmpText, committed: committed, timestamp: timestamp, conflicted: conflicted});
-        console.log("text", text)
-        console.log("orig", tmpText)
+        func_logger.debug({ "message": "コンフリクトなし"});
+        setEditData({...editData, originalText: tmpText, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
         setMessages([]);
       }
       dirty.current = false;
@@ -304,35 +329,41 @@ export function ContentViewer(
 
       if (editData.conflicted) {
         func_logger.info({"message": "コンフリクトしている場合は保存しない"});
-        console.log("text", text);
-        console.log("orig", editData.originalText);
         return;
       }
 
       if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
-        if (await checkData()) {
-          // 変更されていた場合
-          func_logger.trace({"message": "サーバ側変更あり"});
-          if (editData.originalText != text) {
-            // ローカルでも変更されていたら保存(マージ)する
-            func_logger.trace({"message": "クライアント側でも側変更あり->保存(マージ)実行"});
-            func_logger.debug({"message": "DO autosave by timer"});
-            await saveData(false);
-          } else {
-            func_logger.trace({"message": "クライアント側では変更ないがマージ実行"});
-            await saveData(false);
+        const nowTimestamp = new Date().getTime();
+        let skipAutosave = false;
+        if (nowTimestamp - conflictCheckTimestamp.current > conflict_check_timer_time * 1000) {
+          conflictCheckTimestamp.current = nowTimestamp;
+          if (await checkData()) {
+            // 変更されていた場合
+            func_logger.debug({"message": "サーバ側変更あり"});
+            if (editData.originalText != text) {
+              // ローカルでも変更されていたらコンフリクトとする
+              func_logger.debug({"message": "クライアント側でも変更があるのでサーバと同期のため保存処理を行いコンフリクトとする"});
+              await saveData(false);
+            } else {
+              func_logger.debug({"message": "クライアント側では変更ないのでロードする"});
+              await loadData();
+            }
+            skipAutosave = true;
           }
         }
-        const nowTimestamp = new Date().getTime();
-        if (nowTimestamp - autosaveTimestamp.current > 60 * 1000) {
+        if (nowTimestamp - autosaveTimestamp.current > autosave_timer_time * 1000) {
           autosaveTimestamp.current = nowTimestamp;
           // 保存間隔を超えていて、書き換えていた場合は保存する
-          func_logger.info({"message": "保存実行間隔超過"});
-          if (editData.originalText != text) {
-            func_logger.trace({"message": "保存実行"});
-            await saveData(false);
+          func_logger.debug({"message": "保存実行間隔超過"});
+          if (!skipAutosave) {
+            if (editData.originalText != text) {
+              func_logger.debug({"message": "ローカルで変更があるので保存実行"});
+              await saveData(false);
+            } else {
+              func_logger.debug({"message": "ローカルで変更がないので保存スキップ"});
+            }
           } else {
-            func_logger.trace({"message": "保存スキップ"});
+            func_logger.debug({"message": "コンフリクト対応処理済みなので保存処理はスキップ"});
           }
         }
       }
@@ -348,7 +379,7 @@ export function ContentViewer(
     
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       func_logger.debug({"message": "SET interval timer for autosave"});
-      const intervalTime: number = 1000 * 10; // 10秒
+      const intervalTime: number = 1000 * timer_time; // 10秒
       const intervalId = setInterval(() => {
         func_logger.debug({"message": "DO interval timer for autosave"});
         setTimerTime(new Date().getTime());
@@ -404,22 +435,24 @@ export function ContentViewer(
                     <></>
                   }
                   <Button color="primary" className="ml-1 h-full"
-                    isDisabled={!editData.conflicted && compareText(editData.originalText, text)}
                     size="sm" onPress={() => loadData()}>
-                    リセット
+                    読込<br/>(上書き)
                   </Button>
 
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Switch
-                      name="autosaveSwitch"
-                      isSelected={autosave}
-                      onValueChange={setAutosave}
-                      size="lg"
-                      className="ml-1 h-full"
-                      startContent={<FloppyDisk />}
-                      endContent={<FloppyDisk />}
-                      isDisabled={editData.conflicted}
-                    />
+                    <div className="flex flex-col">
+                      <Switch
+                        name="autosaveSwitch"
+                        isSelected={autosave}
+                        onValueChange={setAutosave}
+                        size="lg"
+                        className="ml-1 h-full"
+                        startContent={<FloppyDisk />}
+                        endContent={<FloppyDisk />}
+                        isDisabled={editData.conflicted}
+                      />
+                      <div className="text-xs text-center">自動保存</div>
+                    </div>
                     :
                     <></>
                   }
@@ -499,6 +532,7 @@ export function ContentViewer(
                 <div className="flex">
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Switch
+                      name="autosaveSwitch"
                       isSelected={autosave}
                       onValueChange={setAutosave}
                       size="lg"
