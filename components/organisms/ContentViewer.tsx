@@ -400,7 +400,7 @@ export function ContentViewer(
                 <div className="grow">
                   <Input type="text" label="タイトル" value={pageData.title} />
                 </div>
-                <div className="flex min-w-60">
+                <div className="flex">
                   {(pageData.scheduleData != null && pageData.scheduleData?.templates != null && pageData.scheduleData.templates.length > 0) ?
                     <>
                       <Select label="テンプレート" className="ml-2 min-w-40"
