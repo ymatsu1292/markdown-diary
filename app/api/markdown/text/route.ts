@@ -25,7 +25,11 @@ const writeFileLocal = async (filename: string, data: string) => {
   try {
     func_logger.trace({"message": "write file", "filename": filename});
     fd = await open(filename, 'w');
-    fd.writeFile(data);
+    if (data.substr(-1) !== "\n") {
+      fd.writeFile(data + "\n");
+    } else {
+      fd.writeFile(data);
+    }      
   } finally {
     await fd?.close();
   }
