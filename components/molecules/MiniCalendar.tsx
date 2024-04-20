@@ -45,7 +45,7 @@ export function MiniCalendar(
   const drawCell = (daySchedule: DaySchedule, monthStr: string, todayStr: string, weekday: number, calendarDate: string): JSX.Element => {
     const func_logger = logger.child({ "func": "MiniCalendar.drawCell" });
     func_logger.trace({"message": "START"})
-    
+
     let fontStyle = "font-normal";
     //console.log(todayStr);
     let dateStr: string = monthStr + "-" + String(daySchedule.date).padStart(2, "0");
@@ -69,6 +69,7 @@ export function MiniCalendar(
     }
     //console.log("drawCell.dateStr=", dateStr);
     let res0 = <Link data-date={dateStr} size="sm" rel="me" color="foreground" underline={linkType}
+                 data-focus-visible={false}
                  className={fontStyle} onPress={(e) => {
                    if (e.target instanceof HTMLElement) {
                      changePage(String(e.target.dataset.date));
@@ -115,7 +116,7 @@ export function MiniCalendar(
 	</TableHeader>
 	<TableBody>
 	  {monthSchedule.data.map((item: WeekSchedule) => (
-            <TableRow key={item.id}>
+            <TableRow key={item.id} data-focus-visible={false}>
 	    {item.caldata.map((daySchedule: DaySchedule, count: number) => 
   	      drawCell(daySchedule, monthSchedule.month, todayStr, count, calendarDate)
             )}
