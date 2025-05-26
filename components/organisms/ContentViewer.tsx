@@ -10,6 +10,7 @@ import { Textarea } from "@heroui/react";
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
+import { xcodeLight } from '@uiw/codemirror-theme-xcode';
 import markdownit from 'markdown-it';
 import mdContainer from 'markdown-it-container';
 import { tasklist } from '@mdit/plugin-tasklist';
@@ -466,7 +467,11 @@ export function ContentViewer(
                 </div>
               </div>
               <div id="editor">
-                <CodeMirror value={text} onChange={onChange} height="calc(100dvh - 200px)"/>
+                <CodeMirror value={text}
+                  extensions={[markdown({ base: markdownLanguage, codeLanguages: languages })]}
+                  onChange={onChange} height="calc(100dvh - 200px)"
+                  theme={xcodeLight}
+                />
               </div>
             </CardBody>
           </Card>
