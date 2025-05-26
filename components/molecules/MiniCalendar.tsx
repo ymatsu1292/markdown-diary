@@ -1,5 +1,5 @@
-import { Table, TableHeader, TableColumn ,TableBody, TableRow, TableCell } from '@nextui-org/react';
-import { Link, Tooltip } from '@nextui-org/react';
+import { Table, TableHeader, TableColumn ,TableBody, TableRow, TableCell } from "@heroui/react";
+import { Link, Tooltip } from "@heroui/react";
 import { getTodayStr } from '@/utils/dateutils';
 import { MonthSchedule, WeekSchedule, DaySchedule } from '@/components/types/scheduleDataType';
 

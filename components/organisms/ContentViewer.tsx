@@ -1,12 +1,12 @@
 import './ContentViewer.css';
 
 import { useState, useEffect, useCallback, useMemo, useRef, MutableRefObject } from 'react';
-import { Tabs, Tab, Card, CardBody } from '@nextui-org/react';
-import { Input, Button, Link, Switch } from '@nextui-org/react';
-import { Select, SelectSection, SelectItem } from '@nextui-org/react';
-import { Listbox, ListboxItem } from '@nextui-org/react';
-import { Popover, PopoverTrigger, PopoverContent } from '@nextui-org/react';
-import { Textarea } from '@nextui-org/react';
+import { Tabs, Tab, Card, CardBody } from "@heroui/react";
+import { Input, Button, Link, Switch } from "@heroui/react";
+import { Select, SelectSection, SelectItem } from "@heroui/react";
+import { Listbox, ListboxItem } from "@heroui/react";
+import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
+import { Textarea } from "@heroui/react";
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -412,7 +412,7 @@ export function ContentViewer(
                         selectedKeys={[selectedTemplate]} 
                       >
                         {pageData.scheduleData.templates.map((template) => (
-                          <SelectItem key={template} value={template}>
+                          <SelectItem key={template}>
                             {template}
                           </SelectItem>
                         ))}

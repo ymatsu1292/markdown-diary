@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ScheduleData } from '@/components/types/scheduleDataType';
-import { Listbox, ListboxItem } from '@nextui-org/react';
+import { Listbox, ListboxItem } from "@heroui/react";
 import { Folder, File } from '@phosphor-icons/react';
 import { History } from '@/components/types/historyDataType';
 import { PageData } from '@/components/types/pageDataType';
