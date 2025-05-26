@@ -13,9 +13,10 @@
   "dependencies": {
     "@codemirror/lang-markdown": "^6.3.2",
     "@codemirror/language-data": "^6.5.1",
-    "@mdit/plugin-tasklist": "^0.19.0",
     "@heroui/react": "2.7.8",
+    "@mdit/plugin-tasklist": "^0.19.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@uiw/codemirror-theme-xcode": "^4.23.12",
     "@uiw/react-codemirror": "^4.23.12",
     "framer-motion": "^11.18.2",
     "highlight.js": "^11.11.1",
@@ -37,7 +38,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@vitejs/plugin-react": "^4.5.0",
-    "@vitest/coverage-v8": "^1.6.1",
+    "@vitest/coverage-v8": "^3.1.4",
     "autoprefixer": "^10.4.21",
     "eslint": "^8",
     "eslint-config-next": "^14.2.29",
@@ -45,6 +46,6 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5",
-    "vitest": "^1.6.1"
+    "vitest": "^3.1.4"
   }
 }
