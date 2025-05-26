@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@nextui-org/react';
+import { Button } from "@heroui/react";
 import { MiniCalendar } from '@/components/molecules/MiniCalendar';
 import { getTodayStr, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from '@/utils/dateutils';
 import { ArrowFatLeft, ArrowFatRight } from '@phosphor-icons/react';

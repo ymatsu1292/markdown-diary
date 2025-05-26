@@ -1,5 +1,5 @@
-import { Card, CardBody, CardHeader } from '@nextui-org/react';
-import type { PressEvent } from '@react-types/shared';
+import { Card, CardBody, CardHeader } from "@heroui/react";
+// import type { PressEvent } from '@react-types/shared';
 
 export function NotifyMessages(
   { messages } : {
