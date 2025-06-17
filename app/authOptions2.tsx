@@ -114,7 +114,7 @@ export const authOptions: NextAuthOptions = {
             console.log("refreshed_token=", refreshed_token);
             return refreshed_token;
           } catch (error) {
-            console.log("jwt cookies=", cookies().getAll());
+            //console.log("jwt cookies=", cookies().getAll());
             // リフレッシュできなかった場合は元のトークンを返し、errorという項目を追加してみる
             // こうなった場合は、クライアント側でいったんログアウトして再ログインする必要があるのかな
             console.log("アクセスtokenがリフレッシュできませんでした", error);
