@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@nextui-org/react';
+import { Button } from "@heroui/react";
 import { MiniCalendar } from '@/components/molecules/MiniCalendar';
 import { getTodayStr, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from '@/utils/dateutils';
 import { ArrowFatLeft, ArrowFatRight } from '@phosphor-icons/react';
@@ -26,7 +26,7 @@ export function MiniCalendars(
   };
 
   return (
-    <div className="h-dvh bg-blue-50 w-200">
+    <div className="bg-blue-50 w-200">
       <div className="p-0 m-0">
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
           aria-label="prev-month"
