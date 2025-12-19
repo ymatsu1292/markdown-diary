@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
-import { ScheduleData } from '@/components/types/scheduleDataType';
+import { useState, useMemo } from "react";
+import { ScheduleData } from "@/types/schedule-data-type";
 import { Listbox, ListboxItem } from "@heroui/react";
-import { Folder, File } from '@phosphor-icons/react';
-import { History } from '@/components/types/historyDataType';
-import { PageData } from '@/components/types/pageDataType';
+import { Folder, File } from "lucide-react";
+import { History } from "@/types/history-data-type";
+import { PageData } from "@/types/page-data-type";
 
 export function MarkdownFileList(
   { pageData, setPage } : {

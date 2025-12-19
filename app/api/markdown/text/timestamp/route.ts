@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { stat } from 'node:fs/promises';
-import { authOptions } from '@/app/authOptions';
-import { getServerSession } from 'next-auth/next';
-import { promisify } from 'node:util';
-import { build_path } from '@/utils/buildPath';
+import { NextRequest, NextResponse } from "next/server";
+import { stat } from "node:fs/promises";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { promisify } from "node:util";
+import { build_path } from "@/lib/build-path";
 
-import moment from 'moment';
+import moment from "moment";
 
-import base_logger from '@/utils/logger';
+import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
@@ -17,14 +17,14 @@ const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
   func_logger.trace({"message": "START"});
-  const session = await getServerSession(authOptions);
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session || !session.user || !session.user.email) {
     return NextResponse.json({}, {status: 401});
   }
   const user = session.user.email;
   
   const params = req.nextUrl.searchParams;
-  const target: string = params.has('target') ? params.get('target') || "" : "";
+  const target: string = params.has("target") ? params.get("target") || "" : "";
   func_logger.debug({"params": params, "user": user, "target": target});
 
   const directory = build_path(process.env.DATA_DIRECTORY || "", user);

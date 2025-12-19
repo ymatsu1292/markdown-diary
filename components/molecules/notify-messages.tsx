@@ -1,5 +1,4 @@
 import { Card, CardBody, CardHeader } from "@heroui/react";
-// import type { PressEvent } from '@react-types/shared';
 
 export function NotifyMessages(
   { messages } : {

@@ -1,19 +1,18 @@
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/authOptions';
-import { redirect } from 'next/navigation';
-import { MainPage } from '@/components/pages/MainPage';
-import logger from '@/utils/logger';
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+
+import { MainPage } from "@/components/pages/main-page";
+import { auth } from "@/lib/auth";
 
 export default async function Home() {
-  const session = await getServerSession(authOptions);
-  logger.debug("app/page.ts - Home(): START");
-
+  const session = await auth.api.getSession({
+    headers: await headers()
+  })
   if (!session) {
-    logger.debug("app/page.ts - Home(): セッションがないのでサインインに遷移");
-    redirect('/api/auth/signin');
+    redirect("/login");
   }
-  logger.debug("app/page.ts - Home(): END");
+
   return (
     <MainPage />
   );
-};
+}

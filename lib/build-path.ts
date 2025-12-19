@@ -1,4 +1,4 @@
-import base_logger from '@/utils/logger';
+import base_logger from '@/lib/logger';
 const logger = base_logger.child({ filename: __filename });
 
 export function build_path(base_directory: string, user_email: string) {

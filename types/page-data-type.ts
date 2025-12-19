@@ -1,5 +1,5 @@
-import { History } from '@/components/types/historyDataType';
-import { ScheduleData } from '@/components/types/scheduleDataType';
+import { History } from '@/types/history-data-type';
+import { ScheduleData } from '@/types/schedule-data-type';
 
 export interface PageData {
   title: string;

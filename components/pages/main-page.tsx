@@ -1,29 +1,30 @@
-'use client';
-import Script from 'next/script';
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
-import { getTodayStr, getTodayMonth } from '@/utils/dateutils';
-import { MiniCalendars } from '@/components/organisms/MiniCalendars';
-import { MarkdownFileList } from '@/components/organisms/MarkdownFileList';
-import { ContentViewer } from '@/components/organisms/ContentViewer';
+"use client";
+
+import Script from "next/script";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useSession, signIn, signOut } from "@/lib/auth-client";
+import { getTodayStr, getTodayMonth } from "@/lib/dateutils";
+import { MiniCalendars } from "@/components/organisms/mini-calendars";
+import { MarkdownFileList } from "@/components/organisms/markdown-file-list";
+import { ContentViewer } from "@/components/organisms/content-viewer";
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@heroui/react";
 import { Link, Button, Input } from "@heroui/react";
 import { Card, CardBody } from "@heroui/react";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@heroui/react";
-import { Book, List } from '@phosphor-icons/react';
+import { Book, List } from "lucide-react";
 import { Tabs, Tab } from "@heroui/react";
 import { Listbox, ListboxSection, ListboxItem } from "@heroui/react";
-import { PageData } from '@/components/types/pageDataType';
-import { ScheduleData } from '@/components/types/scheduleDataType';
+import { PageData } from "@/types/page-data-type";
+import { ScheduleData } from "@/types/schedule-data-type";
 
-import base_logger from '@/utils/logger';
+import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 export function MainPage() {
   const func_logger = logger.child({ "func": "MainPage" });
   func_logger.trace({"message": "START"});
 
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [ pageData, setPageData ] = useState<PageData>({
     title: getTodayStr(),
     calendarDate: getTodayStr(),
@@ -43,13 +44,13 @@ export function MainPage() {
 
     let res = null;
     
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/schedule?target=${targetDate}`);
+    const uri = encodeURI(`/api/schedule?target=${targetDate}`);
     const response = await fetch(uri);
     if (response.ok) {
       func_logger.debug({"message": "fetch OK"});
       let jsonData = await response.json();
       func_logger.trace({"jsonData": jsonData});
-      res = jsonData['scheduleData'];
+      res = jsonData["scheduleData"];
     } else {
       func_logger.debug({"message": "fetch NG"});
     }
@@ -69,7 +70,7 @@ export function MainPage() {
       func_logger.info({"message": "START", "dirty.current": dirty.current});
     
       if (dirty.current && newTitle != pageData.title) {
-        const answer = window.confirm('ページを移動してもよろしいですか?')
+        const answer = window.confirm("ページを移動してもよろしいですか?")
         if (!answer) {
           return
         }
@@ -114,10 +115,10 @@ export function MainPage() {
     const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
     func_logger.debug({"message": "START"});
 
-    if (session?.error == "refresh_access_token_error") {
-      func_logger.debug({"message": "TOKEN ERROR -> signIn"});
-      signIn();
-    }
+    // if (session?.error == "refresh_access_token_error") {
+    //   func_logger.debug({"message": "TOKEN ERROR -> signIn"});
+    //   signIn();
+    // }
     
     if (userId != session?.user?.email) {
       setUserId(session?.user?.email || "dummy");
@@ -142,7 +143,7 @@ export function MainPage() {
   }, [searchText]);
   
   const doSearchIfNecessary = async (key: string, page: string) => {
-    if (key == 'Enter' && !isInvalid) {
+    if (key == "Enter" && !isInvalid) {
       // ページを設定する
       setPage(page);
     }
