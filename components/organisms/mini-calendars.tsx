@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
-import { MiniCalendar } from '@/components/molecules/MiniCalendar';
-import { getTodayStr, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from '@/utils/dateutils';
-import { ArrowFatLeft, ArrowFatRight } from '@phosphor-icons/react';
-import { ArrowFatLinesLeft, ArrowFatLinesRight } from '@phosphor-icons/react';
-import { PageData } from '@/components/types/pageDataType';
-import { ScheduleData } from '@/components/types/scheduleDataType';
+import { MiniCalendar } from "@/components/molecules/mini-calendar";
+import { getTodayStr, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from "@/lib/dateutils";
+import { ChevronsLeft, ChevronLeft, ChevronsRight, ChevronRight, House } from "lucide-react";
+import { PageData } from "@/types/page-data-type";
+import { ScheduleData } from "@/types/schedule-data-type";
 
-import base_logger from '@/utils/logger';
+import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 export function MiniCalendars(
@@ -26,28 +25,28 @@ export function MiniCalendars(
   };
 
   return (
-    <div className="bg-blue-50 w-200">
+    <div className="bg-blue-50 w-50">
       <div className="p-0 m-0">
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
           aria-label="prev-month"
           onPress={() => handleTargetPageChange(getPrevMonth(pageData.calendarDate))}
-        ><ArrowFatLinesLeft /></Button>
+        ><ChevronsLeft /></Button>
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
           aria-label="prev-day"
           onPress={() => handleTargetPageChange(getPrevDay(pageData.calendarDate))}
-        ><ArrowFatLeft /></Button>
+        ><ChevronLeft /></Button>
         <Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
           aria-label="today"
           onPress={() => handleTargetPageChange(getTodayStr())}
-        >今日</Button>
+        ><House /></Button>
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
           aria-label="next-day"
           onPress={() => handleTargetPageChange(getNextDay(pageData.calendarDate))}
-        ><ArrowFatRight/></Button>
+        ><ChevronRight/></Button>
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
           aria-label="next-month"
           onPress={() => handleTargetPageChange(getNextMonth(pageData.calendarDate))}
-        ><ArrowFatLinesRight/></Button>
+        ><ChevronsRight/></Button>
       </div>
       {pageData.scheduleData != null ? 
       <div className="container mx-auto">

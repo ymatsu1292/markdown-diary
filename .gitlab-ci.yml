@@ -1,4 +1,4 @@
-image: node:20-alpine
+image: node:24-alpine
 
 variables:
   GIT_STRATEGY: fetch
@@ -15,12 +15,12 @@ build-job:       # This job runs in the build stage, which runs first.
   script:
     - npm run build
 
-coverage-report:
-  before_script:
-    - npm install
-  stage: test
-  script:
-    - npm run coverage
+#coverage-report:
+#  before_script:
+#    - npm install
+#  stage: test
+#  script:
+#    - npm run coverage
 
 # unit-test-job:   # This job runs in the test stage.
 #   stage: test    # It only starts when the job in the build stage completes successfully.

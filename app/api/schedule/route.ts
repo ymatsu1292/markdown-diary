@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import moment from 'moment';
-import { ScheduleData, MonthSchedule, WeekSchedule, DaySchedule } from '@/components/types/scheduleDataType';
-import { EventData } from '@/components/types/scheduleDataType';
-import { stat, writeFile, readFile, opendir } from 'node:fs/promises';
-import { Buffer } from 'node:buffer';
-import { authOptions } from '@/app/authOptions';
-import { getServerSession } from 'next-auth/next';
-import { build_path } from '@/utils/buildPath';
+import { NextRequest, NextResponse } from "next/server";
+import moment from "moment";
+import { ScheduleData, MonthSchedule, WeekSchedule, DaySchedule } from "@/types/schedule-data-type";
+import { EventData } from "@/types/schedule-data-type";
+import { stat, writeFile, readFile, opendir } from "node:fs/promises";
+import { Buffer } from "node:buffer";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { build_path } from "@/lib/build-path";
 
-import base_logger from '@//utils/logger';
+import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 function create_calendar_base(check_month: any): MonthSchedule {
@@ -31,7 +31,7 @@ function create_calendar_base(check_month: any): MonthSchedule {
       "caldata": []
     };
     for (let d = 0; d < 7; d ++) {
-      const calc_date = start_date.clone().add(d + week_number * 7, 'days');
+      const calc_date = start_date.clone().add(d + week_number * 7, "days");
       const calc_date_str = calc_date.format("YYYY-MM-DD");
       if (calc_date.month() != month) {
 	week_data["caldata"].push({date: "", holiday: "", memo: "", hasDiary: false});
@@ -56,10 +56,10 @@ function parse_event_text(text: string): {[key: string]: string} {
   const func_logger = logger.child({ "func": "parse_event_text" });
   func_logger.trace({"message": "START", "params": {"text": text}});
   
-  const lines: string[] = text.split('\n');
+  const lines: string[] = text.split("\n");
   let res: {[key: string]: string} = {}
   lines.forEach((line) => {
-    let items: string[] = line.split(':');
+    let items: string[] = line.split(":");
     if (items.length == 2) {
       let date: string = items[0].trim();
       let event_text: string = items[1].trim();
@@ -79,7 +79,7 @@ async function load_events(event_file: string, base_file: string | null): Promis
   // イベント設定ファイルを読み込む
   let event_data: EventData = {"events": {}, "others": [], "templates": []};
   try {
-    let event_buffer = await readFile(event_file, { encoding: 'utf8' });
+    let event_buffer = await readFile(event_file, { encoding: "utf8" });
     let event_text = event_buffer.toString();
     event_data["events"] = parse_event_text(event_text);
   } catch (error) {
@@ -156,7 +156,7 @@ function set_schedule_sub(target_calendar: MonthSchedule, event_data: EventData,
     for (const day_data of week_data["caldata"]) {
       const date = day_data["date"];
       if (date != "") {
-        const date_str = month + "-" + String(date).padStart(2, '0');
+        const date_str = month + "-" + String(date).padStart(2, "0");
         //console.log("date_str=", date_str, date, event_data["events"]);
         if (date_str in event_data["events"]) {
           if (type == "holiday") {
@@ -192,8 +192,8 @@ function set_schedule(calendars_base: ScheduleData, event_data: EventData, type:
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
   func_logger.info({"message": "START", "params": {"req": req}});
-  
-  const session = await getServerSession(authOptions);
+
+  const session = await auth.api.getSession({ headers: await headers() });
   const params = req.nextUrl.searchParams;
   func_logger.trace({"session": session});
   if (!session || !session.user || !session.user.email) {
@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
   }
   const user = session.user.email;
   const today_str = moment().format("YYYY-MM-DD");
-  const target_date_str = params.has('target') ? params.get('target') : today_str;
+  const target_date_str = params.has("target") ? params.get("target") : today_str;
 
   // func_logger.info({"message": "GET呼び出し", "target_date_str": target_date_str});
   
@@ -212,7 +212,7 @@ export async function GET(req: NextRequest) {
   func_logger.trace({"today_str": today_str, "target_date_str": target_date_str});
   const target_date = moment(target_date_str, "YYYY-MM-DD");
   func_logger.trace({"target_date": target_date});
-  const target_month = target_date.startOf('month');
+  const target_month = target_date.startOf("month");
   const prev_month = target_month.clone().subtract(1, "M");
   const next_month = target_month.clone().add(1, "M");
   func_logger.trace({"target_months": [prev_month, target_month, next_month]});

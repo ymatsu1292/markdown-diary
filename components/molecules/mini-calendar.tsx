@@ -1,9 +1,9 @@
 import { Table, TableHeader, TableColumn ,TableBody, TableRow, TableCell } from "@heroui/react";
 import { Link, Tooltip } from "@heroui/react";
-import { getTodayStr } from '@/utils/dateutils';
-import { MonthSchedule, WeekSchedule, DaySchedule } from '@/components/types/scheduleDataType';
+import { getTodayStr } from "@/lib/dateutils";
+import { MonthSchedule, WeekSchedule, DaySchedule } from "@/types/schedule-data-type";
 
-import base_logger from '@/utils/logger';
+import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 export function MiniCalendar(
@@ -42,7 +42,7 @@ export function MiniCalendar(
     return color;
   };
   
-  const drawCell = (daySchedule: DaySchedule, monthStr: string, todayStr: string, weekday: number, calendarDate: string): JSX.Element => {
+  const drawCell = (daySchedule: DaySchedule, monthStr: string, todayStr: string, weekday: number, calendarDate: string) => {
     const func_logger = logger.child({ "func": "MiniCalendar.drawCell" });
     func_logger.trace({"message": "START"})
 
@@ -102,8 +102,8 @@ export function MiniCalendar(
   }});
   
   return (
-    <div className="m-0 p-1">
-      <Table aria-label="cal-aria1" isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-0"
+    <div className="mini-calendar m-0 p-1">
+      <Table aria-label="cal-aria1" table-fixed isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-0"
         topContent=<span className="h-1 gap-0 m-0 p-0 text-center text-sm">{monthSchedule.month}</span>>
 	<TableHeader className="m-0 p-0 gap-0 h-6">
 	  <TableColumn className="m-0 p-0 h-6 text-center"><span className="text-red-900">日</span></TableColumn>

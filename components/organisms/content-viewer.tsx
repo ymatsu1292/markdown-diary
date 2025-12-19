@@ -1,28 +1,27 @@
-import './ContentViewer.css';
-
-import { useState, useEffect, useCallback, useMemo, useRef, MutableRefObject } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, MutableRefObject } from "react";
 import { Tabs, Tab, Card, CardBody } from "@heroui/react";
 import { Input, Button, Link, Switch } from "@heroui/react";
 import { Select, SelectSection, SelectItem } from "@heroui/react";
 import { Listbox, ListboxItem } from "@heroui/react";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
 import { Textarea } from "@heroui/react";
-import CodeMirror from '@uiw/react-codemirror';
-import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { languages } from '@codemirror/language-data';
-import { xcodeLight } from '@uiw/codemirror-theme-xcode';
-import markdownit from 'markdown-it';
-import mdContainer from 'markdown-it-container';
-import { tasklist } from '@mdit/plugin-tasklist';
-import hljs from 'highlight.js';
-import { useSession } from 'next-auth/react';
-import { History } from '@/components/types/historyDataType';
-import { PageData } from '@/components/types/pageDataType';
-import { EditData } from '@/components/types/editDataType';
-import { FloppyDisk } from '@phosphor-icons/react';
-import { NotifyMessages } from '@/components/molecules/NotifyMessages';
+import CodeMirror from "@uiw/react-codemirror";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { languages } from "@codemirror/language-data";
+import { xcodeLight } from "@uiw/codemirror-theme-xcode";
+import markdownit from "markdown-it";
+//import mdContainer from "markdown-it-container";
+import { tasklist } from "@mdit/plugin-tasklist";
+import { container } from "@mdit/plugin-container";
+import hljs from "highlight.js";
+import { useSession } from "@/lib/auth-client";
+import { History } from "@/types/history-data-type";
+import { PageData } from "@/types/page-data-type";
+import { EditData } from "@/types/edit-data-type";
+import { Save } from "lucide-react";
+import { NotifyMessages } from "@/components/molecules/notify-messages";
 
-import base_logger from '@/utils/logger';
+import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 export function ContentViewer(
@@ -35,7 +34,7 @@ export function ContentViewer(
   func_logger.debug({"message": "START", "params": {
     "pageData": pageData,
   }});
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [ text, setText ] = useState<string>("");
   const [ editData, setEditData ] = useState<EditData>({
     originalText: "",
@@ -71,8 +70,8 @@ export function ContentViewer(
           return hljs.highlight(str, { language: lang }).value;
         } catch (__) {}
       }
-      return '';
-    }}).use(mdContainer, 'info').use(tasklist);
+      return "";
+    }}).use(container, {name: "info"}).use(tasklist);
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
   const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
   const [ histories, setHistories ] = useState<History[]>([]);
@@ -126,7 +125,7 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
     func_logger.debug({"message": "タイムスタンプチェック", "title": pageData.title});
     
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text/timestamp?target=${pageData.title}`);
+    const uri = encodeURI(`/api/markdown/text/timestamp?target=${pageData.title}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
@@ -142,7 +141,7 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
     func_logger.info({"message": "マークダウン読み込み開始", "title": pageData.title});
     
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/text?target=${pageData.title}`);
+    const uri = encodeURI(`/api/markdown/text?target=${pageData.title}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
@@ -184,9 +183,9 @@ export function ContentViewer(
       "timestamp": editData.timestamp,
     };
     func_logger.trace({ "markdown_data": markdown_data });
-    const response = await fetch(`${process.env.BASE_PATH}/api/markdown/text`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch(`/api/markdown/text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(markdown_data),
     })
     if (response.ok) {
@@ -219,11 +218,11 @@ export function ContentViewer(
     const func_logger = logger.child({ "func": "ContentViewer.getHistories" });
     func_logger.debug({"message": "START"});
 
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${pageData.title}`);
+    const uri = encodeURI(`/api/markdown/history?target=${pageData.title}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
-    setHistories(json_data['histories']);
+    setHistories(json_data["histories"]);
     if (showToggle) {
       setShowHistories(true);
     }
@@ -234,7 +233,7 @@ export function ContentViewer(
   const appendTemplate = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.appendTemplate" });
     func_logger.debug({"message": "START"});
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/template?target=${selectedTemplate}`);
+    const uri = encodeURI(`/api/markdown/template?target=${selectedTemplate}`);
     const result = await fetch(uri);
     const json_data = await result.json();
 
@@ -253,11 +252,11 @@ export function ContentViewer(
     const func_logger = logger.child({ "func": "ContentViewer.getHistoryDetail" });
     func_logger.debug({"message": "START"});
 
-    const uri = encodeURI(`${process.env.BASE_PATH}/api/markdown/history?target=${pageData.title}&revision=${revision}`);
+    const uri = encodeURI(`/api/markdown/history?target=${pageData.title}&revision=${revision}`);
     const result = await fetch(uri);
     const json_data = await result.json();
     func_logger.trace({"json_data": json_data});
-    setRevisionText(json_data['text']);
+    setRevisionText(json_data["text"]);
     
     func_logger.debug({"message": "END"});
   };
@@ -443,8 +442,8 @@ export function ContentViewer(
                         onValueChange={setAutosave}
                         size="lg"
                         className="ml-1 h-full"
-                        startContent={<FloppyDisk />}
-                        endContent={<FloppyDisk />}
+                        startContent={<Save />}
+                        endContent={<Save />}
                         isDisabled={editData.conflicted}
                       />
                       <div className="text-xs text-center">自動保存</div>
@@ -539,8 +538,8 @@ export function ContentViewer(
                       onValueChange={setAutosave}
                       size="lg"
                       className="ml-1 h-full"
-                      startContent={<FloppyDisk />}
-                      endContent={<FloppyDisk />}
+                      startContent={<Save />}
+                      endContent={<Save />}
                       disabled={editData.conflicted}
                     />
                     :

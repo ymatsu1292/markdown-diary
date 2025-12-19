@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { open, mkdir, writeFile, readFile, rm, stat, mkdtemp, cp } from 'node:fs/promises';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { exec } from 'child_process';
-import { authOptions } from '@/app/authOptions';
-import { getServerSession } from 'next-auth/next';
-import { promisify } from 'node:util';
-import { build_path } from '@/utils/buildPath';
+import { NextRequest, NextResponse } from "next/server";
+import { open, mkdir, writeFile, readFile, rm, stat, mkdtemp, cp } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { exec } from "child_process";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { promisify } from "node:util";
+import { build_path } from "@/lib/build-path";
 
-import moment from 'moment';
+import moment from "moment";
 
-import base_logger from '@/utils/logger';
+import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
@@ -24,7 +24,7 @@ const writeFileLocal = async (filename: string, data: string) => {
   let fd;
   try {
     func_logger.trace({"message": "write file", "filename": filename});
-    fd = await open(filename, 'w');
+    fd = await open(filename, "w");
     if (data.substr(-1) !== "\n") {
       fd.writeFile(data + "\n");
     } else {
@@ -38,15 +38,15 @@ const writeFileLocal = async (filename: string, data: string) => {
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
   func_logger.trace({"message": "START"});
-  const session = await getServerSession(authOptions);
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session || !session.user || !session.user.email) {
     return NextResponse.json({}, {status: 401});
   }
   const user = session.user.email;
   
   const params = req.nextUrl.searchParams;
-  const target: string = params.has('target') ? params.get('target') || "" : "";
-  const oldtimestamp: number = params.has('timestamp') ? parseFloat(params.get('timestamp') || "0.0") || 0.0 : 0.0;
+  const target: string = params.has("target") ? params.get("target") || "" : "";
+  const oldtimestamp: number = params.has("timestamp") ? parseFloat(params.get("timestamp") || "0.0") || 0.0 : 0.0;
   func_logger.debug({"params": params, "user": user, "target": target});
 
   const directory = build_path(process.env.DATA_DIRECTORY || "", user);
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   const func_logger = logger.child({ "func": "POST" });
   func_logger.info({"message": "START"});
-  const session = await getServerSession(authOptions);
+  const session = await auth.api.getSession({ headers: await headers() });
   func_logger.trace({"session": session});
   if (!session || !session.user || !session.user.email) {
     const res = NextResponse.json({}, {status: 401});
