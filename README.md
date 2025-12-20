@@ -17,13 +17,12 @@ markdown-diary
     $ cd markdown-diary
     $ vi .env
     ```
-    デフォルトでは3002ポートで実行されるので、必要に応じてpackage.jsonの-H 0.0.0.0、-p 3002の部分を修正する
     
 4.  動作確認する
     ```
     $ npm run dev
     ```
-    ブラウザで"http://サーバのIPアドレス/mdiary"を開く
+    ブラウザで"http://サーバのIPアドレス"を開く
 
 5.  問題なければビルドする
     ```

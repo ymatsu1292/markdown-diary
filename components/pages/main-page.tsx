@@ -17,12 +17,12 @@ import { Listbox, ListboxSection, ListboxItem } from "@heroui/react";
 import { PageData } from "@/types/page-data-type";
 import { ScheduleData } from "@/types/schedule-data-type";
 
-import base_logger from "@/lib/logger";
-const logger = base_logger.child({ filename: __filename });
+//import base_logger from "@/lib/logger";
+//const logger = base_logger.child({ filename: __filename });
 
 export function MainPage() {
-  const func_logger = logger.child({ "func": "MainPage" });
-  func_logger.trace({"message": "START"});
+  //const func_logger = logger.child({ "func": "MainPage" });
+  //func_logger.trace({"message": "START"});
 
   const { data: session } = useSession();
   const [ pageData, setPageData ] = useState<PageData>({
@@ -39,22 +39,22 @@ export function MainPage() {
   // カレンダーの日付が変更された際の処理
   const loadSchedule = async(targetDate: string): Promise<ScheduleData | null> => {
     //console.log("loadSchedule開始");
-    const func_logger = logger.child({ "func": "MainPage.loadData" });
-    func_logger.debug({"message": "START"});
+    //const func_logger = logger.child({ "func": "MainPage.loadData" });
+    //func_logger.debug({"message": "START"});
 
     let res = null;
     
     const uri = encodeURI(`/api/schedule?target=${targetDate}`);
     const response = await fetch(uri);
     if (response.ok) {
-      func_logger.debug({"message": "fetch OK"});
+      //func_logger.debug({"message": "fetch OK"});
       let jsonData = await response.json();
-      func_logger.trace({"jsonData": jsonData});
+      //func_logger.trace({"jsonData": jsonData});
       res = jsonData["scheduleData"];
     } else {
-      func_logger.debug({"message": "fetch NG"});
+      //func_logger.debug({"message": "fetch NG"});
     }
-    func_logger.debug({"message": "END"});
+    //func_logger.debug({"message": "END"});
     //console.log("loadSchedule終了");
     return res;
   };
@@ -65,9 +65,9 @@ export function MainPage() {
   ) => {
     //console.log("setPage開始");
     (async () => {
-      const func_logger = logger.child({ "func": "MainPage.setPage" });
-      func_logger.debug({"message": "START"});
-      func_logger.info({"message": "START", "dirty.current": dirty.current});
+      //const func_logger = logger.child({ "func": "MainPage.setPage" });
+      //func_logger.debug({"message": "START"});
+      //func_logger.info({"message": "START", "dirty.current": dirty.current});
     
       if (dirty.current && newTitle != pageData.title) {
         const answer = window.confirm("ページを移動してもよろしいですか?")
@@ -81,17 +81,17 @@ export function MainPage() {
         calendarDate: pageData.calendarDate,
         scheduleData: pageData.scheduleData,
       }
-      func_logger.info({"newPageData": newPageData});
+      //func_logger.info({"newPageData": newPageData});
       
       const datePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
       if (datePattern.test(newTitle)) {
-        func_logger.debug({"message": "target is " + newTitle});
+        //func_logger.debug({"message": "target is " + newTitle});
         newPageData["title"] = newTitle;
         newPageData["calendarDate"] = newTitle;
         //setPageData({...pageData, title: newTitle, calendarDate: newTitle});
       } else {
         // 日付以外のページなら今日をターゲットにする
-        func_logger.debug({"message": "target is TODAY"});
+        //func_logger.debug({"message": "target is TODAY"});
         newPageData["title"] = newTitle;
         newPageData["calendarDate"] = getTodayStr();
         //setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
@@ -102,18 +102,18 @@ export function MainPage() {
       setPageData(newPageData);
       
       if (session?.user == undefined) {
-        func_logger.debug({"message": "NO SESSION"});
+        //func_logger.debug({"message": "NO SESSION"});
         return;
       }
-      func_logger.debug({"message": "END"});
+      //func_logger.debug({"message": "END"});
     })();
     //console.log("setPage終了");
   }
 
   // セッション情報が設定されたときの処理
   useEffect(() => {
-    const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
-    func_logger.debug({"message": "START"});
+    //const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
+    //func_logger.debug({"message": "START"});
 
     // if (session?.error == "refresh_access_token_error") {
     //   func_logger.debug({"message": "TOKEN ERROR -> signIn"});
@@ -124,21 +124,21 @@ export function MainPage() {
       setUserId(session?.user?.email || "dummy");
       setPage(getTodayStr());
     }
-    func_logger.debug({"message": "END"});
+    //func_logger.debug({"message": "END"});
   }, [session]);
   
   const isInvalid = useMemo(() => {
-    const func_logger = logger.child({ "func": "MainPage.isInvalid" });
-    func_logger.debug({"message": "START"});
+    //const func_logger = logger.child({ "func": "MainPage.isInvalid" });
+    //func_logger.debug({"message": "START"});
 
     const filenameNgPattern = /[\\\/:\*\?\"<>\|]/;
     if (searchText === "") {
-      func_logger.debug({"message": "END(searchText is null)", "res": false});
+      //func_logger.debug({"message": "END(searchText is null)", "res": false});
       return false;
     }
 
     const res = filenameNgPattern.test(searchText) ? true : false;
-    func_logger.debug({"message": "END", "res": res});
+    //func_logger.debug({"message": "END", "res": res});
     return res;
   }, [searchText]);
   
