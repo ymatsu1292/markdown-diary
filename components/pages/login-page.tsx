@@ -9,6 +9,8 @@ export function LoginPage() {
   func_logger.trace({"message": "START"});
 
   return (
-    <SignInCard />
+    <div className="h-screen w-screen flex justify-center items-center">
+      <SignInCard />
+    </div>
   );
 }
