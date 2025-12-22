@@ -125,12 +125,15 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
     func_logger.debug({"message": "タイムスタンプチェック", "title": pageData.title});
     
-    const uri = encodeURI(`/api/markdown/text/timestamp?target=${pageData.title}`);
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp?target=${pageData.title}`);
     const result = await fetch(uri);
-    const json_data = await result.json();
-    func_logger.trace({"json_data": json_data});
-    func_logger.trace({"タイムスタンプ": json_data["timestamp"]});
-    const res = (editData["timestamp"] !== json_data["timestamp"]);
+    let res = false;
+    if (result.ok) {
+      const json_data = await result.json();
+      func_logger.trace({"json_data": json_data});
+      func_logger.trace({"タイムスタンプ": json_data["timestamp"]});
+      res = (editData["timestamp"] !== json_data["timestamp"]);
+    }
     
     func_logger.debug({"message": "END", "res": res});
     return res;
@@ -141,12 +144,14 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
     func_logger.info({"message": "マークダウン読み込み開始", "title": pageData.title});
     
-    const uri = encodeURI(`/api/markdown/text?target=${pageData.title}`);
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text?target=${pageData.title}`);
     const result = await fetch(uri);
-    const json_data = await result.json();
-    func_logger.trace({"json_data": json_data});
-    updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
-    setMessages([]);
+    if (result.ok) {
+      const json_data = await result.json();
+      func_logger.trace({"json_data": json_data});
+      updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
+      setMessages([]);
+    }
     
     func_logger.info({"message": "マークダウン読み込み終了"});
     func_logger.debug({"message": "END"});
@@ -183,7 +188,7 @@ export function ContentViewer(
       "timestamp": editData.timestamp,
     };
     func_logger.trace({ "markdown_data": markdown_data });
-    const response = await fetch(`/api/markdown/text`, {
+    const response = await fetch(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(markdown_data),
@@ -218,13 +223,15 @@ export function ContentViewer(
     const func_logger = logger.child({ "func": "ContentViewer.getHistories" });
     func_logger.debug({"message": "START"});
 
-    const uri = encodeURI(`/api/markdown/history?target=${pageData.title}`);
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/history?target=${pageData.title}`);
     const result = await fetch(uri);
-    const json_data = await result.json();
-    func_logger.trace({"json_data": json_data});
-    setHistories(json_data["histories"]);
-    if (showToggle) {
-      setShowHistories(true);
+    if (result.ok) {
+      const json_data = await result.json();
+      func_logger.trace({"json_data": json_data});
+      setHistories(json_data["histories"]);
+      if (showToggle) {
+        setShowHistories(true);
+      }
     }
     
     func_logger.debug({"message": "END"});
@@ -233,17 +240,20 @@ export function ContentViewer(
   const appendTemplate = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.appendTemplate" });
     func_logger.debug({"message": "START"});
-    const uri = encodeURI(`/api/markdown/template?target=${selectedTemplate}`);
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/template?target=${selectedTemplate}`);
     const result = await fetch(uri);
-    const json_data = await result.json();
+    let json_data = null;
+    if (result.ok) {
+      json_data = await result.json();
 
-    let tmpText;
-    if (text.substr(-1) === "\n" || text.length == 0) {
-      tmpText = text + json_data["template"];
-    } else {
-      tmpText = text + "\n" + json_data["template"];
+      let tmpText;
+      if (text.substr(-1) === "\n" || text.length == 0) {
+        tmpText = text + json_data["template"];
+      } else {
+        tmpText = text + "\n" + json_data["template"];
+      }
+      updateEditData(tmpText, false, false, 0);
     }
-    updateEditData(tmpText, false, false, 0);
     
     func_logger.debug({"message": "END", "json_data": json_data});
   };
@@ -252,11 +262,13 @@ export function ContentViewer(
     const func_logger = logger.child({ "func": "ContentViewer.getHistoryDetail" });
     func_logger.debug({"message": "START"});
 
-    const uri = encodeURI(`/api/markdown/history?target=${pageData.title}&revision=${revision}`);
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/history?target=${pageData.title}&revision=${revision}`);
     const result = await fetch(uri);
-    const json_data = await result.json();
-    func_logger.trace({"json_data": json_data});
-    setRevisionText(json_data["text"]);
+    if (result.ok) {
+      const json_data = await result.json();
+      func_logger.trace({"json_data": json_data});
+      setRevisionText(json_data["text"]);
+    }      
     
     func_logger.debug({"message": "END"});
   };

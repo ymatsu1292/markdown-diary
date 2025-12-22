@@ -3,6 +3,8 @@ import Database from "better-sqlite3";
 import { admin, username } from "better-auth/plugins";
 
 export const auth = betterAuth({
+  basePath: "/mdiary/api/auth",
+  baseURL: "https://rhyme.mine.nu/mdiary/api/auth",
   database: new Database("database.sqlite"),
   emailAndPassword: {
     enabled: true,

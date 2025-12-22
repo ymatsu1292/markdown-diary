@@ -2,7 +2,8 @@
 
 import Script from "next/script";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useSession, signIn, signOut } from "@/lib/auth-client";
+import { signOut, useSession } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 import { getTodayStr, getTodayMonth } from "@/lib/dateutils";
 import { MiniCalendars } from "@/components/organisms/mini-calendars";
 import { MarkdownFileList } from "@/components/organisms/markdown-file-list";
@@ -11,7 +12,7 @@ import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@heroui/react";
 import { Link, Button, Input } from "@heroui/react";
 import { Card, CardBody } from "@heroui/react";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@heroui/react";
-import { Book, List } from "lucide-react";
+import { Book, Menu } from "lucide-react";
 import { Tabs, Tab } from "@heroui/react";
 import { Listbox, ListboxSection, ListboxItem } from "@heroui/react";
 import { PageData } from "@/types/page-data-type";
@@ -24,6 +25,7 @@ export function MainPage() {
   //const func_logger = logger.child({ "func": "MainPage" });
   //func_logger.trace({"message": "START"});
 
+  const router = useRouter();
   const { data: session } = useSession();
   const [ pageData, setPageData ] = useState<PageData>({
     title: getTodayStr(),
@@ -33,7 +35,6 @@ export function MainPage() {
   const [ searchText, setSearchText ] = useState<string>("");
   const [ userId, setUserId ] = useState("user");
   const dirty = useRef<boolean>(false);
-
   const today_month = getTodayMonth();
   
   // カレンダーの日付が変更された際の処理
@@ -44,7 +45,7 @@ export function MainPage() {
 
     let res = null;
     
-    const uri = encodeURI(`/api/schedule?target=${targetDate}`);
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/schedule?target=${targetDate}`);
     const response = await fetch(uri);
     if (response.ok) {
       //func_logger.debug({"message": "fetch OK"});
@@ -119,7 +120,7 @@ export function MainPage() {
     //   func_logger.debug({"message": "TOKEN ERROR -> signIn"});
     //   signIn();
     // }
-    
+
     if (userId != session?.user?.email) {
       setUserId(session?.user?.email || "dummy");
       setPage(getTodayStr());
@@ -155,7 +156,7 @@ export function MainPage() {
     <div>
       <Navbar position="sticky" height="3rem" isBordered className="bg-blue-200 min-w-fit mx-auto">
         <NavbarBrand key="a">
-          <Link href={process.env.NEXT_PUBLIC_BASE_URL} color="foreground">
+          <Link href={process.env.NEXT_PUBLIC_BASE_PATH} color="foreground">
             <Book size={24} /><p className="font-bold text-inherit mx-1">Markdown Diary</p>
           </Link>
         </NavbarBrand>
@@ -175,13 +176,21 @@ export function MainPage() {
           <NavbarItem key="menu">
             <Dropdown placement="bottom-end">
               <DropdownTrigger>
-                <Button isIconOnly variant="light" title="menu"><List size={24}/></Button>
+                <Button isIconOnly variant="light" title="menu"><Menu size={24}/></Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="Profile" variant="flat">
                 <DropdownItem className="h-14 gap-2" key="username">
                   <p>Signed in as</p><p className="font-semibold">{session?.user?.name}</p>
                 </DropdownItem>
-                <DropdownItem color="danger" onPress={() => signOut()} key="logout">
+                <DropdownItem color="danger" onPress={async () => {
+                  await signOut({
+                    fetchOptions: {
+                      onSuccess: () => {
+                        router.push("/login");
+                      },
+                    },
+                  });
+                }} key="logout">
                   Logout
                 </DropdownItem>
               </DropdownMenu>
