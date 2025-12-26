@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import Database from "better-sqlite3";
-import { admin, username } from "better-auth/plugins";
 
 export const auth = betterAuth({
   basePath: process.env.NEXT_PUBLIC_BASE_PATH + "/api/auth",

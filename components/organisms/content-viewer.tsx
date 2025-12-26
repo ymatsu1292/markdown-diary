@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, MutableRefObject } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, RefObject } from "react";
 import { Tabs, Tab, Card, CardBody } from "@heroui/react";
 import { Input, Button, Link, Switch } from "@heroui/react";
 import { Select, SelectSection, SelectItem } from "@heroui/react";
@@ -10,7 +10,6 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { xcodeLight } from "@uiw/codemirror-theme-xcode";
 import markdownit from "markdown-it";
-//import mdContainer from "markdown-it-container";
 import { tasklist } from "@mdit/plugin-tasklist";
 import { container } from "@mdit/plugin-container";
 import hljs from "highlight.js";
@@ -26,7 +25,7 @@ const logger = base_logger.child({ filename: __filename });
 
 export function ContentViewer(
   { dirty, pageData } : {
-    dirty: MutableRefObject<boolean>;
+    dirty: RefObject<boolean>;
     pageData: PageData;
   }
 ) {
@@ -80,11 +79,11 @@ export function ContentViewer(
 
   const compareText = (serverText: string, localText: string): boolean => {
     let fixed1 = localText;
-    if (fixed1.substr(-1) !== "\n" && fixed1.length > 0) {
+    if (fixed1.slice(-1) !== "\n" && fixed1.length > 0) {
       fixed1 = localText + "\n";
     }
     let fixed2 = serverText;
-    if (fixed2.substr(-1) !== "\n" && fixed2.length > 0) {
+    if (fixed2.slice(-1) !== "\n" && fixed2.length > 0) {
       fixed2 = localText + "\n";
     }
     return fixed1 === fixed2;
