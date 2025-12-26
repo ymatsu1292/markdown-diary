@@ -3,17 +3,12 @@ import Database from "better-sqlite3";
 import { admin, username } from "better-auth/plugins";
 
 export const auth = betterAuth({
-  basePath: "/mdiary/api/auth",
-  baseURL: "https://rhyme.mine.nu/mdiary/api/auth",
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH + "/api/auth",
+  baseURL: process.env.NEXT_PUBLIC_BASE_URL + "/api/auth",
   database: new Database("database.sqlite"),
   emailAndPassword: {
     enabled: true,
   },
-  trustedOrigin: [
-    "http://192.168.252.104:3000",
-  ],
-  plugins: [
-    username(),
-    admin()
-  ]
+  trustedOrigin: [],
+  plugins: [],
 });
