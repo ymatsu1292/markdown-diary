@@ -18,16 +18,16 @@ export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
   func_logger.trace({"message": "START"});
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || !session.user || !session.user.email) {
+  if (!session) {
     return NextResponse.json({}, {status: 401});
   }
-  const user = session.user.email;
+  const user_id = session.user.id;
   
   const params = req.nextUrl.searchParams;
   const target: string = params.has("target") ? params.get("target") || "" : "";
-  func_logger.debug({"params": params, "user": user, "target": target});
+  func_logger.debug({"params": params, "user_id": user_id, "target": target});
 
-  const directory = build_path(process.env.DATA_DIRECTORY || "", user);
+  const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
   const filename = directory + "/" + target + ".md";
 
   let mtime = 0;
