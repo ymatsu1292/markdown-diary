@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import moment from "moment";
 import { ScheduleData, MonthSchedule, WeekSchedule, DaySchedule } from "@/types/schedule-data-type";
 import { EventData } from "@/types/schedule-data-type";
-import { stat, writeFile, readFile, opendir } from "node:fs/promises";
+import { mkdir, stat, writeFile, readFile, opendir } from "node:fs/promises";
 import { Buffer } from "node:buffer";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -101,15 +101,15 @@ async function load_events(event_file: string, base_file: string | null): Promis
   return event_data;
 }
 
-async function check_diary_exists(target_month_list: string[], user: string | null): Promise<EventData> {
+async function check_diary_exists(target_month_list: string[], user_id: string | null): Promise<EventData> {
   const func_logger = logger.child({ "func": "check_diary_exists" });
   func_logger.trace({"message": "START", "params": {
     "target_month_list": target_month_list,
-    "user": user}});
+    "user_id": user_id}});
 
   let event_data: EventData = {"events": {}, "others": [], "templates": []};
   try {
-    const work_dir = build_path(process.env.DATA_DIRECTORY || "", user || "");
+    const work_dir = build_path(process.env.DATA_DIRECTORY || "", user_id || "");
 
     const dir = await opendir(work_dir);
     const month_list = "(" + target_month_list.join("|") + ")";
@@ -141,7 +141,7 @@ async function check_diary_exists(target_month_list: string[], user: string | nu
 
   func_logger.trace({"message": "END", "params": {
     "target_month_list": target_month_list,
-    "user": user},
+    "user_id": user_id},
     "event_data": event_data});
   return event_data;
 }
@@ -196,13 +196,13 @@ export async function GET(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
   const params = req.nextUrl.searchParams;
   func_logger.trace({"session": session});
-  if (!session || !session.user || !session.user.email) {
+  if (!session) {
     func_logger.info({"message": "SESSION Invalid"});
     const res = NextResponse.json({}, {status: 401});
     func_logger.debug({"message": "END", "params": {"req": req}, "res": res});
     return res;
   }
-  const user = session.user.email;
+  const user_id = session.user.id;
   const today_str = moment().format("YYYY-MM-DD");
   const target_date_str = params.has("target") ? params.get("target") : today_str;
 
@@ -228,11 +228,15 @@ export async function GET(req: NextRequest) {
   // {"cal1": [{"id": "week1", "caldata": [["", "", "", 0], [""...]...
 
   const data_directory: string = process.env.DATA_DIRECTORY || "";
-  const holiday_file: string = build_path(data_directory, user) + "/holiday.md";
+  const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
+  func_logger.trace({"directory": directory});
+  // ディレクトリを作り
+  await mkdir(directory, { recursive: true });
+  const holiday_file: string = build_path(data_directory, user_id) + "/holiday.md";
   const base_holiday_file = data_directory + "/base/holiday.md";
   const holiday_data = await load_events(holiday_file, base_holiday_file);
   // {"2024-01-01": {"holiday": "元旦"}, ...}
-  const private_file = build_path(data_directory, user) + "/private.md";
+  const private_file = build_path(data_directory, user_id) + "/private.md";
   const private_data = await load_events(private_file, null);
   
   set_schedule(calendars_data, holiday_data, "holiday");
@@ -245,7 +249,7 @@ export async function GET(req: NextRequest) {
       calendars_data["cal2"]["month"],
       calendars_data["cal3"]["month"]
     ], 
-    user);
+    user_id);
   //console.log("diary_check_result=", diary_check_result);
   set_schedule(calendars_data, diary_check_result, "diary");
 

@@ -17,6 +17,7 @@ import { Tabs, Tab } from "@heroui/react";
 import { Listbox, ListboxSection, ListboxItem } from "@heroui/react";
 import { PageData } from "@/types/page-data-type";
 import { ScheduleData } from "@/types/schedule-data-type";
+import { MdNavbar } from "@/components/organisms/md-navbar";
 
 //import base_logger from "@/lib/logger";
 //const logger = base_logger.child({ filename: __filename });
@@ -154,50 +155,7 @@ export function MainPage() {
 
   return (
     <div>
-      <Navbar position="sticky" height="3rem" isBordered className="bg-blue-200 min-w-fit mx-auto">
-        <NavbarBrand key="a">
-          <Link href={process.env.NEXT_PUBLIC_BASE_PATH} color="foreground">
-            <Book size={24} /><p className="font-bold text-inherit mx-1">Markdown Diary</p>
-          </Link>
-        </NavbarBrand>
-        <NavbarContent className="sm:flex gap-2" justify="center" key="b">
-          <NavbarItem key="search">
-            <Input type="search" size="sm" placeholder="ページ名" value={searchText} onKeyPress={(e) => {
-              if (e.target instanceof HTMLInputElement) {
-                doSearchIfNecessary(e.key, e.target.value);
-              }
-            }}
-              onValueChange={setSearchText}
-              isInvalid={isInvalid} errorMessage={isInvalid && "ファイル名に使えない文字が含まれています"}
-              color={isInvalid ? "danger" : "default"}
-              className="max-w-xs"
-            />
-          </NavbarItem>
-          <NavbarItem key="menu">
-            <Dropdown placement="bottom-end">
-              <DropdownTrigger>
-                <Button isIconOnly variant="light" title="menu"><Menu size={24}/></Button>
-              </DropdownTrigger>
-              <DropdownMenu aria-label="Profile" variant="flat">
-                <DropdownItem className="h-14 gap-2" key="username">
-                  <p>Signed in as</p><p className="font-semibold">{session?.user?.name}</p>
-                </DropdownItem>
-                <DropdownItem color="danger" onPress={async () => {
-                  await signOut({
-                    fetchOptions: {
-                      onSuccess: () => {
-                        router.push("/login");
-                      },
-                    },
-                  });
-                }} key="logout">
-                  Logout
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          </NavbarItem>
-        </NavbarContent>
-      </Navbar>
+      <MdNavbar doSearchIfNecessary={doSearchIfNecessary} />
       <div className="flex">
         <div className="flex-basis-220">
           <Tabs>
