@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import moment from "moment";
 import { ScheduleData, MonthSchedule, WeekSchedule } from "@/types/schedule-data-type";
 import { EventData } from "@/types/schedule-data-type";
 import { mkdir, writeFile, readFile, opendir } from "node:fs/promises";
@@ -7,20 +6,26 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { build_path } from "@/lib/build-path";
 
+//import moment from "moment";
+import { format, parse, startOfMonth, subMonths, addMonths, previousSunday } from "date-fns";
+import { setDefaultOptions, addDays } from "date-fns";
+import { ja } from "date-fns/locale";
+setDefaultOptions({ locale: ja });
+
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
-function create_calendar_base(check_month: moment.Moment): MonthSchedule {
+function create_calendar_base(check_month: Date): MonthSchedule {
   const func_logger = logger.child({ "func": "create_calendar_base" });
   func_logger.debug({"message": "START", "params": {"check_month": check_month}});
 
-  const year = check_month.clone().year();
-  const month = check_month.clone().month();
+  const year = check_month.getFullYear();
+  const month = check_month.getMonth() + 1;
   const result: MonthSchedule = {
-    "month": check_month.format("YYYY-MM"),
+    "month": format(check_month, "yyyy-MM"),
     "data": []
   }
-  const start_date = check_month.clone().weekday(0);
+  const start_date = previousSunday(check_month);
   //console.log("start_date=", start_date, ", check_month=", month);
   let week_number = 0;
   let continue_flag = true;
@@ -30,14 +35,14 @@ function create_calendar_base(check_month: moment.Moment): MonthSchedule {
       "caldata": []
     };
     for (let d = 0; d < 7; d ++) {
-      const calc_date = start_date.clone().add(d + week_number * 7, "days");
+      const calc_date = addDays(start_date, d + week_number * 7);
       //const calc_date_str = calc_date.format("YYYY-MM-DD");
-      if (calc_date.month() != month) {
+      if (calc_date.getMonth() + 1 != month) {
 	week_data["caldata"].push({date: "", holiday: "", memo: "", hasDiary: false});
       } else {
-	week_data["caldata"].push({date: String(calc_date.date()), holiday: "", memo: "", hasDiary: false});
+	week_data["caldata"].push({date: String(calc_date.getDate()), holiday: "", memo: "", hasDiary: false});
       }
-      if (calc_date.year() > year || (calc_date.year() == year && calc_date.month() > month)) {
+      if (calc_date.getFullYear() > year || (calc_date.getFullYear() == year && calc_date.getMonth() + 1 > month)) {
 	continue_flag = false;
       }
       //console.log("calc_date=", calc_date, ", calc_date_str=", calc_date_str,
@@ -204,18 +209,18 @@ export async function GET(req: NextRequest) {
     return res;
   }
   const user_id = session.user.id;
-  const today_str = moment().format("YYYY-MM-DD");
+  const today_str = format(new Date(), "yyyy-MM-dd");
   const target_date_str = params.has("target") ? params.get("target") : today_str;
 
   // func_logger.info({"message": "GET呼び出し", "target_date_str": target_date_str});
   
   // カレンダーの日付を計算する
   func_logger.trace({"today_str": today_str, "target_date_str": target_date_str});
-  const target_date = moment(target_date_str, "YYYY-MM-DD");
+  const target_date = parse(target_date_str || "", "yyyy-MM-dd", new Date());
   func_logger.trace({"target_date": target_date});
-  const target_month = target_date.startOf("month");
-  const prev_month = target_month.clone().subtract(1, "M");
-  const next_month = target_month.clone().add(1, "M");
+  const target_month = startOfMonth(target_date);
+  const prev_month = subMonths(target_month, 1);
+  const next_month = addMonths(target_month, 1);
   func_logger.trace({"target_months": [prev_month, target_month, next_month]});
 
   const calendars_data: ScheduleData = {
@@ -258,4 +263,3 @@ export async function GET(req: NextRequest) {
   func_logger.info({"message": "END", "params": {"req": req}, "res": res});
   return res;
 }
-

@@ -1,8 +1,12 @@
 import { History } from '@/types/history-data-type';
-import moment from 'moment';
+import { setDefaultOptions, parse, format } from "date-fns";
+import { ja, enGB } from "date-fns/locale";
+import { tz } from "@date-fns/tz";
+setDefaultOptions({ locale: ja });
+//import moment from 'moment';
 
-// import base_logger from '@/lib/logger';
-// const logger = base_logger.child({ filename: __filename });
+import base_logger from '@/lib/logger';
+const logger = base_logger.child({ filename: __filename });
 
 export function rlog_parse(value: string): History[] {
   // データ例
@@ -72,8 +76,13 @@ export function rlog_parse(value: string): History[] {
         console.log("date_data=", date_data);
         if (date_data !== null) {
           const date_str = date_data[1];
-          const date_obj = moment.utc(date_str);
-          res.push({"revision": revision, "datetime": date_obj.local().format("YYYY-MM-DD HH:mm")});
+          const date_obj = parse(date_str, "yyyy/MM/dd HH:mm:ss", new Date(), {in: tz("Europe/London")});
+          //logger.info({"date_str": date_str});
+          //logger.info({"date_obj": date_obj});
+          //logger.info({"format0": format(date_obj, "yyyy-MM-dd HH:mm")});
+          //logger.info({"format1": format(date_obj, "yyyy-MM-dd HH:mm", {locale: ja})});
+          //logger.info({"format2": format(date_obj, "yyyy-MM-dd HH:mm", {locale: ja, in: tz("Asia/Tokyo")})});
+          res.push({"revision": revision, "datetime": format(date_obj, "yyyy-MM-dd HH:mm", {locale: ja, in: tz("Asia/Tokyo")})});
           status = 0;
         } else {
           status = 99;

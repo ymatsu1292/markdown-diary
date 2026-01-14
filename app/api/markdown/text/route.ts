@@ -6,7 +6,10 @@ import { headers } from "next/headers";
 import { promisify } from "node:util";
 import { build_path } from "@/lib/build-path";
 
-import moment from "moment";
+//import moment from "moment";
+import { setDefaultOptions, format } from "date-fns";
+import { ja, enGB } from "date-fns/locale";
+setDefaultOptions({ locale: ja });
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
@@ -133,7 +136,7 @@ export async function POST(req: Request) {
       try {
         let cmd = "";
         let res;
-        const dtstr = moment().format();
+        const dtstr = format(new Date(), "yyyy-MM-dd");
         // mkdir RCS
         func_logger.trace({"message": "mkdir"});
         await mkdir(directory + "/RCS", { recursive: true });
