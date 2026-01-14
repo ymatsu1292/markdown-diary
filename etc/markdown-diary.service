@@ -1,0 +1,16 @@
+[Unit]
+Description=Markdown Diary Service
+After=network.target
+ConditionPathExists=/home/user/markdown-diary/data
+
+[Service]
+Environment=PATH=/home/user/.nvm/versions/node/v24.12.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+ExecStart=bash -c ". /home/user/.bashrc; cd /home/user/markdown-diary; npm run start"
+Restart=on-failure
+Type=simple
+WorkingDirectory=/home/user/markdown-diary
+User=user
+Group=user
+
+[Install]
+WantedBy=multi-user.target

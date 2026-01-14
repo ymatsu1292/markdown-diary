@@ -1,22 +1,16 @@
 "use client";
 
 import Script from "next/script";
-import { useState, useEffect, useMemo, useRef } from "react";
-import { signOut, useSession } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-import { getTodayStr, getTodayMonth } from "@/lib/dateutils";
+import { useState, useEffect, useRef } from "react";
+import { useSession } from "@/lib/auth-client";
+import { getTodayStr } from "@/lib/dateutils";
 import { MiniCalendars } from "@/components/organisms/mini-calendars";
 import { MarkdownFileList } from "@/components/organisms/markdown-file-list";
 import { ContentViewer } from "@/components/organisms/content-viewer";
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@heroui/react";
-import { Link, Button, Input } from "@heroui/react";
-import { Card, CardBody } from "@heroui/react";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@heroui/react";
-import { Book, Menu } from "lucide-react";
 import { Tabs, Tab } from "@heroui/react";
-import { Listbox, ListboxSection, ListboxItem } from "@heroui/react";
 import { PageData } from "@/types/page-data-type";
 import { ScheduleData } from "@/types/schedule-data-type";
+import { MdNavbar } from "@/components/organisms/md-navbar";
 
 //import base_logger from "@/lib/logger";
 //const logger = base_logger.child({ filename: __filename });
@@ -25,17 +19,17 @@ export function MainPage() {
   //const func_logger = logger.child({ "func": "MainPage" });
   //func_logger.trace({"message": "START"});
 
-  const router = useRouter();
   const { data: session } = useSession();
   const [ pageData, setPageData ] = useState<PageData>({
     title: getTodayStr(),
     calendarDate: getTodayStr(),
     scheduleData: null,
   });
-  const [ searchText, setSearchText ] = useState<string>("");
-  const [ userId, setUserId ] = useState("user");
+  //const [ searchText, setSearchText ] = useState<string>("");
+  //const [ userId, setUserId ] = useState("user");
+  //const userId = session?.user?.email;
   const dirty = useRef<boolean>(false);
-  const today_month = getTodayMonth();
+  //const today_month = getTodayMonth();
   
   // カレンダーの日付が変更された際の処理
   const loadSchedule = async(targetDate: string): Promise<ScheduleData | null> => {
@@ -49,7 +43,7 @@ export function MainPage() {
     const response = await fetch(uri);
     if (response.ok) {
       //func_logger.debug({"message": "fetch OK"});
-      let jsonData = await response.json();
+      const jsonData = await response.json();
       //func_logger.trace({"jsonData": jsonData});
       res = jsonData["scheduleData"];
     } else {
@@ -59,7 +53,7 @@ export function MainPage() {
     //console.log("loadSchedule終了");
     return res;
   };
-  
+
   // ページが変更されたときの処理
   const setPage = (
     newTitle: string, 
@@ -77,7 +71,7 @@ export function MainPage() {
         }
       }
       
-      let newPageData = {
+      const newPageData = {
         title: pageData.title,
         calendarDate: pageData.calendarDate,
         scheduleData: pageData.scheduleData,
@@ -97,7 +91,7 @@ export function MainPage() {
         newPageData["calendarDate"] = getTodayStr();
         //setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
       }
-      let sched = await loadSchedule(newPageData["calendarDate"]);
+      const sched = await loadSchedule(newPageData["calendarDate"]);
       newPageData["scheduleData"] = sched;
       //func_logger.info({"pageData": newPageData});
       setPageData(newPageData);
@@ -111,40 +105,37 @@ export function MainPage() {
     //console.log("setPage終了");
   }
 
-  // セッション情報が設定されたときの処理
   useEffect(() => {
-    //const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
-    //func_logger.debug({"message": "START"});
-
-    // if (session?.error == "refresh_access_token_error") {
-    //   func_logger.debug({"message": "TOKEN ERROR -> signIn"});
-    //   signIn();
-    // }
-
-    if (userId != session?.user?.email) {
-      setUserId(session?.user?.email || "dummy");
+    async function doSetPage() {
       setPage(getTodayStr());
     }
-    //func_logger.debug({"message": "END"});
-  }, [session]);
+    doSetPage();
+    // eslint-disable-next-line
+  }, []);
   
-  const isInvalid = useMemo(() => {
-    //const func_logger = logger.child({ "func": "MainPage.isInvalid" });
-    //func_logger.debug({"message": "START"});
+  //useEffect(() => {
+  //setPage(getTodayStr());
+  //}, [setPage]);
+  
+  // セッション情報が設定されたときの処理
+  // useEffect(() => {
+  //   //const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
+  //   //func_logger.debug({"message": "START"});
 
-    const filenameNgPattern = /[\\\/:\*\?\"<>\|]/;
-    if (searchText === "") {
-      //func_logger.debug({"message": "END(searchText is null)", "res": false});
-      return false;
-    }
+  //   // if (session?.error == "refresh_access_token_error") {
+  //   //   func_logger.debug({"message": "TOKEN ERROR -> signIn"});
+  //   //   signIn();
+  //   // }
 
-    const res = filenameNgPattern.test(searchText) ? true : false;
-    //func_logger.debug({"message": "END", "res": res});
-    return res;
-  }, [searchText]);
+  //   if (userId != session?.user?.email) {
+  //     setUserId(session?.user?.email || "dummy");
+  //     setPage(getTodayStr());
+  //   }
+  //   //func_logger.debug({"message": "END"});
+  // }, [session]);
   
   const doSearchIfNecessary = async (key: string, page: string) => {
-    if (key == "Enter" && !isInvalid) {
+    if (key == "Enter") {
       // ページを設定する
       setPage(page);
     }
@@ -154,50 +145,7 @@ export function MainPage() {
 
   return (
     <div>
-      <Navbar position="sticky" height="3rem" isBordered className="bg-blue-200 min-w-fit mx-auto">
-        <NavbarBrand key="a">
-          <Link href={process.env.NEXT_PUBLIC_BASE_PATH} color="foreground">
-            <Book size={24} /><p className="font-bold text-inherit mx-1">Markdown Diary</p>
-          </Link>
-        </NavbarBrand>
-        <NavbarContent className="sm:flex gap-2" justify="center" key="b">
-          <NavbarItem key="search">
-            <Input type="search" size="sm" placeholder="ページ名" value={searchText} onKeyPress={(e) => {
-              if (e.target instanceof HTMLInputElement) {
-                doSearchIfNecessary(e.key, e.target.value);
-              }
-            }}
-              onValueChange={setSearchText}
-              isInvalid={isInvalid} errorMessage={isInvalid && "ファイル名に使えない文字が含まれています"}
-              color={isInvalid ? "danger" : "default"}
-              className="max-w-xs"
-            />
-          </NavbarItem>
-          <NavbarItem key="menu">
-            <Dropdown placement="bottom-end">
-              <DropdownTrigger>
-                <Button isIconOnly variant="light" title="menu"><Menu size={24}/></Button>
-              </DropdownTrigger>
-              <DropdownMenu aria-label="Profile" variant="flat">
-                <DropdownItem className="h-14 gap-2" key="username">
-                  <p>Signed in as</p><p className="font-semibold">{session?.user?.name}</p>
-                </DropdownItem>
-                <DropdownItem color="danger" onPress={async () => {
-                  await signOut({
-                    fetchOptions: {
-                      onSuccess: () => {
-                        router.push("/login");
-                      },
-                    },
-                  });
-                }} key="logout">
-                  Logout
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          </NavbarItem>
-        </NavbarContent>
-      </Navbar>
+      <MdNavbar doSearchIfNecessary={doSearchIfNecessary} />
       <div className="flex">
         <div className="flex-basis-220">
           <Tabs>
@@ -213,7 +161,7 @@ export function MainPage() {
         </div>
         <div className="grow">
           <ContentViewer
-            dirty={dirty}
+            dirtyRef={dirty}
             pageData={pageData}
           />
         </div>

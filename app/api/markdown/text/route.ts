@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { open, mkdir, writeFile, readFile, rm, stat, mkdtemp, cp } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { open, mkdir, readFile, rm, stat } from "node:fs/promises";
 import { exec } from "child_process";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -39,17 +37,18 @@ export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
   func_logger.trace({"message": "START"});
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || !session.user || !session.user.email) {
+  if (!session) {
     return NextResponse.json({}, {status: 401});
   }
-  const user = session.user.email;
+  const user_id = session.user.id;
+  console.log("user_id=", user_id);
   
   const params = req.nextUrl.searchParams;
   const target: string = params.has("target") ? params.get("target") || "" : "";
   const oldtimestamp: number = params.has("timestamp") ? parseFloat(params.get("timestamp") || "0.0") || 0.0 : 0.0;
-  func_logger.debug({"params": params, "user": user, "target": target});
+  func_logger.debug({"params": params, "user_id": user_id, "target": target});
 
-  const directory = build_path(process.env.DATA_DIRECTORY || "", user);
+  const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
   const filename = directory + "/" + target + ".md";
 
   let markdown = "";
@@ -66,10 +65,10 @@ export async function GET(req: NextRequest) {
 
     if (useRcs) {
       // RCSを利用している場合はrcsdiffでコミットされていない情報があるかどうかをチェック
-      let cmd: string = 'rcsdiff -r ' + target + '.md';
+      const cmd: string = 'rcsdiff -r ' + target + '.md';
       try {
         func_logger.info({"command": cmd, "message": "exec"});
-        let exec_res = await aexec(cmd, {"cwd": directory});
+        const exec_res = await aexec(cmd, {"cwd": directory});
         func_logger.info({"command": cmd, "res": exec_res});
         // 差分がない場合
       } catch (error) {
@@ -92,12 +91,12 @@ export async function POST(req: Request) {
   func_logger.info({"message": "START"});
   const session = await auth.api.getSession({ headers: await headers() });
   func_logger.trace({"session": session});
-  if (!session || !session.user || !session.user.email) {
+  if (!session) {
     const res = NextResponse.json({}, {status: 401});
     func_logger.trace({"message": "no session", "res": res});
     return res;
   }
-  const user = session.user.email;
+  const user_id = session.user.id;
   
   const json_data = await req.json();
   func_logger.trace({"json_data": json_data});
@@ -106,7 +105,7 @@ export async function POST(req: Request) {
   const markdown = json_data['markdown'];
   const original = json_data['original'];
   const oldtimestamp: number = parseFloat(json_data['timestamp'] || "0.0") || 0.0;
-  const directory = build_path(process.env.DATA_DIRECTORY || "", user);
+  const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
   func_logger.trace({"directory": directory});
   func_logger.trace({"markdown": markdown, "original": original, "oldtimestamp": oldtimestamp});
   // ディレクトリを作り
@@ -122,8 +121,8 @@ export async function POST(req: Request) {
   try {
     const stat_data = await stat(filename);
     mtime = stat_data.mtimeMs;
-  } catch (error) {
-    func_logger.info({"message": "cannot stat"});
+  } catch (e) {
+    func_logger.info({"message": "cannot stat", "error": e});
   }
 
   if (markdown != "") {
@@ -146,8 +145,9 @@ export async function POST(req: Request) {
           func_logger.trace({"command": cmd, "message": "exec"});
           res = await aexec(cmd, {"cwd": directory});
           func_logger.trace({"command": cmd, "res": res});
-        } catch (err) {
+        } catch (e) {
           // rlogがエラーになったらRCS未登録
+          func_logger.info({"message": "rlog failed", "error": e});
           historyExisted = false;
         }
         if (historyExisted) {
@@ -167,9 +167,9 @@ export async function POST(req: Request) {
               func_logger.trace({"message": "タイムスタンプが変わっているので更新しない", "old": oldtimestamp, "new": mtime});
               conflicted = true;
             }
-          } catch (err) {
+          } catch (e) {
             // 何かエラーが出た
-            func_logger.warn({"command": cmd, "message": "通常更新失敗(RCS登録)", "error": err});
+            func_logger.warn({"command": cmd, "message": "通常更新失敗(RCS登録)", "error": e});
           }
         } else {
           // 履歴が存在しない場合は新規登録する
@@ -182,8 +182,8 @@ export async function POST(req: Request) {
             func_logger.trace({"command": cmd, "message": "exec(initial ci)"});
             res = await aexec(cmd, {"cwd": directory});
             func_logger.trace({"command": cmd, "res": res});
-          } catch (err) {
-            func_logger.warn({"command": cmd, "message": "初期登録失敗(RCS登録)", "error": err});
+          } catch (e) {
+            func_logger.warn({"command": cmd, "message": "初期登録失敗(RCS登録)", "error": e});
           }
         }
       } finally {
@@ -204,16 +204,16 @@ export async function POST(req: Request) {
     try {
       const stat_data = await stat(filename);
       mtime = stat_data.mtimeMs;
-    } catch (error) {
-      func_logger.info({"message": "cannot stat"});
+    } catch (e) {
+      func_logger.info({"message": "cannot stat", "error": e});
     }
     func_logger.trace({"message": "タイムスタンプ", "timestamp": mtime});
     if (useRcs) {
       // RCSを利用している場合はrcsdiffでコミットされていない情報があるかどうかをチェック
-      let cmd: string = 'rcsdiff -r ' + target + '.md';
+      const cmd: string = 'rcsdiff -r ' + target + '.md';
       try {
         func_logger.info({"command": cmd, "message": "exec"});
-        let exec_res = await aexec(cmd, {"cwd": directory});
+        const exec_res = await aexec(cmd, {"cwd": directory});
         func_logger.info({"command": cmd, "res": exec_res});
         // 差分がない場合
       } catch (error) {

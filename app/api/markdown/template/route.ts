@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { open, mkdir, writeFile, readFile, rm } from "node:fs/promises";
-import { exec } from "child_process";
+import { readFile } from "node:fs/promises";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { promisify } from "node:util";
 import { build_path } from "@/lib/build-path";
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
-
-const aexec = promisify(exec);
 
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
