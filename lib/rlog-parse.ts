@@ -1,8 +1,8 @@
 import { History } from '@/types/history-data-type';
 import moment from 'moment';
 
-import base_logger from '@/lib/logger';
-const logger = base_logger.child({ filename: __filename });
+// import base_logger from '@/lib/logger';
+// const logger = base_logger.child({ filename: __filename });
 
 export function rlog_parse(value: string): History[] {
   // データ例
@@ -40,14 +40,14 @@ export function rlog_parse(value: string): History[] {
   // 3. "date: "で始まる行の";"までの文字列を日付として読み出し、ローカルタイムに変換して保管する
   // 4. 1へ戻る
   
-  let res: History[] = [];
+  const res: History[] = [];
   
   const revision_regex = /^revision ([0-9.]+)/;
   const date_regex = /^date: ([0-9/: +]+)/;
   const lines = value.split('\n');
   let status: number = 0; // 0: 初期状態、1: 最初の区切り文字が着た後
   let revision = "";
-  let date_str = "";
+  //let date_str = "";
   for (const line of lines) {
     switch (status) {
       case 0: // 最初のデータの前
@@ -71,8 +71,8 @@ export function rlog_parse(value: string): History[] {
         const date_data = date_regex.exec(line);
         console.log("date_data=", date_data);
         if (date_data !== null) {
-          let date_str = date_data[1];
-          let date_obj = moment.utc(date_str);
+          const date_str = date_data[1];
+          const date_obj = moment.utc(date_str);
           res.push({"revision": revision, "datetime": date_obj.local().format("YYYY-MM-DD HH:mm")});
           status = 0;
         } else {

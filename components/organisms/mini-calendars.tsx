@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
 import { MiniCalendar } from "@/components/molecules/mini-calendar";
 import { getTodayStr, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from "@/lib/dateutils";
 import { ChevronsLeft, ChevronLeft, ChevronsRight, ChevronRight, House } from "lucide-react";
 import { PageData } from "@/types/page-data-type";
-import { ScheduleData } from "@/types/schedule-data-type";
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });

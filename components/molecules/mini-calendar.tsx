@@ -48,12 +48,12 @@ export function MiniCalendar(
 
     let fontStyle = "font-normal";
     //console.log(todayStr);
-    let dateStr: string = monthStr + "-" + String(daySchedule.date).padStart(2, "0");
+    const dateStr: string = monthStr + "-" + String(daySchedule.date).padStart(2, "0");
     //console.log("drawCell: START ", calendarDate, dateStr);
-    let key: string = dateStr;
+    //let key: string = dateStr;
     let otherMonth: boolean = false;
     if (daySchedule.date == "") {
-      key = "dummy-" + String(weekday);
+      //key = "dummy-" + String(weekday);
       otherMonth = true;
     }
     //console.log("drawCell.dateStr=", dateStr);
@@ -68,7 +68,7 @@ export function MiniCalendar(
       linkType = "always";
     }
     //console.log("drawCell.dateStr=", dateStr);
-    let res0 = <Link data-date={dateStr} size="sm" rel="me" color="foreground" underline={linkType}
+    const res0 = <Link data-date={dateStr} size="sm" rel="me" color="foreground" underline={linkType}
                  data-focus-visible={false}
                  className={fontStyle} onPress={(e) => {
                    if (e.target instanceof HTMLElement) {
@@ -89,7 +89,7 @@ export function MiniCalendar(
     }
     //console.log("res1=", res1);
     //console.log("drawCell: END");
-    let res2 = <TableCell key={weekday} className={`m-0 p-0 text-center ${calcCellColor(daySchedule, weekday, otherMonth)}`}>{res1}</TableCell>;
+    const res2 = <TableCell key={weekday} className={`m-0 p-0 text-center ${calcCellColor(daySchedule, weekday, otherMonth)}`}>{res1}</TableCell>;
     func_logger.trace({"message": "END", "res": res2})
     return res2;
   }

@@ -30,16 +30,15 @@ export async function GET(req: NextRequest) {
   func_logger.debug({"params": params, "user_id": user_id, "target": target, "revision": revision});
   
   const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
-  const filename = directory + "/" + target + ".md";
 
   if (revision === "") {
     // 履歴全体を取得する場合
     let histories: History[] = [];
-    let cmd: string = "rlog " + target + ".md";
+    const cmd: string = "rlog " + target + ".md";
     try {
       // func_logger.trace({"command": cmd, "message": "exec"});
       func_logger.info({"command": cmd, "message": "exec"});
-      let exec_res = await aexec(cmd, {"cwd": directory});
+      const exec_res = await aexec(cmd, {"cwd": directory});
       func_logger.info({"command": cmd, "res": exec_res});
       
       histories = rlog_parse(exec_res["stdout"]);
@@ -52,11 +51,11 @@ export async function GET(req: NextRequest) {
   } else {
     // リビジョンを指定してその内容を取得する場合
     let text: string = "";
-    let cmd: string = "co -p" + revision + " " + target + ".md";
+    const cmd: string = "co -p" + revision + " " + target + ".md";
     try {
       // func_logger.trace({"command": cmd, "message": "exec"});
       func_logger.info({"command": cmd, "message": "exec"});
-      let exec_res = await aexec(cmd, {"cwd": directory});
+      const exec_res = await aexec(cmd, {"cwd": directory});
       func_logger.info({"command": cmd, "res": exec_res});
       
       text = exec_res["stdout"];

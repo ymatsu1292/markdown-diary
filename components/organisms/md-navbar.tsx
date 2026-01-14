@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@heroui/react";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection, Avatar } from "@heroui/react";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection } from "@heroui/react";
 import { Link, Input, Button } from "@heroui/react";
 import { Book, Menu } from "lucide-react";
 
@@ -43,7 +43,7 @@ export function MdNavbar(
         {doSearchIfNecessary != null ? (
         <NavbarItem key="search">
           <Input type="search" size="sm" placeholder="ページ名" value={searchText} onKeyPress={(e) => {
-            if (e.target instanceof HTMLInputElement) {
+            if (e.target instanceof HTMLInputElement && !isInvalid) {
               doSearchIfNecessary(e.key, e.target.value);
             }
           }}
@@ -82,7 +82,7 @@ export function MdNavbar(
                 <DropdownItem color="danger" onPress={async () => {
                   await signOut({
                     fetchOptions: {
-                      onSuccess: () => {
+                      onSuccess: async () => {
                         router.push("/login");
                       },
                     },

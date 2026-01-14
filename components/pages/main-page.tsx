@@ -1,20 +1,13 @@
 "use client";
 
 import Script from "next/script";
-import { useState, useEffect, useMemo, useRef } from "react";
-import { signOut, useSession } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-import { getTodayStr, getTodayMonth } from "@/lib/dateutils";
+import { useState, useEffect, useRef } from "react";
+import { useSession } from "@/lib/auth-client";
+import { getTodayStr } from "@/lib/dateutils";
 import { MiniCalendars } from "@/components/organisms/mini-calendars";
 import { MarkdownFileList } from "@/components/organisms/markdown-file-list";
 import { ContentViewer } from "@/components/organisms/content-viewer";
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@heroui/react";
-import { Link, Button, Input } from "@heroui/react";
-import { Card, CardBody } from "@heroui/react";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@heroui/react";
-import { Book, Menu } from "lucide-react";
 import { Tabs, Tab } from "@heroui/react";
-import { Listbox, ListboxSection, ListboxItem } from "@heroui/react";
 import { PageData } from "@/types/page-data-type";
 import { ScheduleData } from "@/types/schedule-data-type";
 import { MdNavbar } from "@/components/organisms/md-navbar";
@@ -26,17 +19,17 @@ export function MainPage() {
   //const func_logger = logger.child({ "func": "MainPage" });
   //func_logger.trace({"message": "START"});
 
-  const router = useRouter();
   const { data: session } = useSession();
   const [ pageData, setPageData ] = useState<PageData>({
     title: getTodayStr(),
     calendarDate: getTodayStr(),
     scheduleData: null,
   });
-  const [ searchText, setSearchText ] = useState<string>("");
-  const [ userId, setUserId ] = useState("user");
+  //const [ searchText, setSearchText ] = useState<string>("");
+  //const [ userId, setUserId ] = useState("user");
+  //const userId = session?.user?.email;
   const dirty = useRef<boolean>(false);
-  const today_month = getTodayMonth();
+  //const today_month = getTodayMonth();
   
   // カレンダーの日付が変更された際の処理
   const loadSchedule = async(targetDate: string): Promise<ScheduleData | null> => {
@@ -50,7 +43,7 @@ export function MainPage() {
     const response = await fetch(uri);
     if (response.ok) {
       //func_logger.debug({"message": "fetch OK"});
-      let jsonData = await response.json();
+      const jsonData = await response.json();
       //func_logger.trace({"jsonData": jsonData});
       res = jsonData["scheduleData"];
     } else {
@@ -60,7 +53,7 @@ export function MainPage() {
     //console.log("loadSchedule終了");
     return res;
   };
-  
+
   // ページが変更されたときの処理
   const setPage = (
     newTitle: string, 
@@ -78,7 +71,7 @@ export function MainPage() {
         }
       }
       
-      let newPageData = {
+      const newPageData = {
         title: pageData.title,
         calendarDate: pageData.calendarDate,
         scheduleData: pageData.scheduleData,
@@ -98,7 +91,7 @@ export function MainPage() {
         newPageData["calendarDate"] = getTodayStr();
         //setPageData({...pageData, title: newTitle, calendarDate: getTodayStr()});
       }
-      let sched = await loadSchedule(newPageData["calendarDate"]);
+      const sched = await loadSchedule(newPageData["calendarDate"]);
       newPageData["scheduleData"] = sched;
       //func_logger.info({"pageData": newPageData});
       setPageData(newPageData);
@@ -112,40 +105,37 @@ export function MainPage() {
     //console.log("setPage終了");
   }
 
-  // セッション情報が設定されたときの処理
   useEffect(() => {
-    //const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
-    //func_logger.debug({"message": "START"});
-
-    // if (session?.error == "refresh_access_token_error") {
-    //   func_logger.debug({"message": "TOKEN ERROR -> signIn"});
-    //   signIn();
-    // }
-
-    if (userId != session?.user?.email) {
-      setUserId(session?.user?.email || "dummy");
+    async function doSetPage() {
       setPage(getTodayStr());
     }
-    //func_logger.debug({"message": "END"});
-  }, [session]);
+    doSetPage();
+    // eslint-disable-next-line
+  }, []);
   
-  const isInvalid = useMemo(() => {
-    //const func_logger = logger.child({ "func": "MainPage.isInvalid" });
-    //func_logger.debug({"message": "START"});
+  //useEffect(() => {
+  //setPage(getTodayStr());
+  //}, [setPage]);
+  
+  // セッション情報が設定されたときの処理
+  // useEffect(() => {
+  //   //const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
+  //   //func_logger.debug({"message": "START"});
 
-    const filenameNgPattern = /[\\\/:\*\?\"<>\|]/;
-    if (searchText === "") {
-      //func_logger.debug({"message": "END(searchText is null)", "res": false});
-      return false;
-    }
+  //   // if (session?.error == "refresh_access_token_error") {
+  //   //   func_logger.debug({"message": "TOKEN ERROR -> signIn"});
+  //   //   signIn();
+  //   // }
 
-    const res = filenameNgPattern.test(searchText) ? true : false;
-    //func_logger.debug({"message": "END", "res": res});
-    return res;
-  }, [searchText]);
+  //   if (userId != session?.user?.email) {
+  //     setUserId(session?.user?.email || "dummy");
+  //     setPage(getTodayStr());
+  //   }
+  //   //func_logger.debug({"message": "END"});
+  // }, [session]);
   
   const doSearchIfNecessary = async (key: string, page: string) => {
-    if (key == "Enter" && !isInvalid) {
+    if (key == "Enter") {
       // ページを設定する
       setPage(page);
     }
@@ -171,7 +161,7 @@ export function MainPage() {
         </div>
         <div className="grow">
           <ContentViewer
-            dirty={dirty}
+            dirtyRef={dirty}
             pageData={pageData}
           />
         </div>

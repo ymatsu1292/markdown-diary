@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@heroui/react";
-import { Card, CardHeader, CardBody, CardFooter} from "@heroui/react";
+import { Card, CardHeader, CardBody } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { useState } from "react";
-import { Loader2, Key } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 
 export default function SignInCard() {
@@ -57,10 +57,10 @@ export default function SignInCard() {
             onClick={async () => {
               await signIn.email({ email, password,
                 callbackURL: process.env.NEXT_PUBLIC_BASE_PATH + "/" }, {
-                onRequest: (ctx) => {
+                onRequest: () => {
                   setLoading(true);
                 },
-                onResponse: (ctx) => {
+                onResponse: () => {
                   setLoading(false);
                 },
               },);
