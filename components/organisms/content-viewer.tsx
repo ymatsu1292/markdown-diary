@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo, useRef, RefObject } from "react";
+import { useState, useEffect, useMemo, useRef, RefObject } from "react";
 import { Tabs, Tab, Card, CardBody } from "@heroui/react";
 import { Input, Button, Link, Switch } from "@heroui/react";
-import { Select, SelectSection, SelectItem } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/react";
 import { Listbox, ListboxItem } from "@heroui/react";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
 import { Textarea } from "@heroui/react";
@@ -24,8 +24,8 @@ import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 export function ContentViewer(
-  { dirty, pageData } : {
-    dirty: RefObject<boolean>;
+  { dirtyRef, pageData } : {
+    dirtyRef: RefObject<boolean>;
     pageData: PageData;
   }
 ) {
@@ -67,7 +67,9 @@ export function ContentViewer(
       if (lang && hljs.getLanguage(lang)) {
         try {
           return hljs.highlight(str, { language: lang }).value;
-        } catch (__) {}
+        } catch (e) {
+          func_logger.debug({"message": "hljs.highlight error", "error": e});
+        }
       }
       return "";
     }}).use(container, {name: "info"}).use(tasklist);
@@ -99,25 +101,33 @@ export function ContentViewer(
     if (originalUpdate) {
       setText(newText);
       setEditData({...editData, originalText: newText, html: html_data, committed: commitFlag, timestamp: timestamp, conflicted: false} as EditData);
-      dirty.current = false;
+      dirtyRef.current = false;
     } else {
       setText(newText);
       setEditData({...editData, html: html_data, committed: commitFlag} as EditData);
-      dirty.current = (newText != editData.originalText);
+      dirtyRef.current = (newText != editData.originalText);
     }
-    func_logger.trace({"dirty": dirty.current});
+    func_logger.trace({"dirtyRef": dirtyRef.current});
 
     func_logger.trace({"message": "END", "params": {"newText": newText, "originalUpdate": originalUpdate, "commitFlag": commitFlag}});
   }
 
-  const onChange = useCallback((val: string) => {
+  // const onChange = useCallback((val: string) => {
+  //   const func_logger = logger.child({ "func": "ContentViewer.onChange" });
+  //   func_logger.trace({"message": "START", "params": {"val": val}});
+  //   func_logger.info({"message": "onChange開始"});
+  //   updateEditData(val, false, false, 0);
+  //   func_logger.info({"message": "onChange終了"});
+  //   func_logger.trace({"message": "END", "params": {"val": val}});
+  // }, [md, pageData.title, editData, updateEditData]);
+  const onChange = (val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
     func_logger.trace({"message": "START", "params": {"val": val}});
     func_logger.info({"message": "onChange開始"});
     updateEditData(val, false, false, 0);
     func_logger.info({"message": "onChange終了"});
     func_logger.trace({"message": "END", "params": {"val": val}});
-  }, [md, pageData.title, editData]);
+  };
   
   const checkData = async(): Promise<boolean> => {
     const func_logger = logger.child({ "func": "ContentViewer.checkData" });
@@ -138,24 +148,6 @@ export function ContentViewer(
     return res;
   };
   
-  const loadData = async() => {
-    const func_logger = logger.child({ "func": "ContentViewer.loadData" });
-    func_logger.debug({"message": "START"});
-    func_logger.info({"message": "マークダウン読み込み開始", "title": pageData.title});
-    
-    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text?target=${pageData.title}`);
-    const result = await fetch(uri);
-    if (result.ok) {
-      const json_data = await result.json();
-      func_logger.trace({"json_data": json_data});
-      updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
-      setMessages([]);
-    }
-    
-    func_logger.info({"message": "マークダウン読み込み終了"});
-    func_logger.debug({"message": "END"});
-  }
-
   const setConflictMessage = () => {
     setMessages([
       "他の画面から更新されたため自動保存を停止しています",
@@ -208,7 +200,7 @@ export function ContentViewer(
         setEditData({...editData, originalText: text, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
         setMessages([]);
       }
-      dirty.current = false;
+      dirtyRef.current = false;
       if (showHistories) {
         getHistories(false);
       }
@@ -296,6 +288,24 @@ export function ContentViewer(
     func_logger.debug({"message": "END"});
   }
   
+  const loadData = async() => {
+    const func_logger = logger.child({ "func": "ContentViewer.loadData" });
+    func_logger.debug({"message": "START"});
+    func_logger.info({"message": "マークダウン読み込み開始", "title": pageData.title});
+    
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text?target=${pageData.title}`);
+    const result = await fetch(uri);
+    if (result.ok) {
+      const json_data = await result.json();
+      func_logger.trace({"json_data": json_data});
+      updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
+      setMessages([]);
+    }
+    
+    func_logger.info({"message": "マークダウン読み込み終了"});
+    func_logger.debug({"message": "END"});
+  }
+      
   useEffect(() => {
     (async() => {
       const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
@@ -313,6 +323,7 @@ export function ContentViewer(
       func_logger.debug({"message": "END"});
       func_logger.info({"message": "ページ情報読み込み完了", "targetPage": pageData.title});
     })()
+    // eslint-disable-next-line
   }, [pageData.title, session]);
 
   // タイマー時刻が更新された際にデータをチェックまたは保存する
@@ -376,7 +387,8 @@ export function ContentViewer(
       
       func_logger.debug({"message": "END"});
     })()
-  }, [timerTime]);
+    // eslint-disable-next-line
+  }, [timerTime, autosave, autosave_timer_time]);
   
   // 定期的にタイマー時刻を更新する
   useEffect(() => {
@@ -394,6 +406,7 @@ export function ContentViewer(
     }
     
     func_logger.debug({"message": "END"});
+    // eslint-disable-next-line
   }, []);
   
   func_logger.debug({"message": "END", "params": {
@@ -416,9 +429,13 @@ export function ContentViewer(
                       <Select label="テンプレート" className="ml-2 min-w-40"
                         selectionMode="single"
                         onSelectionChange={(keys) => {
-                          let keylist: React.Key[] = [...keys];
+                          const keylist: React.Key[] = [...keys];
                           func_logger.trace({"keylist": keylist});
-                          keylist.length === 0 ? setSelectedTemplate("") : setSelectedTemplate(keylist[0] as string);
+                          if (keylist.length === 0) {
+                            setSelectedTemplate("");
+                          } else {
+                            setSelectedTemplate(keylist[0] as string);
+                          }
                         }}
                         selectedKeys={[selectedTemplate]} 
                       >

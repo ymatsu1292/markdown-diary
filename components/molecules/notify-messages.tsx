@@ -1,4 +1,4 @@
-import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Card, CardBody } from "@heroui/react";
 
 export function NotifyMessages(
   { messages } : {

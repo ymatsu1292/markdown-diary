@@ -1,8 +1,6 @@
-import { useState, useMemo } from "react";
-import { ScheduleData } from "@/types/schedule-data-type";
+//import { useState, useMemo } from "react";
 import { Listbox, ListboxItem } from "@heroui/react";
-import { Folder, File } from "lucide-react";
-import { History } from "@/types/history-data-type";
+import { File } from "lucide-react";
 import { PageData } from "@/types/page-data-type";
 
 export function MarkdownFileList(
@@ -11,8 +9,8 @@ export function MarkdownFileList(
     setPage: (page: string) => void,
   }
 ) {
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
-  const selectedFile = useMemo(() => Array.from(selectedKeys).join(", "), [selectedKeys]);
+  //const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+  //const selectedFile = useMemo(() => Array.from(selectedKeys).join(", "), [selectedKeys]);
 
   const handleTargetPageChange = (newPage: string) => {
     // ページ遷移時の処理
@@ -23,7 +21,7 @@ export function MarkdownFileList(
     <div className="h-dvh bg-blue-50 w-50">
       <div className="m-1 p-1">ファイル一覧</div>
       <div className="container mx-auto">
-        <Listbox aria-label="filelist" variant="flat" selectionMode="single" selectedKeys={selectedKeys}>
+        <Listbox aria-label="filelist" variant="flat" selectionMode="single">
           { pageData.scheduleData != null ? pageData.scheduleData.markdownFiles.map((item) => 
             <ListboxItem key={item} startContent={<File size={16} />}
               onPress={(e) => {

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import moment from "moment";
-import { ScheduleData, MonthSchedule, WeekSchedule, DaySchedule } from "@/types/schedule-data-type";
+import { ScheduleData, MonthSchedule, WeekSchedule } from "@/types/schedule-data-type";
 import { EventData } from "@/types/schedule-data-type";
-import { mkdir, stat, writeFile, readFile, opendir } from "node:fs/promises";
-import { Buffer } from "node:buffer";
+import { mkdir, writeFile, readFile, opendir } from "node:fs/promises";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { build_path } from "@/lib/build-path";
@@ -11,28 +10,28 @@ import { build_path } from "@/lib/build-path";
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
-function create_calendar_base(check_month: any): MonthSchedule {
+function create_calendar_base(check_month: moment.Moment): MonthSchedule {
   const func_logger = logger.child({ "func": "create_calendar_base" });
   func_logger.debug({"message": "START", "params": {"check_month": check_month}});
 
   const year = check_month.clone().year();
   const month = check_month.clone().month();
-  let result: MonthSchedule = {
+  const result: MonthSchedule = {
     "month": check_month.format("YYYY-MM"),
     "data": []
   }
-  let start_date = check_month.clone().weekday(0);
+  const start_date = check_month.clone().weekday(0);
   //console.log("start_date=", start_date, ", check_month=", month);
   let week_number = 0;
   let continue_flag = true;
   while (continue_flag) {
-    let week_data: WeekSchedule = {
+    const week_data: WeekSchedule = {
       "id": "week" + String(week_number),
       "caldata": []
     };
     for (let d = 0; d < 7; d ++) {
       const calc_date = start_date.clone().add(d + week_number * 7, "days");
-      const calc_date_str = calc_date.format("YYYY-MM-DD");
+      //const calc_date_str = calc_date.format("YYYY-MM-DD");
       if (calc_date.month() != month) {
 	week_data["caldata"].push({date: "", holiday: "", memo: "", hasDiary: false});
       } else {
@@ -57,12 +56,12 @@ function parse_event_text(text: string): {[key: string]: string} {
   func_logger.trace({"message": "START", "params": {"text": text}});
   
   const lines: string[] = text.split("\n");
-  let res: {[key: string]: string} = {}
+  const res: {[key: string]: string} = {}
   lines.forEach((line) => {
-    let items: string[] = line.split(":");
+    const items: string[] = line.split(":");
     if (items.length == 2) {
-      let date: string = items[0].trim();
-      let event_text: string = items[1].trim();
+      const date: string = items[0].trim();
+      const event_text: string = items[1].trim();
       res[date] = event_text;
     }
   });
@@ -77,18 +76,18 @@ async function load_events(event_file: string, base_file: string | null): Promis
   func_logger.trace({"message": "START", "params": {"event_file": event_file, "base_file": base_file}});
 
   // イベント設定ファイルを読み込む
-  let event_data: EventData = {"events": {}, "others": [], "templates": []};
+  const event_data: EventData = {"events": {}, "others": [], "templates": []};
   try {
-    let event_buffer = await readFile(event_file, { encoding: "utf8" });
-    let event_text = event_buffer.toString();
+    const event_buffer = await readFile(event_file, { encoding: "utf8" });
+    const event_text = event_buffer.toString();
     event_data["events"] = parse_event_text(event_text);
-  } catch (error) {
+  } catch (e) {
     // ファイルがない場合はベースファイルから読み込み、本来のファイルに書き出す
-    func_logger.trace({"message": "COPY FROM base file"});
+    func_logger.trace({"message": "COPY FROM base file", "error": e});
     if (base_file != null) {
       try {
-        let event_buffer = await readFile(base_file);
-        let event_text = event_buffer.toString();
+        const event_buffer = await readFile(base_file);
+        const event_text = event_buffer.toString();
         await writeFile(event_file, event_text);
         event_data["events"] = parse_event_text(event_text);
       } catch (error) {
@@ -107,7 +106,7 @@ async function check_diary_exists(target_month_list: string[], user_id: string |
     "target_month_list": target_month_list,
     "user_id": user_id}});
 
-  let event_data: EventData = {"events": {}, "others": [], "templates": []};
+  const event_data: EventData = {"events": {}, "others": [], "templates": []};
   try {
     const work_dir = build_path(process.env.DATA_DIRECTORY || "", user_id || "");
 
@@ -137,7 +136,9 @@ async function check_diary_exists(target_month_list: string[], user_id: string |
         }
       }
     }
-  } catch (error) {}
+  } catch (e) {
+    func_logger.trace({"message": "unknown error", "error": e});
+  }
 
   func_logger.trace({"message": "END", "params": {
     "target_month_list": target_month_list,
@@ -151,7 +152,7 @@ function set_schedule_sub(target_calendar: MonthSchedule, event_data: EventData,
   func_logger.trace({"message": "START", "params": {
     "target_calendar": "target_calendar", "event_data": "event_data", "type": type}});
   
-  let month = target_calendar["month"];
+  const month = target_calendar["month"];
   for (const week_data of target_calendar["data"]) {
     for (const day_data of week_data["caldata"]) {
       const date = day_data["date"];
@@ -217,7 +218,7 @@ export async function GET(req: NextRequest) {
   const next_month = target_month.clone().add(1, "M");
   func_logger.trace({"target_months": [prev_month, target_month, next_month]});
 
-  let calendars_data: ScheduleData = {
+  const calendars_data: ScheduleData = {
     "cal1": create_calendar_base(prev_month),
     "cal2": create_calendar_base(target_month),
     "cal3": create_calendar_base(next_month),

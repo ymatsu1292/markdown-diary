@@ -10,8 +10,7 @@ export default async function Users() {
   })
   console.log("Login(): session=", session);
   if (!session) {
-    console.log("Login(): redirect");
-    redirect("/");
+    redirect("/login");
   }
 
   console.log("Users(): UsersPage");

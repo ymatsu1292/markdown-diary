@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { stat } from "node:fs/promises";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { promisify } from "node:util";
+//import { promisify } from "node:util";
 import { build_path } from "@/lib/build-path";
 
-import moment from "moment";
+//import moment from "moment";
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
-const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
-  ? (process.env["NEXT_PUBLIC_USE_RCS"] == "true" ? true : false)
-  : false;
+// const useRcs: boolean = ("NEXT_PUBLIC_USE_RCS" in process.env)
+//   ? (process.env["NEXT_PUBLIC_USE_RCS"] == "true" ? true : false)
+//   : false;
 
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
