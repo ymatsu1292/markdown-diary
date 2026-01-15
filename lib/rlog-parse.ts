@@ -1,12 +1,12 @@
 import { History } from '@/types/history-data-type';
 import { setDefaultOptions, parse, format } from "date-fns";
-import { ja, enGB } from "date-fns/locale";
+import { ja } from "date-fns/locale";
 import { tz } from "@date-fns/tz";
 setDefaultOptions({ locale: ja });
 //import moment from 'moment';
 
-import base_logger from '@/lib/logger';
-const logger = base_logger.child({ filename: __filename });
+// import base_logger from '@/lib/logger';
+// const logger = base_logger.child({ filename: __filename });
 
 export function rlog_parse(value: string): History[] {
   // データ例

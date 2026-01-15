@@ -128,23 +128,15 @@ export function ContentViewer(
     func_logger.info({"message": "onChange終了"});
     func_logger.trace({"message": "END", "params": {"val": val}});
   };
-  
+
   const checkData = async(): Promise<boolean> => {
     const func_logger = logger.child({ "func": "ContentViewer.checkData" });
-    func_logger.debug({"message": "START"});
-    func_logger.debug({"message": "タイムスタンプチェック", "title": pageData.title});
-    
-    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp?target=${pageData.title}`);
-    const result = await fetch(uri);
     let res = false;
-    if (result.ok) {
-      const json_data = await result.json();
-      func_logger.trace({"json_data": json_data});
-      func_logger.trace({"タイムスタンプ": json_data["timestamp"]});
-      res = (editData["timestamp"] !== json_data["timestamp"]);
+    if (timestampSSE > timestampSSEold) {
+      setTimestampSSEold(timestampSSE);
+      res = true;
     }
-    
-    func_logger.debug({"message": "END", "res": res});
+    func_logger.debug({"message": "checkData", "res": res});
     return res;
   };
   
@@ -326,6 +318,24 @@ export function ContentViewer(
     // eslint-disable-next-line
   }, [pageData.title, session]);
 
+  const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
+  const [timestampSSE, setTimestampSSE] = useState<number>(0);
+  useEffect(() => {
+    const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
+    const eventSource = new EventSource(uri);
+    eventSource.onmessage = (event) => {
+      func_logger.debug({"message": "onMessage", "event": event});
+      setTimestampSSE(event.data);
+    };
+    eventSource.onerror = () => {
+      func_logger.debug({"message": "onError"});
+    };
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+  
   // タイマー時刻が更新された際にデータをチェックまたは保存する
   useEffect(() => {
     (async() => {
@@ -359,10 +369,10 @@ export function ContentViewer(
             func_logger.debug({"message": "サーバ側変更あり"});
             if (editData.originalText != text) {
               // ローカルでも変更されていたらコンフリクトとする
-              func_logger.debug({"message": "クライアント側でも変更があるのでサーバと同期のため保存処理を行いコンフリクトとする"});
+              func_logger.info({"message": "クライアント側でも変更があるのでサーバと同期のため保存処理を行いコンフリクトとする"});
               await saveData(false);
             } else {
-              func_logger.debug({"message": "クライアント側では変更ないのでロードする"});
+              func_logger.info({"message": "クライアント側では変更ないのでロードする"});
               await loadData();
             }
             skipAutosave = true;
