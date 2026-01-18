@@ -78,6 +78,7 @@ export function ContentViewer(
   const [ histories, setHistories ] = useState<History[]>([]);
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
   const [ revisionText, setRevisionText ] = useState<string>("");
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const compareText = (serverText: string, localText: string): boolean => {
     let fixed1 = localText;
@@ -279,7 +280,7 @@ export function ContentViewer(
     
     func_logger.debug({"message": "END"});
   }
-  
+
   const loadData = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.loadData" });
     func_logger.debug({"message": "START"});
@@ -316,25 +317,29 @@ export function ContentViewer(
       func_logger.info({"message": "ページ情報読み込み完了", "targetPage": pageData.title});
     })()
     // eslint-disable-next-line
-  }, [pageData.title, session]);
+  }, [session]);
 
   const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
   const [timestampSSE, setTimestampSSE] = useState<number>(0);
   useEffect(() => {
-    const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
-    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
-    const eventSource = new EventSource(uri);
-    eventSource.onmessage = (event) => {
-      func_logger.debug({"message": "onMessage", "event": event});
-      setTimestampSSE(event.data);
-    };
-    eventSource.onerror = () => {
-      func_logger.debug({"message": "onError"});
-    };
-    return () => {
-      eventSource.close();
-    };
-  }, []);
+    (async() => {
+      const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
+      await loadData();
+      const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
+      const eventSource = new EventSource(uri);
+      eventSource.onmessage = (event) => {
+        func_logger.debug({"message": "onMessage", "event": event});
+        setTimestampSSE(event.data);
+      };
+      eventSource.onerror = () => {
+        func_logger.debug({"message": "onError"});
+      };
+      return () => {
+        eventSource.close();
+      };
+    })();
+    // eslint-disable-next-line
+  }, [pageData.title]);
   
   // タイマー時刻が更新された際にデータをチェックまたは保存する
   useEffect(() => {
@@ -396,7 +401,7 @@ export function ContentViewer(
       }
       
       func_logger.debug({"message": "END"});
-    })()
+    })();
     // eslint-disable-next-line
   }, [timerTime, autosave, autosave_timer_time]);
   
@@ -408,11 +413,17 @@ export function ContentViewer(
     if (process.env.NEXT_PUBLIC_USE_RCS === "true") {
       func_logger.debug({"message": "SET interval timer for autosave"});
       const intervalTime: number = 1000 * timer_time; // 10秒
-      const intervalId = setInterval(() => {
+      if (intervalRef.current !== null) return;
+      intervalRef.current = setInterval(() => {
         func_logger.debug({"message": "DO interval timer for autosave"});
         setTimerTime(new Date().getTime());
       }, intervalTime);
-      return () => clearInterval(intervalId);
+      return () => {
+        if (intervalRef.current != null) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      }
     }
     
     func_logger.debug({"message": "END"});

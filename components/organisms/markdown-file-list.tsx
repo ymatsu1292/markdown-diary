@@ -18,7 +18,7 @@ export function MarkdownFileList(
   };
 
   return (
-    <div className="h-dvh bg-blue-50 w-50">
+    <div className="h-dvh bg-blue-50 w-53">
       <div className="m-1 p-1">ファイル一覧</div>
       <div className="container mx-auto">
         <Listbox aria-label="filelist" variant="flat" selectionMode="single">
