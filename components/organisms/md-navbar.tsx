@@ -10,27 +10,29 @@ import { Book, Menu } from "lucide-react";
 import { signOut, useSession } from "@/lib/auth-client";
 
 export function MdNavbar(
-  { doSearchIfNecessary } : {
-    doSearchIfNecessary: ((key: string, page: string) => void) | null,
+  { goPageIfNecessary, doSearchIfNecessary } : {
+    goPageIfNecessary: ((key: string, page: string) => void) | null;
+    doSearchIfNecessary: ((key: string, searchText: string) => void) | null;
   }
 ) {
   const router = useRouter();
   const { data: session } = useSession();
   const [ searchText, setSearchText ] = useState<string>("");
+  const [ pageName, setPageName ] = useState<string>("");
   const isInvalid = useMemo(() => {
     //const func_logger = logger.child({ "func": "MainPage.isInvalid" });
     //func_logger.debug({"message": "START"});
 
     const filenameNgPattern = /[\\\/:\*\?\"<>\|]/;
-    if (searchText === "") {
+    if (pageName === "") {
       //func_logger.debug({"message": "END(searchText is null)", "res": false});
       return false;
     }
 
-    const res = filenameNgPattern.test(searchText) ? true : false;
+    const res = filenameNgPattern.test(pageName) ? true : false;
     //func_logger.debug({"message": "END", "res": res});
     return res;
-  }, [searchText]);
+  }, [pageName]);
   
   return (
     <Navbar position="sticky" height="3rem" isBordered className="bg-blue-200 min-w-fit mx-auto">
@@ -42,12 +44,26 @@ export function MdNavbar(
       <NavbarContent className="sm:flex gap-2" justify="center" key="b">
         {doSearchIfNecessary != null ? (
         <NavbarItem key="search">
-          <Input type="search" size="sm" placeholder="ページ名" value={searchText} onKeyPress={(e) => {
-            if (e.target instanceof HTMLInputElement && !isInvalid) {
+          <Input type="search" size="sm" placeholder="grep検索" value={searchText} onKeyPress={(e) => {
+            if (e.target instanceof HTMLInputElement) {
               doSearchIfNecessary(e.key, e.target.value);
             }
           }}
             onValueChange={setSearchText}
+            color="default"
+            className="max-w-xs"
+          />
+        </NavbarItem>
+        ) : <></>
+        }
+        {goPageIfNecessary != null ? (
+        <NavbarItem key="page">
+          <Input type="page" size="sm" placeholder="ページ名" value={pageName} onKeyPress={(e) => {
+            if (e.target instanceof HTMLInputElement && !isInvalid) {
+              goPageIfNecessary(e.key, e.target.value);
+            }
+          }}
+            onValueChange={setPageName}
             isInvalid={isInvalid} errorMessage={isInvalid && "ファイル名に使えない文字が含まれています"}
             color={isInvalid ? "danger" : "default"}
             className="max-w-xs"

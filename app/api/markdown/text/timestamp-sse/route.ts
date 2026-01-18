@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     }
     //const res = NextResponse.json({"timestamp": mtime});
     //func_logger.trace({"message": "タイムスタンプ取得", "mtime": mtime});
-  }, 1000);
+  }, 10000);
 
   req.signal.addEventListener("abort", () => {
     clearInterval(interval);

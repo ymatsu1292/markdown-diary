@@ -44,7 +44,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({}, {status: 401});
   }
   const user_id = session.user.id;
-  console.log("user_id=", user_id);
   
   const params = req.nextUrl.searchParams;
   const target: string = params.has("target") ? params.get("target") || "" : "";

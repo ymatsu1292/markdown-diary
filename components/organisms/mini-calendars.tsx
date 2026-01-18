@@ -23,7 +23,7 @@ export function MiniCalendars(
   };
 
   return (
-    <div className="bg-blue-50 w-50">
+    <div className="bg-blue-50 w-53">
       <div className="p-0 m-0">
 	<Button color="primary" variant="light" size="sm" radius="sm" className="m-0 p-0 min-w-10"
           aria-label="prev-month"

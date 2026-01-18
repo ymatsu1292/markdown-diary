@@ -253,7 +253,7 @@ export function UsersPage() {
 
   return (
     <div>
-      <MdNavbar doSearchIfNecessary={null} />
+      <MdNavbar doSearchIfNecessary={null} goPageIfNecessary={null} />
       {session!.user.role === "admin" ?
         <Card className="m-1 p-1">
           <div className="flex m-1 p-1">
