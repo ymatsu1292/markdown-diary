@@ -6,6 +6,7 @@ import { useSession } from "@/lib/auth-client";
 import { getTodayStr } from "@/lib/dateutils";
 import { MiniCalendars } from "@/components/organisms/mini-calendars";
 import { MarkdownFileList } from "@/components/organisms/markdown-file-list";
+import { GrepResultList } from "@/components/organisms/grep-result-list";
 import { ContentViewer } from "@/components/organisms/content-viewer";
 import { Tabs, Tab } from "@heroui/react";
 import { PageData } from "@/types/page-data-type";
@@ -18,12 +19,16 @@ import { MdNavbar } from "@/components/organisms/md-navbar";
 export function MainPage() {
   //const func_logger = logger.child({ "func": "MainPage" });
   //func_logger.trace({"message": "START"});
+  console.log("MainPage");
 
   const { data: session } = useSession();
+  const [ selectedTab, setSelectedTab ] = useState<string>("calendar");
   const [ pageData, setPageData ] = useState<PageData>({
     title: getTodayStr(),
     calendarDate: getTodayStr(),
     scheduleData: null,
+    grepText: "",
+    grepResults: [],
   });
   //const [ searchText, setSearchText ] = useState<string>("");
   //const [ userId, setUserId ] = useState("user");
@@ -54,9 +59,25 @@ export function MainPage() {
     return res;
   };
 
+  // 検索実施時の処理
+  const doSearch = (
+    searchText: string,
+  ) => {
+    (async () => {
+      const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/search?target=${searchText}`);
+      const response = await fetch(uri);
+      if (response.ok) {
+        const jsonData = await response.json();
+        console.log("jsonData=", jsonData);
+        console.log("grepResults=", jsonData["grepResults"]);
+        setPageData({...pageData, grepText: searchText, grepResults: jsonData["grepResults"]});
+      }
+    })();
+  };
+  
   // ページが変更されたときの処理
   const setPage = (
-    newTitle: string, 
+    newTitle: string,
   ) => {
     //console.log("setPage開始");
     (async () => {
@@ -75,6 +96,8 @@ export function MainPage() {
         title: pageData.title,
         calendarDate: pageData.calendarDate,
         scheduleData: pageData.scheduleData,
+        grepText: pageData.grepText,
+        grepResults: pageData.grepResults,
       }
       //func_logger.info({"newPageData": newPageData});
       
@@ -133,8 +156,15 @@ export function MainPage() {
   //   }
   //   //func_logger.debug({"message": "END"});
   // }, [session]);
+
+  const doSearchIfNecessary = async (key: string, searchText: string) => {
+    if (key == "Enter") {
+      setSelectedTab("grep");
+      doSearch(searchText);
+    }
+  };
   
-  const doSearchIfNecessary = async (key: string, page: string) => {
+  const goPageIfNecessary = async (key: string, page: string) => {
     if (key == "Enter") {
       // ページを設定する
       setPage(page);
@@ -145,10 +175,10 @@ export function MainPage() {
 
   return (
     <div>
-      <MdNavbar doSearchIfNecessary={doSearchIfNecessary} />
+      <MdNavbar doSearchIfNecessary={doSearchIfNecessary} goPageIfNecessary={goPageIfNecessary} />
       <div className="flex">
-        <div className="flex-basis-220">
-          <Tabs>
+        <div>
+          <Tabs selectedKey={selectedTab} onSelectionChange={(key: React.Key) => {setSelectedTab(String(key))}}>
             <Tab key="calendar" title={<div className="flex items-center space-x-2"><span>カレンダー</span></div>}>
               <MiniCalendars
                 pageData={pageData}
@@ -156,6 +186,9 @@ export function MainPage() {
             </Tab>
             <Tab key="files" title={<div className="flex items-center space-x-2"><span>ファイル</span></div>}>
               <MarkdownFileList pageData={pageData} setPage={setPage} />
+            </Tab>
+            <Tab key="grep" title={<div className="flex items-center space-x-2"><span>検索</span></div>}>
+              <GrepResultList pageData={pageData} setPage={setPage} />
             </Tab>
           </Tabs>
         </div>
