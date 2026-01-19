@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { authOptions } from '@/app/authOptions';
-import { getServerSession } from 'next-auth/next';
-import { promisify } from 'node:util';
-import { build_path } from '@/utils/buildPath';
-import { rlog_parse } from '@/utils/rlogParse';
-import { exec } from 'child_process';
-import { History } from '@/components/types/historyDataType';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { promisify } from "node:util";
+import { build_path } from "@/lib/build-path";
+import { rlog_parse } from "@/lib/rlog-parse";
+import { exec } from "child_process";
+import { History } from "@/types/history-data-type";
 
-import base_logger from '@/utils/logger';
+import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 const aexec = promisify(exec);
@@ -15,32 +15,30 @@ const aexec = promisify(exec);
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
   func_logger.trace({"message": "START"});
-
-  const session = await getServerSession(authOptions);
+  const session = await auth.api.getSession({ headers: await headers() });
   let res;
   func_logger.trace({"session": session});
-  if (!session || !session.user || !session.user.email) {
+  if (!session) {
     res = NextResponse.json({}, {status: 401});
     func_logger.trace({"message": "no session", "res": res});
     return res;
   }
-  const user = session.user.email;
+  const user_id = session.user.id;
   const params = req.nextUrl.searchParams;
-  const target: string = params.has('target') ? params.get('target') || "" : "";
-  const revision: string = params.has('revision') ? params.get('revision') || "" : "";
-  func_logger.debug({"params": params, "user": user, "target": target, "revision": revision});
+  const target: string = params.has("target") ? params.get("target") || "" : "";
+  const revision: string = params.has("revision") ? params.get("revision") || "" : "";
+  func_logger.debug({"params": params, "user_id": user_id, "target": target, "revision": revision});
   
-  const directory = build_path(process.env.DATA_DIRECTORY || "", user);
-  const filename = directory + "/" + target + ".md";
+  const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
 
   if (revision === "") {
     // 履歴全体を取得する場合
     let histories: History[] = [];
-    let cmd: string = 'rlog ' + target + '.md';
+    const cmd: string = "rlog " + target + ".md";
     try {
       // func_logger.trace({"command": cmd, "message": "exec"});
       func_logger.info({"command": cmd, "message": "exec"});
-      let exec_res = await aexec(cmd, {"cwd": directory});
+      const exec_res = await aexec(cmd, {"cwd": directory});
       func_logger.info({"command": cmd, "res": exec_res});
       
       histories = rlog_parse(exec_res["stdout"]);
@@ -53,11 +51,11 @@ export async function GET(req: NextRequest) {
   } else {
     // リビジョンを指定してその内容を取得する場合
     let text: string = "";
-    let cmd: string = 'co -p' + revision + " " + target + '.md';
+    const cmd: string = "co -p" + revision + " " + target + ".md";
     try {
       // func_logger.trace({"command": cmd, "message": "exec"});
       func_logger.info({"command": cmd, "message": "exec"});
-      let exec_res = await aexec(cmd, {"cwd": directory});
+      const exec_res = await aexec(cmd, {"cwd": directory});
       func_logger.info({"command": cmd, "res": exec_res});
       
       text = exec_res["stdout"];
