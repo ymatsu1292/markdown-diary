@@ -9,7 +9,7 @@ markdown-diary
 
 実行方法
 -----
-1.  Node.js 20.11.1をインストールしたLinux環境を用意する
+1.  Node.js 24.12.1をインストールしたLinux環境を用意する
     できればRCSもインストールする(ubuntuであればapt install rcsでインストール)
 2.  git cloneでリポジトリをクローンする
 3.  設定ファイル(markdown-diary/.env)を設定する
@@ -17,14 +17,18 @@ markdown-diary
     $ cd markdown-diary
     $ vi .env
     ```
-    デフォルトでは3002ポートで実行されるので、必要に応じてpackage.jsonの-H 0.0.0.0、-p 3002の部分を修正する
-    
-4.  動作確認する
-    ```
-    $ npm run dev
-    ```
-    ブラウザで"http://サーバのIPアドレス/mdiary"を開く
+    *   BETTER_AUTH_SECRETにopenssl rand -base64 32で作成した文字列を設定
+    *   DOMAINにドメイン名またはIPアドレスを設定
+    *   NEXT_PUBLIC_BASE_PATHにサブディレクトリを使用する場合は"/ディレクトリ名"の形式で設定
+    *   NEXT_PUBLIC_BASE_URLにURLを設定
+    *   DATA_DIRECTORYにデータを置くディレクトリを設定
+    *   RCSを利用する場合はNEXT_PUBLIC_USE_RCSにtrueを設定
 
+4.  利用するパッケージをダウンロードする
+    ```
+    $ npm install
+    ```
+    
 5.  問題なければビルドする
     ```
     $ npm run build

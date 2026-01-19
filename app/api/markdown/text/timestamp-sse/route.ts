@@ -22,6 +22,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({}, {status: 401});
   }
   const user_id = session.user.id;
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
   
   const params = req.nextUrl.searchParams;
   const target: string = params.has("target") ? params.get("target") || "" : "";
@@ -30,16 +32,32 @@ export async function GET(req: NextRequest) {
   const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
   const filename = directory + "/" + target + ".md";
 
-  let mtime = 0;
-  try {
-    const stat_data = await stat(filename);
-    mtime = stat_data.mtimeMs;
-  } catch (error) {
-    // エラーが出ても気にしない
-    func_logger.debug({"message": "IGNORE ERROR", "error": error})
-  }
-  const res = NextResponse.json({"timestamp": mtime});
-  func_logger.trace({"message": "タイムスタンプ取得", "mtime": mtime});
-  func_logger.debug({"message": "END", "res": res});
-  return res;
+  const interval = setInterval(async () => {
+    func_logger.debug({"message": "do interval"})
+    let mtime = 0;
+    try {
+      const stat_data = await stat(filename);
+      mtime = stat_data.mtimeMs;
+      writer.write(new TextEncoder().encode(`event: message\ndata:${mtime}\n\n`));
+    } catch (error) {
+      // エラーが出ても気にしない
+      func_logger.debug({"message": "IGNORE ERROR", "error": error})
+    }
+    //const res = NextResponse.json({"timestamp": mtime});
+    //func_logger.trace({"message": "タイムスタンプ取得", "mtime": mtime});
+  }, 10000);
+
+  req.signal.addEventListener("abort", () => {
+    clearInterval(interval);
+    writer.close();
+  });
+  
+  func_logger.debug({"message": "END"});
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }
