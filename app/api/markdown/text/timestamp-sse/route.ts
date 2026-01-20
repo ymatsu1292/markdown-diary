@@ -43,8 +43,6 @@ export async function GET(req: NextRequest) {
       // エラーが出ても気にしない
       func_logger.debug({"message": "IGNORE ERROR", "error": error})
     }
-    //const res = NextResponse.json({"timestamp": mtime});
-    //func_logger.trace({"message": "タイムスタンプ取得", "mtime": mtime});
   }, 10000);
 
   req.signal.addEventListener("abort", () => {

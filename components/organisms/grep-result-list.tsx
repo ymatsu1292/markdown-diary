@@ -13,6 +13,7 @@ export function GrepResultList(
       <div className="container mx-auto">
         <Listbox aria-label="greplist" variant="flat" selectionMode="single"
           itemClasses={{base: "my-0 py-0 font-bold font-mono", title: "font-serif"}}
+          className="h-[calc(100dvh-170px)] overflow-scroll"
         >
           { pageData.grepResults.map((item) => 
             <ListboxItem key={item[0]+":"+item[1]} startContent={item[0]+"["+item[1]+"]"}
