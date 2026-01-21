@@ -5,12 +5,10 @@ import useSWR, { useSWRConfig } from "swr";
 import { Eye } from "lucide-react";
 import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
 import { Pagination, getKeyValue } from "@heroui/react";
-import { Spinner, Input, Button, Link } from "@heroui/react";
+import { Spinner, Input, Button } from "@heroui/react";
 import { Card, CardBody } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection } from "@heroui/react";
 import { Modal, ModalContent, ModalHeader, ModalBody, useDisclosure } from "@heroui/react";
-import { Menu } from "lucide-react";
 import { useSession, authClient } from "@/lib/auth-client";
 
 import { MdNavbar } from "@/components/organisms/md-navbar";
@@ -80,57 +78,6 @@ export function UsersPage() {
     hasError = true;
   }
   
-  function EditMenu({
-    user
-  } : {
-    user: UserData,
-  }) {
-    return (
-      <Dropdown>
-        <DropdownTrigger variant="flat">
-          <Link color="foreground"><Menu size={16} /></Link>
-        </DropdownTrigger>
-        {session?.user?.role == "admin" ?
-        <DropdownMenu aria-label="edit-menu"
-          disabledKeys={user.id == session?.user?.id ? ["delete", "set-normal-user"] : []}
-        >
-          <DropdownSection showDivider>
-            <DropdownItem key="edit" onPress={() => {
-              if (!user.username) {
-                user.username = "";
-              }
-              setOrigUser({...user, password: user.password || "", newPassword: ""});
-              setEditUser({...user, password: user.password || "", newPassword: ""});
-              onOpen();
-            }}>編集</DropdownItem>
-          </DropdownSection>
-          <DropdownSection>
-            {user.role != "admin" ?
-            <DropdownItem key="set-admin">管理者に変更</DropdownItem>
-            :
-            <DropdownItem key="set-normal-user">一般ユーザに変更</DropdownItem>
-            }
-            <DropdownItem key="delete" color="danger" className="text-danger">削除</DropdownItem>
-          </DropdownSection>
-        </DropdownMenu>
-        :
-        <DropdownMenu aria-label="edit-menu">
-          <DropdownSection>
-            <DropdownItem key="edit" onPress={() => {
-              if (!user.username) {
-                user.username = "";
-              }
-              setOrigUser({...user, password: user.password || "", newPassword: ""});
-              setEditUser({...user, password: user.password || "", newPassword: ""});
-              onOpen();
-            }}>編集</DropdownItem>
-          </DropdownSection>
-        </DropdownMenu>
-        }
-      </Dropdown>
-    );
-  }
-
   const onSubmit = async () => {
     let result = true;
     if (origUser.id == "") {
@@ -295,7 +242,6 @@ export function UsersPage() {
         }}
       >
         <TableHeader>
-          <TableColumn key="menu"><span></span></TableColumn>
           <TableColumn key="username">username</TableColumn>
           <TableColumn key="name">name</TableColumn>
           <TableColumn key="email">email</TableColumn>
@@ -312,9 +258,7 @@ export function UsersPage() {
           {(item) => (
             <TableRow key={item?.id}>
               {(columnKey) => <TableCell>{
-                columnKey != "menu" ?
-                getKeyValue(item, columnKey) :
-                <EditMenu user={item} />
+                getKeyValue(item, columnKey)
               }</TableCell>}
             </TableRow>
           )}
@@ -430,6 +374,20 @@ export function UsersPage() {
                   >{
                     editUser.id == "" ? <>追加</> : <>更新</>
                   }</Button>
+                  <Button color="danger"
+                    onPress={async () => {
+                      const { error } = await authClient.admin.removeUser({
+                        userId: editUser.id
+                      });
+                      if (error) {
+                        alert(error);
+                      } else {
+                        mutate(`api/users?page=${page}`, true);
+                        onClose();
+                      }
+                    }}
+                    isDisabled={editUser.id == session?.user?.id}
+                  >削除</Button>
                   <span className="grow"></span>
                   <Button color="warning"
                     onPress={() => {

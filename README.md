@@ -39,3 +39,6 @@ markdown-diary
     ```
     $ npm run start
     ```
+
+7.  ブラウザでURLを開き、ユーザ名「admin」、パスワード「admin1234」でログインする
+    adminユーザのパスワードは変更してください
