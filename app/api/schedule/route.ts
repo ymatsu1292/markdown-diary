@@ -42,14 +42,15 @@ function create_calendar_base(check_month: Date): MonthSchedule {
       } else {
 	week_data["caldata"].push({date: String(calc_date.getDate()), holiday: "", memo: "", hasDiary: false});
       }
-      if (calc_date.getFullYear() > year || (calc_date.getFullYear() == year && calc_date.getMonth() + 1 > month)) {
-	continue_flag = false;
-      }
-      //console.log("calc_date=", calc_date, ", calc_date_str=", calc_date_str,
-      // ", month=", month, ", calc_date.month()=", calc_date.month(), ", continue_flag=", continue_flag);
+      func_logger.info({"calc_date": calc_date, "week_data": week_data,
+        "month": month, "calc_date.month": calc_date.getMonth() + 1, "continue_flag": continue_flag});
     }
     result["data"].push(week_data);
     week_number += 1;
+    const next_date = addDays(start_date, week_number * 7);
+    if (next_date.getFullYear() > year || (next_date.getFullYear() == year && next_date.getMonth() + 1 > month)) {
+      continue_flag = false;
+    }
   }
   //console.log(result);
   func_logger.debug({"message": "END", "res": "..."});
