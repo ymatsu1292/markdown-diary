@@ -107,7 +107,7 @@ export function UsersPage() {
         setErrorMessage(error?.message || "system error");
         result = false;
       }
-    } else if (session?.user.role === "admin") {
+    } else if (session?.user?.role === "admin") {
       // 更新
       setErrorMessage("");
       const updateData: { [key: string]: string } = {};
@@ -201,7 +201,7 @@ export function UsersPage() {
   return (
     <div>
       <MdNavbar doSearchIfNecessary={null} goPageIfNecessary={null} />
-      {session!.user.role === "admin" ?
+      {session?.user?.role === "admin" ?
         <Card className="m-1 p-1">
           <div className="flex m-1 p-1">
             <Input label="検索" size="sm" className="max-w-xs" />
@@ -312,9 +312,9 @@ export function UsersPage() {
                         errorMessage={() => (
                           <ul>{emailErrors.map((error, i) => (<li key={i}>{error}</li>))}</ul>
                         )}
-                        isReadOnly={session?.user.role === "admin"? false: true}
+                        isReadOnly={session?.user?.role === "admin"? false: true}
                       />
-                      {session?.user.role != "admin" ?
+                      {session?.user?.role != "admin" ?
                       <Input key="old-password" autoComplete="new-password"
                         classNames={{"base": "m-1 p-1", "label": "w-30", "input": "w-124"}}
                         value={editUser.password}
