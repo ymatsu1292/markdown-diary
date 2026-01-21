@@ -7,7 +7,7 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection 
 import { Link, Input, Button } from "@heroui/react";
 import { Book, Menu } from "lucide-react";
 
-import { signOut, useSession } from "@/lib/auth-client";
+import { authClient, useSession } from "@/lib/auth-client";
 
 export function MdNavbar(
   { goPageIfNecessary, doSearchIfNecessary } : {
@@ -96,9 +96,9 @@ export function MdNavbar(
               </DropdownSection>
               <DropdownSection>
                 <DropdownItem color="danger" onPress={async () => {
-                  await signOut({
+                  await authClient.signOut({
                     fetchOptions: {
-                      onSuccess: async () => {
+                      onSuccess: () => {
                         router.push("/login");
                       },
                     },
