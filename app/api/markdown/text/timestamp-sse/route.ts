@@ -31,6 +31,8 @@ export async function GET(req: NextRequest) {
 
   const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
   const filename = directory + "/" + target + ".md";
+  let prev_mtime = 0;
+  let prev_mtime2 = 0;
 
   const interval = setInterval(async () => {
     func_logger.debug({"message": "do interval"})
@@ -38,12 +40,19 @@ export async function GET(req: NextRequest) {
     try {
       const stat_data = await stat(filename);
       mtime = stat_data.mtimeMs;
-      writer.write(new TextEncoder().encode(`event: message\ndata:${mtime}\n\n`));
+      if (mtime != prev_mtime) {
+        writer.write(new TextEncoder().encode(`event: message\ndata:${mtime}\n\n`));
+        prev_mtime = mtime;
+        prev_mtime2 = mtime;
+      } else if (mtime - prev_mtime2 > 10) {
+        writer.write(new TextEncoder().encode(":\n\n"));
+        prev_mtime2 = mtime;
+      }
     } catch (error) {
       // エラーが出ても気にしない
       func_logger.debug({"message": "IGNORE ERROR", "error": error})
     }
-  }, 10000);
+  }, 500);
 
   req.signal.addEventListener("abort", () => {
     clearInterval(interval);
