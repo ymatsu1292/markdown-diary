@@ -32,21 +32,27 @@ export async function GET(req: NextRequest) {
   const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
   const filename = directory + "/" + target + ".md";
   let prev_mtime = 0;
-  let prev_mtime2 = 0;
+  let prev_timestamp = 0;
 
   const interval = setInterval(async () => {
     func_logger.debug({"message": "do interval"})
     let mtime = 0;
     try {
+      const timestamp = Date.now();
       const stat_data = await stat(filename);
       mtime = stat_data.mtimeMs;
+      func_logger.debug({"message": "EventStream!"})
       if (mtime != prev_mtime) {
         writer.write(new TextEncoder().encode(`event: message\ndata:${mtime}\n\n`));
         prev_mtime = mtime;
-        prev_mtime2 = mtime;
-      } else if (mtime - prev_mtime2 > 10) {
+        prev_timestamp = timestamp;
+        func_logger.debug({"message": "EventStream - send timestamp"})
+      } else if (timestamp - prev_timestamp > 10000) {
         writer.write(new TextEncoder().encode(":\n\n"));
-        prev_mtime2 = mtime;
+        prev_timestamp = timestamp;
+        func_logger.debug({"message": "EventStream - health check", "timestamp": timestamp, "prev_timestamp": prev_timestamp})
+      } else {
+        func_logger.info({"message": "EventStream - SKIP", "timestamp": timestamp, "prev_timestamp": prev_timestamp})
       }
     } catch (error) {
       // エラーが出ても気にしない
