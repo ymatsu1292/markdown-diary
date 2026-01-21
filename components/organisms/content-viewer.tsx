@@ -46,6 +46,8 @@ export function ContentViewer(
   const autosaveTimestamp = useRef<number>(new Date().getTime());
   const conflictCheckTimestamp = useRef<number>(new Date().getTime());
   const [ messages, setMessages ] = useState<string[]>([]);
+  const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
+  const [timestampSSE, setTimestampSSE] = useState<number>(0);
 
   const calc_timer_time = (value_str: string, default_value: number, min_value: number): number => {
     const time_value = Number(value_str);
@@ -293,6 +295,7 @@ export function ContentViewer(
       func_logger.trace({"json_data": json_data});
       updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
       setMessages([]);
+      setTimestampSSEold(json_data["timestamp"]);
     }
     
     func_logger.info({"message": "マークダウン読み込み終了"});
@@ -303,7 +306,7 @@ export function ContentViewer(
     (async() => {
       const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
       func_logger.debug({"message": "START"});
-      func_logger.info({"message": "ページかセッションが更新された", "targetPage": pageData.title});
+      func_logger.info({"message": "セッションが更新された", "targetPage": pageData.title});
       
       if (session != null) {
         func_logger.debug({"message": "DO loadData()"});
@@ -319,8 +322,6 @@ export function ContentViewer(
     // eslint-disable-next-line
   }, [session]);
 
-  const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
-  const [timestampSSE, setTimestampSSE] = useState<number>(0);
   useEffect(() => {
     (async() => {
       const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
