@@ -1,16 +1,16 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Button } from "@heroui/react";
 import { Card, CardHeader, CardBody } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { signIn } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignInCard() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   return (
     <Card className="max-w-md w-200">
@@ -21,16 +21,15 @@ export default function SignInCard() {
         <div className="grid gap-4">
 
           <div className="grid gap-2">
-            <label htmlFor="email">メールアドレス</label>
+            <label htmlFor="username">ユーザ名</label>
             <Input
-              id="email"
-              type="email"
-              placeholder="user@example.com"
+              id="username"
+              type="text"
               required
               onChange={(e) => {
-                setEmail(e.target.value);
+                setUsername(e.target.value);
               }}
-              value={email}
+              value={username}
             />
           </div>
 
@@ -53,24 +52,16 @@ export default function SignInCard() {
           <Button
             type="submit"
             className="w-full"
-	    isDisabled={loading}
             onClick={async () => {
-              await signIn.email({ email, password,
-                callbackURL: process.env.NEXT_PUBLIC_BASE_PATH + "/" }, {
-                onRequest: () => {
-                  setLoading(true);
-                },
-                onResponse: () => {
-                  setLoading(false);
-                },
-              },);
+              const { error } = await authClient.signIn.username({
+                username: username, password: password,
+              });
+              if (!error) {
+                router.push("/");
+              }
             }}
           >
-            {loading ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <p>ログイン</p>
-            )}
+            <p>ログイン</p>
           </Button>
         </div>
       </CardBody>
