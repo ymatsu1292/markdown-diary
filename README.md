@@ -11,8 +11,12 @@ markdown-diary
 -----
 1.  Node.js 24.12.1をインストールしたLinux環境を用意する
     できればRCSもインストールする(ubuntuであればapt install rcsでインストール)
+    
 2.  git cloneでリポジトリをクローンする
-3.  設定ファイル(markdown-diary/.env)を設定する
+
+3.  初回であればdatabase.sqlite.baseをdatabase.sqliteにコピーする
+
+4.  設定ファイル(markdown-diary/.env)を設定する
     ```
     $ cd markdown-diary
     $ vi .env
@@ -24,21 +28,21 @@ markdown-diary
     *   DATA_DIRECTORYにデータを置くディレクトリを設定
     *   RCSを利用する場合はNEXT_PUBLIC_USE_RCSにtrueを設定
 
-4.  利用するパッケージをダウンロードする
+5.  利用するパッケージをダウンロードする
     ```
     $ npm install
     ```
     
-5.  問題なければビルドする
+6.  問題なければビルドする
     ```
     $ npm run build
     ```
 
-6.  手動で起動するか、systemdに登録するなどして起動する
+7.  手動で起動するか、systemdに登録するなどして起動する
     手動起動の場合
     ```
     $ npm run start
     ```
 
-7.  ブラウザでURLを開き、ユーザ名「admin」、パスワード「admin1234」でログインする
-    adminユーザのパスワードは変更してください
+8.  ブラウザでURLを開き、ユーザ名「admin」、パスワード「admin1234」でログインする
+    ログイン後adminユーザのパスワードは変更すること!
