@@ -16,7 +16,7 @@ const logger = base_logger.child({ filename: __filename });
 
 export async function GET(req: NextRequest) {
   const func_logger = logger.child({ "func": "GET" });
-  func_logger.trace({"message": "START"});
+  func_logger.debug({"message": "START"});
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return NextResponse.json({}, {status: 401});
@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
       const timestamp = Date.now();
       const stat_data = await stat(filename);
       mtime = stat_data.mtimeMs;
+      //func_logger.info({"message": "do interval", "filename": filename, "timestamp": timestamp, "stat_data": stat_data, "mtime": mtime})
       func_logger.debug({"message": "EventStream!"})
       if (mtime != prev_mtime) {
         writer.write(new TextEncoder().encode(`event: message\ndata:${mtime}\n\n`));
@@ -52,11 +53,12 @@ export async function GET(req: NextRequest) {
         prev_timestamp = timestamp;
         func_logger.debug({"message": "EventStream - health check", "timestamp": timestamp, "prev_timestamp": prev_timestamp})
       } else {
-        func_logger.info({"message": "EventStream - SKIP", "timestamp": timestamp, "prev_timestamp": prev_timestamp})
+        func_logger.debug({"message": "EventStream - SKIP", "timestamp": timestamp, "prev_timestamp": prev_timestamp})
       }
     } catch (error) {
-      // エラーが出ても気にしない
-      func_logger.debug({"message": "IGNORE ERROR", "error": error})
+      func_logger.info({"message": "EventStram - error", "error": error});
+      clearInterval(interval);
+      writer.close();
     }
   }, 500);
 
