@@ -126,16 +126,16 @@ export function ContentViewer(
   const onChange = (val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
     func_logger.trace({"message": "START", "params": {"val": val}});
-    func_logger.info({"message": "onChange開始"});
+    func_logger.debug({"message": "onChange開始"});
     updateEditData(val, false, false, 0);
-    func_logger.info({"message": "onChange終了"});
+    func_logger.debug({"message": "onChange終了"});
     func_logger.trace({"message": "END", "params": {"val": val}});
   };
 
   const checkData = async(): Promise<boolean> => {
     const func_logger = logger.child({ "func": "ContentViewer.checkData" });
     let res = false;
-    if (timestampSSE > timestampSSEold) {
+    if (timestampSSE > 0 && timestampSSE > timestampSSEold) {
       setTimestampSSEold(timestampSSE);
       res = true;
     }
@@ -296,6 +296,7 @@ export function ContentViewer(
       updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
       setMessages([]);
       setTimestampSSEold(json_data["timestamp"]);
+      //func_logger.info({"loadData: timestamp": json_data["timestamp"]});
     }
     
     func_logger.info({"message": "マークダウン読み込み終了"});
@@ -303,44 +304,55 @@ export function ContentViewer(
   }
       
   useEffect(() => {
-    (async() => {
+    const asyncLoad = async () => {
       const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
       func_logger.debug({"message": "START"});
       func_logger.info({"message": "セッションが更新された", "targetPage": pageData.title});
       
-      if (session != null) {
-        func_logger.debug({"message": "DO loadData()"});
-        await loadData();
-        //setHistories([] as History[]);
-        setShowHistories(false);
-      } else {
-        func_logger.debug({"message": "SKIP loadData()"});
+      if (session == null) {
+        return;
       }
-      func_logger.debug({"message": "END"});
-      func_logger.info({"message": "ページ情報読み込み完了", "targetPage": pageData.title});
-    })()
-    // eslint-disable-next-line
-  }, [session]);
-
-  useEffect(() => {
-    (async() => {
-      const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
+      func_logger.debug({"message": "DO loadData()"});
       await loadData();
-      const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
-      const eventSource = new EventSource(uri);
-      eventSource.onmessage = (event) => {
-        func_logger.debug({"message": "onMessage", "event": event});
-        setTimestampSSE(event.data);
-      };
-      eventSource.onerror = () => {
-        func_logger.debug({"message": "onError"});
-      };
-      return () => {
-        eventSource.close();
-      };
-    })();
+    };
+    asyncLoad();
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
+    const eventSource = new EventSource(uri);
+    eventSource.onmessage = (event) => {
+      func_logger.debug({"message": "onMessage", "event": event});
+      setTimestampSSE(event.data);
+    };
+    eventSource.onerror = () => {
+      func_logger.debug({"message": "onError"});
+      eventSource.close();
+    };
+    //setShowHistories(false);
+    func_logger.debug({"message": "END"});
+    func_logger.info({"message": "ページ情報読み込み完了", "targetPage": pageData.title});
+    return () => {
+      eventSource.close();
+    };
     // eslint-disable-next-line
-  }, [pageData.title]);
+  }, [session, pageData.title]);
+
+  // useEffect(() => {
+  //   const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
+  //   runLoadData();
+  //   const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
+  //   const eventSource = new EventSource(uri);
+  //   eventSource.onmessage = (event) => {
+  //     func_logger.debug({"message": "onMessage", "event": event});
+  //     setTimestampSSE(event.data);
+  //   };
+  //   eventSource.onerror = () => {
+  //     func_logger.debug({"message": "onError"});
+  //     eventSource.close();
+  //   };
+  //   return () => {
+  //     eventSource.close();
+  //   };
+  //   // eslint-disable-next-line
+  // }, [pageData.title]);
   
   // タイマー時刻が更新された際にデータをチェックまたは保存する
   useEffect(() => {
