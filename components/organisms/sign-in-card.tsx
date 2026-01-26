@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/react";
+import { Form, Button } from "@heroui/react";
 import { Card, CardHeader, CardBody } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { useState } from "react";
@@ -19,40 +19,9 @@ export default function SignInCard() {
       </CardHeader>
       <CardBody>
         <div className="grid gap-4">
-
-          <div className="grid gap-2">
-            <label htmlFor="username">ユーザ名</label>
-            <Input
-              id="username"
-              type="text"
-              required
-              onChange={(e) => {
-                setUsername(e.target.value);
-              }}
-              value={username}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <div className="flex items-center">
-              <label htmlFor="password">パスワード</label>
-                
-            </div>
-
-            <Input
-              id="password"
-              type="password"
-              placeholder="password"
-              autoComplete="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            onClick={async () => {
+          <Form
+            onSubmit={async (e) => {
+              e.preventDefault();
               const { error } = await authClient.signIn.username({
                 username: username, password: password,
               });
@@ -61,8 +30,33 @@ export default function SignInCard() {
               }
             }}
           >
+            <Input
+              label="ユーザ名"
+              id="username"
+              type="text"
+              required
+              onChange={(e) => {
+                setUsername(e.target.value);
+              }}
+              value={username}
+            />
+            <Input
+              label="パスワード"
+              id="password"
+              type="password"
+              placeholder="password"
+              autoComplete="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+          <Button
+            type="submit"
+            className="w-full"
+          >
             <p>ログイン</p>
           </Button>
+          </Form>
         </div>
       </CardBody>
       
