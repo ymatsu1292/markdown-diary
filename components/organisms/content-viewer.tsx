@@ -136,6 +136,7 @@ export function ContentViewer(
     const func_logger = logger.child({ "func": "ContentViewer.checkData" });
     let res = false;
     if (timestampSSE > 0 && timestampSSE > timestampSSEold) {
+      func_logger.debug({ "message": "checkData()でtimestamp差分検出", "timestampSSE": timestampSSE, "timestampSSEold": timestampSSEold});
       setTimestampSSEold(timestampSSE);
       res = true;
     }
@@ -192,7 +193,9 @@ export function ContentViewer(
         setConflictMessage();
       } else {
         func_logger.debug({ "message": "コンフリクトなし"});
+        func_logger.debug({ "message": "saveData()でtimestamp更新", "timestamp": timestamp});
         setEditData({...editData, originalText: text, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
+        setTimestampSSEold(timestamp);
         setMessages([]);
       }
       dirtyRef.current = false;
@@ -333,7 +336,7 @@ export function ContentViewer(
       eventSource.close();
     };
     // eslint-disable-next-line
-  }, [session, pageData.title]);
+  }, [session?.user?.id, pageData.title]);
 
   // useEffect(() => {
   //   const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
