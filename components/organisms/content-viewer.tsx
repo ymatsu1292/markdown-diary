@@ -310,13 +310,14 @@ export function ContentViewer(
     const asyncLoad = async () => {
       const func_logger = logger.child({ "func": "ContentViewer.useEffect[1]" });
       func_logger.debug({"message": "START"});
-      func_logger.info({"message": "セッションが更新された", "targetPage": pageData.title});
+      func_logger.info({"message": "ページorセッションが更新された", "targetPage": pageData.title});
       
       if (session == null) {
         return;
       }
       func_logger.debug({"message": "DO loadData()"});
       await loadData();
+      setTimestampSSE(0);
     };
     asyncLoad();
     const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
@@ -325,8 +326,8 @@ export function ContentViewer(
       func_logger.debug({"message": "onMessage", "event": event});
       setTimestampSSE(event.data);
     };
-    eventSource.onerror = () => {
-      func_logger.debug({"message": "onError"});
+    eventSource.onerror = (e) => {
+      func_logger.debug({"message": "onError", "error": e});
       eventSource.close();
     };
     //setShowHistories(false);
