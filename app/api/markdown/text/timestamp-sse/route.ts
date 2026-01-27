@@ -37,23 +37,31 @@ export async function GET(req: NextRequest) {
   const interval = setInterval(async () => {
     func_logger.debug({"message": "do interval"})
     let mtime = 0;
+    const timestamp = Date.now();
     try {
-      const timestamp = Date.now();
       const stat_data = await stat(filename);
       mtime = stat_data.mtimeMs;
-      //func_logger.info({"message": "do interval", "filename": filename, "timestamp": timestamp, "stat_data": stat_data, "mtime": mtime})
+      func_logger.trace({"message": "get mtime", "mtime": mtime})
+    } catch (error) {
+      func_logger.trace({"message": "EventStream(no file)", "error": error})
+    }
+    try {
+      func_logger.trace({"message": "do interval", "filename": filename, "timestamp": timestamp, "mtime": mtime})
       func_logger.debug({"message": "EventStream!"})
       if (mtime != prev_mtime) {
+        func_logger.trace({"message": "EventStream - send timestamp1"})
+        func_logger.trace({"message": "EventStream", "writer": writer})
         writer.write(new TextEncoder().encode(`event: message\ndata:${mtime}\n\n`));
         prev_mtime = mtime;
         prev_timestamp = timestamp;
-        func_logger.debug({"message": "EventStream - send timestamp"})
+        func_logger.trace({"message": "EventStream - send timestamp2"})
       } else if (timestamp - prev_timestamp > 10000) {
+        func_logger.trace({"message": "EventStream - health check1"})
         writer.write(new TextEncoder().encode(":\n\n"));
         prev_timestamp = timestamp;
         func_logger.debug({"message": "EventStream - health check", "timestamp": timestamp, "prev_timestamp": prev_timestamp})
       } else {
-        func_logger.debug({"message": "EventStream - SKIP", "timestamp": timestamp, "prev_timestamp": prev_timestamp})
+        func_logger.trace({"message": "EventStream - SKIP", "timestamp": timestamp, "prev_timestamp": prev_timestamp})
       }
     } catch (error) {
       func_logger.info({"message": "EventStram - error", "error": error});
