@@ -8,12 +8,10 @@ export default async function Users() {
   const session = await auth.api.getSession({
     headers: await headers()
   })
-  console.log("Login(): session=", session);
   if (!session) {
     redirect("/login");
   }
 
-  console.log("Users(): UsersPage");
   return (
     <UsersPage />
   );

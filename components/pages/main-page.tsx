@@ -19,7 +19,6 @@ import { MdNavbar } from "@/components/organisms/md-navbar";
 export function MainPage() {
   //const func_logger = logger.child({ "func": "MainPage" });
   //func_logger.trace({"message": "START"});
-  console.log("MainPage");
 
   const { data: session } = useSession();
   const [ selectedTab, setSelectedTab ] = useState<string>("calendar");
@@ -68,8 +67,6 @@ export function MainPage() {
       const response = await fetch(uri);
       if (response.ok) {
         const jsonData = await response.json();
-        console.log("jsonData=", jsonData);
-        console.log("grepResults=", jsonData["grepResults"]);
         setPageData({...pageData, grepText: searchText, grepResults: jsonData["grepResults"]});
       }
     })();
