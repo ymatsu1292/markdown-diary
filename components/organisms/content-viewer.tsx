@@ -299,6 +299,9 @@ export function ContentViewer(
       updateEditData(json_data["markdown"], true, json_data["committed"], json_data["timestamp"]);
       setMessages([]);
       setTimestampSSEold(json_data["timestamp"]);
+      if (showHistories) {
+        getHistories(false);
+      }
       //func_logger.info({"loadData: timestamp": json_data["timestamp"]});
     }
     
