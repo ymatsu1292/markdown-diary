@@ -24,7 +24,6 @@ const roles: { key: Role; label: string; }[] = [
 export function UsersPage() {
   const { mutate } = useSWRConfig();
   const { data: session } = useSession();
-  console.log("UsersPage session=", session);
   const [page, setPage] = useState<number>(1);
   const {data, isLoading} = useSWR<UsersData, boolean>(`api/users?page=${page}`, 
     fetcher, { keepPreviousData: true, });
@@ -42,15 +41,10 @@ export function UsersPage() {
   }, [data?.count, rowsPerPage]);
   const loadingState = isLoading || data?.results?.length === 0 ? "loading" : "idle";
 
-  console.log("data=", data);
-
   const [ passwordIsVisible, setPasswordIsVisible ] = useState<boolean>(false);
   const togglePasswordIsVisible = () => setPasswordIsVisible(!passwordIsVisible);
   const [ oldPasswordIsVisible, setOldPasswordIsVisible ] = useState<boolean>(false);
   const toggleOldPasswordIsVisible = () => setOldPasswordIsVisible(!oldPasswordIsVisible);
-
-  console.log("editUser=", editUser);
-  console.log("origUser=", origUser);
 
   let hasError: boolean = false;
   
@@ -88,8 +82,6 @@ export function UsersPage() {
         name: editUser.name,
         role: editUser.role,
       });
-      console.log("newUser=", newUser);
-      console.log("error=", error);
       if (newUser) {
         const { data: updatedUser, error: error2 } = await authClient.admin.updateUser({
           userId: newUser.user.id,
@@ -120,34 +112,28 @@ export function UsersPage() {
       if (origUser.username != editUser.username) {
         updateData["username"] = editUser.username;
       }
-      console.log("updateData=", updateData);
       if (Object.keys(updateData).length > 0) {
         const { data: updatedUser, error: error2 } = await authClient.admin.updateUser({
           userId: editUser.id,
           data: updateData,
         });
-        console.log("updatedData=", updatedUser);
         setErrorMessage(error2?.message || "");
         if (error2 !== null) {
           result = false;
         }
       }
       if (editUser.newPassword !== "") {
-        console.log("change password0:", editUser);
         const { data: updatedUser, error: error2 } = await authClient.admin.setUserPassword({
           userId: editUser.id,
           newPassword: editUser?.newPassword || "",
         });
         setErrorMessage(error2?.message || "");
-        console.log("change password1:", updatedUser);
-        console.log("change password2:", error2);
         if (error2 !== null) {
           result = false;
           setErrorMessage(error2?.message || "system error");
         }
       }
       if (result && origUser.role != editUser.role && editUser.id != undefined) {
-        console.log("change role0:", editUser.role);
         const { error: error3 } = await authClient.admin.setRole({
           userId: editUser.id,
           role: editUser.role,
@@ -170,16 +156,8 @@ export function UsersPage() {
       if (origUser.username != editUser.username) {
         updateData["username"] = editUser.username;
       }
-      console.log("updateData=", updateData);
       if (Object.keys(updateData).length > 0) {
         const res = await authClient.updateUser(updateData);
-        console.log("res=", res);
-        /*
-        setErrorMessage(error?.message || "");
-        if (error !== null) {
-          result = false;
-        }
-         */
       }
       // 一般ユーザのパスワード変更
       if (editUser.password != "" && editUser.newPassword != "" && editUser.newPassword != undefined) {
@@ -188,7 +166,6 @@ export function UsersPage() {
           currentPassword: editUser.password,
           revokeOtherSessions: true,
         });
-        console.log("error2=", error2);
         if (error2 != null) {
           setErrorMessage(error2?.message || "");
           result = false;
@@ -364,7 +341,6 @@ export function UsersPage() {
                   <Button color="primary"
                     onPress={async () => {
                       const res = await onSubmit();
-                      console.log("onSubmit=", res);
                       mutate(`api/users?page=${page}`, true);
                       if (res) {
                         onClose();
