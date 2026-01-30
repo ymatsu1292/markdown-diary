@@ -136,7 +136,7 @@ export function ContentViewer(
     const func_logger = logger.child({ "func": "ContentViewer.checkData" });
     let res = false;
     if (timestampSSE > 0 && timestampSSE > timestampSSEold) {
-      func_logger.info({ "message": "checkData()でtimestamp差分検出", "timestampSSE": timestampSSE, "timestampSSEold": timestampSSEold});
+      func_logger.debug({ "message": "checkData()でtimestamp差分検出", "timestampSSE": timestampSSE, "timestampSSEold": timestampSSEold});
       setTimestampSSEold(timestampSSE);
       res = true;
     }
@@ -193,7 +193,7 @@ export function ContentViewer(
         setConflictMessage();
       } else {
         func_logger.debug({ "message": "コンフリクトなし"});
-        func_logger.info({ "message": "saveData()でtimestamp更新", "timestamp": timestamp});
+        func_logger.debug({ "message": "saveData()でtimestamp更新", "timestamp": timestamp});
         setEditData({...editData, originalText: text, committed: committed, timestamp: timestamp, conflicted: conflicted} as EditData);
         setTimestampSSEold(timestamp);
         setMessages([]);
