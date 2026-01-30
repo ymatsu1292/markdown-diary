@@ -113,7 +113,7 @@ export function UsersPage() {
         updateData["username"] = editUser.username;
       }
       if (Object.keys(updateData).length > 0) {
-        const { data: updatedUser, error: error2 } = await authClient.admin.updateUser({
+        const { error: error2 } = await authClient.admin.updateUser({
           userId: editUser.id,
           data: updateData,
         });
@@ -123,7 +123,7 @@ export function UsersPage() {
         }
       }
       if (editUser.newPassword !== "") {
-        const { data: updatedUser, error: error2 } = await authClient.admin.setUserPassword({
+        const { error: error2 } = await authClient.admin.setUserPassword({
           userId: editUser.id,
           newPassword: editUser?.newPassword || "",
         });
@@ -157,7 +157,7 @@ export function UsersPage() {
         updateData["username"] = editUser.username;
       }
       if (Object.keys(updateData).length > 0) {
-        const res = await authClient.updateUser(updateData);
+        await authClient.updateUser(updateData);
       }
       // 一般ユーザのパスワード変更
       if (editUser.password != "" && editUser.newPassword != "" && editUser.newPassword != undefined) {
