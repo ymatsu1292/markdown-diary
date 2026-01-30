@@ -8,9 +8,10 @@ import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 export function MiniCalendars(
-  { pageData, setPage } : {
+  { pageData, setPage, hasText } : {
     pageData: PageData,
     setPage: (page: string) => void,
+    hasText: boolean | null;
   }
 ) {
   const func_logger = logger.child({ "func": "MiniCalendars" });
@@ -48,9 +49,9 @@ export function MiniCalendars(
       </div>
       {pageData.scheduleData != null ? 
       <div className="container mx-auto">
-	<MiniCalendar monthSchedule={pageData.scheduleData.cal1} handleTargetPageChange={handleTargetPageChange} calendarDate={pageData.calendarDate} />
-	<MiniCalendar monthSchedule={pageData.scheduleData.cal2} handleTargetPageChange={handleTargetPageChange} calendarDate={pageData.calendarDate} />
-	<MiniCalendar monthSchedule={pageData.scheduleData.cal3} handleTargetPageChange={handleTargetPageChange} calendarDate={pageData.calendarDate} />
+	<MiniCalendar monthSchedule={pageData.scheduleData.cal1} handleTargetPageChange={handleTargetPageChange} calendarDate={pageData.calendarDate} hasText={hasText} />
+	<MiniCalendar monthSchedule={pageData.scheduleData.cal2} handleTargetPageChange={handleTargetPageChange} calendarDate={pageData.calendarDate} hasText={hasText} />
+	<MiniCalendar monthSchedule={pageData.scheduleData.cal3} handleTargetPageChange={handleTargetPageChange} calendarDate={pageData.calendarDate} hasText={hasText} />
       </div>
       :
       <div className="grid place-items-center h-full">
