@@ -24,9 +24,11 @@ import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 export function ContentViewer(
-  { dirtyRef, pageData } : {
+  { dirtyRef, pageData, hasText, setHasText } : {
     dirtyRef: RefObject<boolean>;
     pageData: PageData;
+    hasText: boolean | null;
+    setHasText: (val: boolean | null) => void;
   }
 ) {
   const func_logger = logger.child({ "func": "ContentViewer" });
@@ -128,6 +130,11 @@ export function ContentViewer(
     func_logger.trace({"message": "START", "params": {"val": val}});
     func_logger.debug({"message": "onChange開始"});
     updateEditData(val, false, false, 0);
+    if ((hasText || hasText == null) && val == "") {
+      setHasText(false);
+    } else if ((!hasText || hasText == null) && val != "") {
+      setHasText(true);
+    }
     func_logger.debug({"message": "onChange終了"});
     func_logger.trace({"message": "END", "params": {"val": val}});
   };

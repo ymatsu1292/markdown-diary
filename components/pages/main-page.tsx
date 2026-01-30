@@ -29,6 +29,7 @@ export function MainPage() {
     grepText: "",
     grepResults: [],
   });
+  const [ hasText, setHasText ] = useState<boolean | null>(null);
   //const [ searchText, setSearchText ] = useState<string>("");
   //const [ userId, setUserId ] = useState("user");
   //const userId = session?.user?.email;
@@ -115,6 +116,7 @@ export function MainPage() {
       newPageData["scheduleData"] = sched;
       //func_logger.info({"pageData": newPageData});
       setPageData(newPageData);
+      setHasText(null);
       
       if (session?.user == undefined) {
         //func_logger.debug({"message": "NO SESSION"});
@@ -179,7 +181,9 @@ export function MainPage() {
             <Tab key="calendar" title={<div className="flex items-center space-x-2"><span>カレンダー</span></div>}>
               <MiniCalendars
                 pageData={pageData}
-                setPage={setPage} />
+                setPage={setPage}
+                hasText={hasText}
+              />
             </Tab>
             <Tab key="files" title={<div className="flex items-center space-x-2"><span>ファイル</span></div>}>
               <MarkdownFileList pageData={pageData} setPage={setPage} />
@@ -193,6 +197,8 @@ export function MainPage() {
           <ContentViewer
             dirtyRef={dirty}
             pageData={pageData}
+            hasText={hasText}
+            setHasText={setHasText}
           />
         </div>
       </div>

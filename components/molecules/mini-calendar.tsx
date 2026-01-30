@@ -7,10 +7,11 @@ import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
 export function MiniCalendar(
-  { monthSchedule, handleTargetPageChange, calendarDate } : {
+  { monthSchedule, handleTargetPageChange, calendarDate, hasText } : {
     monthSchedule: MonthSchedule,
     handleTargetPageChange: (newPage: string) => void,
     calendarDate: string,
+    hasText: boolean | null;
   }
 ) {
   const func_logger = logger.child({ "func": "MiniCalendar" });
@@ -66,6 +67,16 @@ export function MiniCalendar(
     let linkType: "none" | "always" = "none";
     if (daySchedule.hasDiary) {
       linkType = "always";
+    }
+    if (calendarDate == dateStr) {
+      //console.log("calendarDate==dateStr hasText=", hasText);
+      if (hasText == null) {
+        if (daySchedule.hasDiary) {
+          linkType = "always";
+        }
+      } else if (hasText) {
+        linkType = "always";
+      }
     }
     //console.log("drawCell.dateStr=", dateStr);
     const res0 = <Link data-date={dateStr} size="sm" rel="me" color="foreground" underline={linkType}
