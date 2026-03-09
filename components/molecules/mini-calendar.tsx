@@ -40,6 +40,11 @@ export function MiniCalendar(
     if (daySchedule.memo != "") {
       color = "bg-yellow-200";
     }
+    const regex = /^\[([a-z]*)\](.*)$/;
+    const m = regex.exec(daySchedule.memo);
+    if (m != null) {
+      color = "bg-" + m[1] + "-200";
+    }
     return color;
   };
   
@@ -92,7 +97,8 @@ export function MiniCalendar(
     if (daySchedule.holiday !="" || daySchedule.memo != "") {
       let message = daySchedule.holiday;
       if (daySchedule.holiday == "") {
-	message = daySchedule.memo;
+        const memo = daySchedule.memo;
+        message = memo.replace(/^\[[a-z]*\]/, "");
       } else if (daySchedule.memo != "") {
 	message = daySchedule.holiday + "/" + daySchedule.memo;
       }
