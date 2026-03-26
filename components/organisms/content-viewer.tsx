@@ -505,7 +505,7 @@ export function ContentViewer(
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Button color={editData.committed ? "primary" : "danger"} className="ml-1 h-full"
                       size="sm" onPress={() => saveData(true)}>
-                                                                 ften13                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                     </Button>
                     :
                     <></>
@@ -615,7 +615,7 @@ export function ContentViewer(
       </Tabs>
       <NotifyMessages messages={messages} />
       
-      <Modal size="5xl" scrollBehavior="normal"
+      <Modal size="5xl" scrollBehavior="inside"
         isOpen={isOpen} placement="top-center" onOpenChange={onOpenChange}>
         <ModalContent>
           {(onClose) => (
