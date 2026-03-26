@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   func_logger.debug({"params": params, "target1": target1, "target2": target2});
 
   let diff_html: string = "";
-  const cmd: string = "git diff --color " + target1 + ".md " + target2 + ".md | ansi2html";
+  const cmd: string = "diff -u --color=always " + target2 + ".md " + target1 + ".md | ansi2html";
   try {
     const exec_res = await aexec(cmd, {"cwd": directory});
     func_logger.info({"command": cmd, "res": exec_res});
