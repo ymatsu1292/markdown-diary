@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useRef, RefObject } from "react";
 import { Tabs, Tab, Card, CardBody } from "@heroui/react";
 import { Input, Button, Link, Switch } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
 import { Listbox, ListboxItem } from "@heroui/react";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
 import { Textarea } from "@heroui/react";
+import { Modal, ModalContent, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -50,6 +50,7 @@ export function ContentViewer(
   const [ messages, setMessages ] = useState<string[]>([]);
   const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
   const [timestampSSE, setTimestampSSE] = useState<number>(0);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const calc_timer_time = (value_str: string, default_value: number, min_value: number): number => {
     const time_value = Number(value_str);
@@ -78,7 +79,9 @@ export function ContentViewer(
       return "";
     }}).use(container, {name: "info"}).use(tasklist);
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
-  const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
+  //const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
+  const [ diffTarget, setDiffTarget ] = useState<string>("");
+  const [ diffHtml, setDiffHtml ] = useState<string>("");
   const [ histories, setHistories ] = useState<History[]>([]);
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
   const [ revisionText, setRevisionText ] = useState<string>("");
@@ -233,27 +236,6 @@ export function ContentViewer(
     func_logger.debug({"message": "END"});
   };
 
-  const appendTemplate = async() => {
-    const func_logger = logger.child({ "func": "ContentViewer.appendTemplate" });
-    func_logger.debug({"message": "START"});
-    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/template?target=${selectedTemplate}`);
-    const result = await fetch(uri);
-    let json_data = null;
-    if (result.ok) {
-      json_data = await result.json();
-
-      let tmpText;
-      if (text.substr(-1) === "\n" || text.length == 0) {
-        tmpText = text + json_data["template"];
-      } else {
-        tmpText = text + "\n" + json_data["template"];
-      }
-      updateEditData(tmpText, false, false, 0);
-    }
-    
-    func_logger.debug({"message": "END", "json_data": json_data});
-  };
-
   const getHistoryDetail = async(revision: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.getHistoryDetail" });
     func_logger.debug({"message": "START"});
@@ -269,6 +251,21 @@ export function ContentViewer(
     func_logger.debug({"message": "END"});
   };
 
+  const showDiff = async() => {
+    const func_logger = logger.child({ "func": "ContentViewer.showDiff" });
+    func_logger.debug({"message": "START"});
+
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/diff?t1=${pageData.title}&t2=${diffTarget}`);
+    const result = await fetch(uri);
+    if (result.ok) {
+      const json_data = await result.json();
+      func_logger.trace({"json_data": json_data});
+      setDiffHtml(json_data["diff_html"]);
+      onOpen();
+    }
+    
+    func_logger.debug({"message": "END"});
+  };
   const appendHistoryDetail = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.appendHistoryDetail" });
     func_logger.debug({"message": "START"});
@@ -472,42 +469,16 @@ export function ContentViewer(
                   <Input type="text" label="タイトル" value={pageData.title} />
                 </div>
                 <div className="flex">
-                  {(pageData.scheduleData != null && pageData.scheduleData?.templates != null && pageData.scheduleData.templates.length > 0) ?
-                    <>
-                      <Select label="テンプレート" className="ml-2 min-w-40"
-                        selectionMode="single"
-                        onSelectionChange={(keys) => {
-                          const keylist: React.Key[] = [...keys];
-                          func_logger.trace({"keylist": keylist});
-                          if (keylist.length === 0) {
-                            setSelectedTemplate("");
-                          } else {
-                            setSelectedTemplate(keylist[0] as string);
-                          }
-                        }}
-                        selectedKeys={[selectedTemplate]} 
-                      >
-                        {pageData.scheduleData.templates.map((template) => (
-                          <SelectItem key={template}>
-                            {template}
-                          </SelectItem>
-                        ))}
-                      </Select>
-                      <Button color="primary" className="ml-2 h-full" size="sm"
-                        isDisabled={selectedTemplate === "" ? true : false}
-                        onPress={() => {
-                          appendTemplate();
-                        }}
-                      >
-                        テンプレ<br/>取込
-                      </Button>
-                    </>
-                    :
-                    <></>
-                  }
-                  <Button color="primary" className="ml-1 h-full"
-                    size="sm" onPress={() => loadData()}>
-                    読込<br/>(上書き)
+                  <Input type="text" label="差分対象" className="ml-2 min-w-40"
+                    value={diffTarget} onValueChange={setDiffTarget}
+                  />
+                  <Button color="primary" className="ml-2 h-full" size="sm"
+                    isDisabled={diffTarget === "" ? true : false}
+                    onPress={() => {
+                      showDiff();
+                    }}
+                  >
+                     差分<br/>表示
                   </Button>
 
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
@@ -534,7 +505,7 @@ export function ContentViewer(
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
                     <Button color={editData.committed ? "primary" : "danger"} className="ml-1 h-full"
                       size="sm" onPress={() => saveData(true)}>
-                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                                                                 ften13                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                     </Button>
                     :
                     <></>
@@ -643,6 +614,22 @@ export function ContentViewer(
         </Tab>
       </Tabs>
       <NotifyMessages messages={messages} />
+      
+      <Modal size="5xl" scrollBehavior="normal"
+        isOpen={isOpen} placement="top-center" onOpenChange={onOpenChange}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalBody>
+                <div dangerouslySetInnerHTML={{ __html: diffHtml }}/>
+              </ModalBody>
+              <ModalFooter>
+                <Button color="secondary" onPress={onClose}>閉じる</Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
