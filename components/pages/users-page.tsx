@@ -3,12 +3,12 @@ import { useState, useMemo } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
 import { Eye } from "lucide-react";
-import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
-import { Pagination, getKeyValue } from "@heroui/react";
-import { Spinner, Input, Button } from "@heroui/react";
-import { Card, CardBody } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
-import { Modal, ModalContent, ModalHeader, ModalBody, useDisclosure } from "@heroui/react";
+import { Table } from "@heroui/react";
+import { Input, Button, TextField, FieldError } from "@heroui/react";
+import { Card } from "@heroui/react";
+import { Select, Label, ListBox, TextArea } from "@heroui/react";
+import { Modal, useOverlayState } from "@heroui/react";
+
 import { useSession, authClient } from "@/lib/auth-client";
 
 import { MdNavbar } from "@/components/organisms/md-navbar";
@@ -21,30 +21,43 @@ const roles: { key: Role; label: string; }[] = [
   {key: "user", label: "一般ユーザ"},
 ];
 
+const columns = [
+  {id: "username", name: "ユーザID"},
+  {id: "name", name: "名前"},
+  {id: "email", name: "メール"},
+  {id: "role", name: "ロール"},
+  {id: "banned", name: "banned"},
+  {id: "banReason", name: "banReason"},
+  {id: "banExpires", name: "banExpires"},
+];
+
 export function UsersPage() {
   const { mutate } = useSWRConfig();
   const { data: session } = useSession();
-  const [page, setPage] = useState<number>(1);
-  const {data, isLoading} = useSWR<UsersData, boolean>(`api/users?page=${page}`, 
+  const [ page, setPage ] = useState<number>(1);
+  const { data, isLoading } = useSWR<UsersData, boolean>(`api/users?page=${page}`, 
     fetcher, { keepPreviousData: true, });
   const rowsPerPage = 10;
-  const {isOpen, onOpen, onOpenChange} = useDisclosure();
-  const [editUser, setEditUser] = useState<UserData>(baseUserData);
-  const [origUser, setOrigUser] = useState<UserData>(baseUserData);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  // const tmpmsg = useMemo(() => {
-  //   return errorMessage;
-  // }, [errorMessage]);
+  const [ editUser, setEditUser ] = useState<UserData>(baseUserData);
+  const [ origUser, setOrigUser ] = useState<UserData>(baseUserData);
+  const [ errorMessage, setErrorMessage ] = useState<string>("");
 
-  const pages = useMemo(() => {
+  const totalPages = useMemo(() => {
     return data?.count ? Math.ceil(data.count / rowsPerPage) : 0;
   }, [data?.count, rowsPerPage]);
+  const pages = Array.from({length: totalPages}, (_, i) => i + 1);
+  const paginatedItems = data?.results || [];
+  const start = (page - 1) * rowsPerPage + 1;
+  const end = Math.min(page * rowsPerPage, data?.results.length || 0);
   const loadingState = isLoading || data?.results?.length === 0 ? "loading" : "idle";
 
   const [ passwordIsVisible, setPasswordIsVisible ] = useState<boolean>(false);
   const togglePasswordIsVisible = () => setPasswordIsVisible(!passwordIsVisible);
   const [ oldPasswordIsVisible, setOldPasswordIsVisible ] = useState<boolean>(false);
   const toggleOldPasswordIsVisible = () => setOldPasswordIsVisible(!oldPasswordIsVisible);
+
+  const [ isOpen, setIsOpen ] = useState(false);
+  const modalState = useOverlayState({defaultOpen: false});
 
   let hasError: boolean = false;
   
@@ -181,176 +194,169 @@ export function UsersPage() {
       {session?.user?.role === "admin" ?
         <Card className="m-1 p-1">
           <div className="flex m-1 p-1">
-            <Input label="検索" size="sm" className="max-w-xs" />
-            <Button color="primary" className="m-1 p-1">フィルタ</Button>
-            <Button color="primary" className="m-1 p-1" onPress={() => {
-              setOrigUser(baseUserData);
-              setEditUser(baseUserData);
-              onOpen();
-            }}>ユーザ追加</Button>
+            <Input className="max-w-xs" />
+            <Button variant="primary" className="m-1 p-1 rounded-lg">フィルタ</Button>
           </div>
         </Card>
         :
         <></>
       }
-      <Table
-        aria-label="Users Table"
-        selectionMode="single"
-        selectionBehavior="replace"
-        bottomContent={
-          pages > 0 ? (
-            <div className="flex w-full justify-center">
-              <Pagination isCompact showControls showShadow color="primary" 
-                page={page} total={pages} onChange={(page) => setPage(page)}
-              />
-            </div>
-          ) : null
-        }
-        onRowAction={(key) => {
-          const item = (data?.results ?? []).find(item0 => item0.id === key);
-          if (item) {
-            if (!item.username) {
-              item.username = "";
-            }
-            setOrigUser({...item, password: item.password || "", newPassword: ""});
-            setEditUser({...item, password: item.password || "", newPassword: ""});
-            onOpen();
-          }
-        }}
-      >
-        <TableHeader>
-          <TableColumn key="username">username</TableColumn>
-          <TableColumn key="name">name</TableColumn>
-          <TableColumn key="email">email</TableColumn>
-          <TableColumn key="role">role</TableColumn>
-          <TableColumn key="banned">banned</TableColumn>
-          <TableColumn key="banReason">banReason</TableColumn>
-          <TableColumn key="banExpires">banExpires</TableColumn>
-        </TableHeader>
-        <TableBody
-          items={data?.results ?? []}
-          loadingContent={<Spinner />}
-          loadingState={loadingState}
-        >
-          {(item) => (
-            <TableRow key={item?.id}>
-              {(columnKey) => <TableCell>{
-                getKeyValue(item, columnKey)
-              }</TableCell>}
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="3xl">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">{
+      <Modal isOpen={modalState.isOpen}>
+        <Button variant="primary" className="m-1 p-1 rounded-lg" onPress={() => {
+          setOrigUser(baseUserData);
+          setEditUser(baseUserData);
+          modalState.open();
+        }}>ユーザ追加</Button>
+        <Modal.Backdrop>
+          <Modal.Container size="lg">
+            <Modal.Dialog>
+              <Modal.CloseTrigger />
+              <Modal.Header className="flex flex-col gap-1">{
                 editUser.id == "" ? <>ユーザ追加</> : <>ユーザ情報編集</>
-              }</ModalHeader>
-              <ModalBody>
-                <Card fullWidth>
-                  <CardBody>
-                    <div className="flex flex-col">
-                      <Input key="userId"
-                        label="ユーザID" labelPlacement="outside-left"
-                        classNames={{"base": "m-1 p-1", "label": "w-30", "input": "w-130"}}
-                        value={editUser.id} isReadOnly isDisabled
-                      />
+              }</Modal.Header>
+              <Modal.Body>
+                <div className="flex flex-col m-2 p-2">
+                  <div className="flex flex-row items-center">
+                    <Label className="w-20">ユーザID</Label>
+                    <Input key="userId"
+                      className="m-1 p-1 w-80"
+                      value={editUser.id}
+                      disabled
+                    />
+                  </div>
+                  <div className="flex flex-row items-center">
+                    <Label className="w-20">ユーザ名</Label>
+                    <TextField isRequired isInvalid={usernameErrors.length > 0}
+                      name="username"
+                      onChange={(value) => setEditUser({...editUser, username: value} as UserData)}
+                    >
                       <Input key="username"
-                        classNames={{"base": "m-1 p-1", "label": "w-30", "input": "w-130"}}
+                        className="m-1 p-1 w-80"
                         value={editUser.username}
-                        color={editUser.username == origUser.username ? "default" : "warning"}
-                        onValueChange={(value) => setEditUser({...editUser, username: value} as UserData)}
-                        label="ユーザ名" labelPlacement="outside-left"
-                        isInvalid={usernameErrors.length > 0}
-                        errorMessage={() => (
-                          <ul>{usernameErrors.map((error, i) => (<li key={i}>{error}</li>))}</ul>
-                        )}
+                        variant={editUser.username == origUser.username ? "primary" : "secondary"}
                       />
+                      {usernameErrors.map((error, i) => (
+                        <FieldError>{error}</FieldError>
+                      ))}
+                    </TextField>
+                  </div>
+                  <div className="flex flex-row items-center">
+                    <Label className="w-20">氏名</Label>
+                    <TextField isInvalid={nameErrors.length > 0}
+                      name="name"
+                      onChange={(value) => setEditUser({...editUser, name: value} as UserData)}
+                    >
                       <Input key="name"
-                        classNames={{"base": "m-1 p-1", "label": "w-30", "input": "w-130"}}
+                        className="m-1 p-1 w-80"
                         value={editUser.name}
-                        color={editUser.name == origUser.name ? "default" : "warning"}
-                        onValueChange={(value) => setEditUser({...editUser, name: value})}
-                        label="氏名" labelPlacement="outside-left"
-                        isInvalid={nameErrors.length > 0}
-                        errorMessage={() => (
-                          <ul>{nameErrors.map((error, i) => (<li key={i}>{error}</li>))}</ul>
-                        )}
+                        variant={editUser.name == origUser.name ? "primary" : "secondary"}
                       />
+                      {nameErrors.map((error, i) => (
+                        <FieldError>{error}</FieldError>
+                      ))}
+                    </TextField>
+                  </div>
+                  <div className="flex flex-row items-center">
+                    <Label className="w-20">メールアドレス</Label>
+                    <TextField
+                      name="email"
+                      onChange={(value) => setEditUser({...editUser, email: value} as UserData)}
+                    >
                       <Input key="email"
-                        classNames={{"base": "m-1 p-1", "label": "w-30", "input": "w-130"}}
+                        className="m-1 p-1 w-80"
                         value={editUser.email}
-                        color={(editUser.email == origUser.email) ? "default" : "warning"}
-                        onValueChange={(value) => setEditUser({...editUser, email: value})}
-                        label="メールアドレス" labelPlacement="outside-left" 
-                        isInvalid={emailErrors.length > 0}
-                        errorMessage={() => (
-                          <ul>{emailErrors.map((error, i) => (<li key={i}>{error}</li>))}</ul>
-                        )}
-                        isReadOnly={session?.user?.role === "admin"? false: true}
+                        variant={(editUser.email == origUser.email) ? "primary" : "secondary"}
+                        data-invalid={emailErrors.length > 0}
+                        disabled={session?.user?.role === "admin" ? false: true}
                       />
-                      {session?.user?.role != "admin" ?
-                      <Input key="old-password" autoComplete="new-password"
-                        classNames={{"base": "m-1 p-1", "label": "w-30", "input": "w-124"}}
-                        value={editUser.password}
-                        color={(editUser.password == "") ? "default" : "warning"}
-                        onValueChange={(value) => setEditUser({...editUser, password: value})}
-                        type={oldPasswordIsVisible ? "text" : "password"}
-                        endContent={<button className="focus:outline-solid outline-transparent" type="button"
-                                      onClick={toggleOldPasswordIsVisible}>
-                                      <Eye />
-                                    </button>}
-                        label="旧パスワード" labelPlacement="outside-left" 
-                      />
-                        : <></>}
-                      <Input key="new-password" autoComplete="new-password"
-                        classNames={{"base": "m-1 p-1", "label": "w-30", "input": "w-124"}}
-                        value={editUser.newPassword}
-                        color={(editUser.newPassword == "") ? "default" : "warning"}
-                        onValueChange={(value) => setEditUser({...editUser, newPassword: value})}
-                        type={passwordIsVisible ? "text" : "password"}
-                        endContent={<button className="focus:outline-solid outline-transparent" type="button"
-                                      onClick={togglePasswordIsVisible}>
-                                      <Eye />
-                                    </button>}
-                        label="パスワード" labelPlacement="outside-left" 
-                        isInvalid={passwordErrors.length > 0}
-                        errorMessage={() => (
-                          <ul>{passwordErrors.map((error, i) => (<li key={i}>{error}</li>))}</ul>
-                        )}
-                      />
-                      <Select key="role" 
-                        classNames={{"base": "m-1 p-1", "label": "ml-2 w-28", "trigger": "w-136"}}
-                        selectedKeys={[typeof editUser.role === "string" ? editUser.role : "user"]}
-                        onSelectionChange={(value) => setEditUser({...editUser, role: (value.anchorKey || "user") as Role})}
-                        selectionMode="single"
-                        isDisabled={editUser.id == session?.user?.id}
-                        label="ロール" labelPlacement="outside-left"
+                      {emailErrors.map((error, i) => (
+                        <FieldError>{error}</FieldError>
+                      ))}
+                    </TextField>
+                  </div>
+                  {session?.user?.role != "admin" ?
+                    <div className="flex flex-row items-center">
+                      <Label className="w-20">旧パスワード</Label>
+                      <TextField name="old-password"
+                        onChange={(value) => setEditUser({...editUser, password: value} as UserData)}
                       >
-                        {roles.map((role) => (
-                          <SelectItem key={role.key} textValue={role.label}>{role.label}</SelectItem>
-                        ))}              
-                      </Select>
+                        <Input key="old-password" autoComplete="new-password"
+                          className="m-1 p-1 w-80"
+                          value={editUser.password}
+                          variant={(editUser.password == "") ? "primary" : "secondary"}
+                          type={oldPasswordIsVisible ? "text" : "password"}
+                        />
+                        <button className="focus:outline-solid outline-transparent" type="button"
+                          onClick={toggleOldPasswordIsVisible}>
+                          <Eye />
+                        </button>
+                      </TextField>
                     </div>
-                  </CardBody>
-                </Card>
-                <Button>{errorMessage}</Button>
+                    :
+                    <></>
+                  }
+                  <div className="flex flex-row items-center">
+                    <Label className="w-20">パスワード</Label>
+                    <TextField name="new-password"
+                      onChange={(value) => setEditUser({...editUser, newPassword: value} as UserData)}
+                    >
+                      <Input key="new-password" autoComplete="new-password"
+                        className="m-1 p-1 w-80"
+                        value={editUser.newPassword}
+                        variant={(editUser.newPassword == "") ? "primary" : "secondary"}
+                        type={passwordIsVisible ? "text" : "password"}
+                        data-invalid={passwordErrors.length > 0}
+                      />
+                      {passwordErrors.map((error, i) => (
+                        <FieldError>{error}</FieldError>
+                      ))}
+                    </TextField>
+                    <button className="focus:outline-solid outline-transparent" type="button"
+                      onClick={togglePasswordIsVisible}>
+                      <Eye />
+                    </button>
+                  </div>
+                  <div className="flex items-center">
+                    <Label className="w-20">ロール</Label>
+                    <Select key="role" 
+                      className="ml-1 w-80"
+                      selectedKey={editUser.role}
+                      onChange={(value) => setEditUser({...editUser, role: value as Role} as UserData)}
+                      isDisabled={editUser.id == session?.user?.id}
+                      aria-label="role"
+                    >
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {roles.map((role) => (
+                            <ListBox.Item id={role.key} textValue={role.label}>
+                              {role.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}              
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+                </div>
+                <TextArea rows={1} fullWidth>{errorMessage}</TextArea>
                 <div className="flex flex-wrap gap-1">
-                  <Button color="primary"
+                  <Button variant="primary"
                     onPress={async () => {
                       const res = await onSubmit();
                       mutate(`api/users?page=${page}`, true);
                       if (res) {
-                        onClose();
+                        modalState.close();
                       }
                     }}
                     isDisabled={hasError}
                   >{
                     editUser.id == "" ? <>追加</> : <>更新</>
                   }</Button>
-                  <Button color="danger"
+                  <Button variant="danger"
                     onPress={async () => {
                       const { error } = await authClient.admin.removeUser({
                         userId: editUser.id
@@ -359,30 +365,62 @@ export function UsersPage() {
                         alert(error);
                       } else {
                         mutate(`api/users?page=${page}`, true);
-                        onClose();
+                        modalState.close();
                       }
                     }}
                     isDisabled={editUser.id == session?.user?.id}
                   >削除</Button>
                   <span className="grow"></span>
-                  <Button color="warning"
+                  <Button variant="danger"
                     onPress={() => {
                       setEditUser(origUser)
                     }}
                   >
-                    クリア
+                     クリア
                   </Button>
-                  <Button color="warning"
-                    onPress={onClose}
+                  <Button variant="danger"
+                    onPress={modalState.close}
                   >
-                    閉じる
+                     閉じる
                   </Button>
                 </div>
-              </ModalBody>
-            </>
-          )}
-        </ModalContent>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>              
       </Modal>
+      <Table className="m-1 p-1">
+        <Table.ScrollContainer>
+          <Table.Content aria-label="tsc" className="overflow-y-auto"
+            onRowAction={(key) => {
+              const item = (data?.results ?? []).find(item0 => item0.id === key);
+              if (item) {
+                if (!item.username) {
+                  item.username = "";
+                }
+                setOrigUser({...item, password: item.password || "", newPassword: ""} as UserData);
+                setEditUser({...item, password: item.password || "", newPassword: ""} as UserData);
+                modalState.open();
+              }
+            }}
+          >
+            <Table.Header columns={columns}>
+              {(column) => (
+                <Table.Column isRowHeader={column.id === "username"}>{column.name}</Table.Column>
+              )}
+            </Table.Header>
+            <Table.Body items={paginatedItems}>
+              {(user) => (
+                <Table.Row>
+                  <Table.Collection items={columns}>
+                    {(column) => <Table.Cell>{user[column.id as keyof typeof user]}</Table.Cell>}
+                  </Table.Collection>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table.Content>
+        </Table.ScrollContainer>
+      </Table>
     </div>
   );
 }

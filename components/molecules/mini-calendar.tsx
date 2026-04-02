@@ -1,4 +1,4 @@
-import { Table, TableHeader, TableColumn ,TableBody, TableRow, TableCell } from "@heroui/react";
+import { Table } from "@heroui/react";
 import { Link, Tooltip } from "@heroui/react";
 import { getTodayStr } from "@/lib/dateutils";
 import { MonthSchedule, WeekSchedule, DaySchedule } from "@/types/schedule-data-type";
@@ -69,24 +69,25 @@ export function MiniCalendar(
     if (calendarDate == dateStr) {
       fontStyle = "font-black text-red-900";
     }
-    let linkType: "none" | "always" = "none";
+    let linkType: string = "no-underline";
     if (daySchedule.hasDiary) {
-      linkType = "always";
+      linkType = "underline underline-offset-2 decoration-red-900";
     }
     if (calendarDate == dateStr) {
       //console.log("calendarDate==dateStr hasText=", hasText);
       if (hasText == null) {
         if (daySchedule.hasDiary) {
-          linkType = "always";
+          linkType = "underline underline-offset-2 decoration-red-900";
         }
       } else if (hasText) {
-        linkType = "always";
+        linkType = "underline underline-offset-2 decoration-red-900";
       }
     }
+    const styleType: string = "border-none " + fontStyle + " " + linkType;
     //console.log("drawCell.dateStr=", dateStr);
-    const res0 = <Link data-date={dateStr} size="sm" rel="me" color="foreground" underline={linkType}
+    const res0 = <Link data-date={dateStr} rel="me"
                  data-focus-visible={false}
-                 className={fontStyle} onPress={(e) => {
+                 className={styleType} onPress={(e) => {
                    if (e.target instanceof HTMLElement) {
                      changePage(String(e.target.dataset.date));
                    }
@@ -102,11 +103,11 @@ export function MiniCalendar(
       } else if (daySchedule.memo != "") {
 	message = daySchedule.holiday + "/" + daySchedule.memo;
       }
-      res1 = <Tooltip showArrow={true} content={message}>{res0}</Tooltip>;
+      res1 = <Tooltip><Tooltip.Trigger>{res0}</Tooltip.Trigger><Tooltip.Content>{message}</Tooltip.Content></Tooltip>;
     }
     //console.log("res1=", res1);
     //console.log("drawCell: END");
-    const res2 = <TableCell key={weekday} className={`m-0 p-0 text-center ${calcCellColor(daySchedule, weekday, otherMonth)}`}>{res1}</TableCell>;
+    const res2 = <Table.Cell key={weekday} className={`border-none text-xs m-0 p-0 text-center ${calcCellColor(daySchedule, weekday, otherMonth)} rounded-none`}>{res1}</Table.Cell>;
     func_logger.trace({"message": "END", "res": res2})
     return res2;
   }
@@ -119,27 +120,31 @@ export function MiniCalendar(
   }});
   
   return (
-    <div className="mini-calendar m-0 p-1">
-      <Table aria-label="cal-aria1" table-fixed isCompact radius="sm" className="mx-1 my-0 px-1 py-0 gap-0"
-        topContent=<span className="h-1 gap-0 m-0 p-0 text-center text-sm">{monthSchedule.month}</span>>
-	<TableHeader className="m-0 p-0 gap-0 h-6">
-	  <TableColumn className="m-0 p-0 h-6 text-center"><span className="text-red-900">日</span></TableColumn>
-	  <TableColumn className="m-0 p-0 h-6 text-center">月</TableColumn>
-	  <TableColumn className="m-0 p-0 h-6 text-center">火</TableColumn>
-	  <TableColumn className="m-0 p-0 h-6 text-center">水</TableColumn>
-	  <TableColumn className="m-0 p-0 h-6 text-center">木</TableColumn>
-	  <TableColumn className="m-0 p-0 h-6 text-center">金</TableColumn>
-	  <TableColumn className="m-0 p-0 h-6 text-center"><span className="text-blue-900">土</span></TableColumn>
-	</TableHeader>
-	<TableBody>
-	  {monthSchedule.data.map((item: WeekSchedule) => (
-            <TableRow key={item.id} data-focus-visible={false}>
-	    {item.caldata.map((daySchedule: DaySchedule, count: number) => 
-  	      drawCell(daySchedule, monthSchedule.month, todayStr, count, calendarDate)
-            )}
-	    </TableRow>
-          ))}
-	</TableBody>
+    <div className="mini-calendar m-1 p-1 rounded bg-white">
+      <span className="flex items-center justify-center gap-0 m-0 p-0 text-center text-sm">{monthSchedule.month}</span>
+      <Table aria-label="cal-aria1" className="mx-0 my-0 px-1 py-0 gap-0 rounded-none bg-white">
+        <Table.ScrollContainer>
+          <Table.Content aria-label="mini-cal-content">
+	    <Table.Header className="m-0 p-0 gap-0 h-6">
+	      <Table.Column isRowHeader className="m-0 p-0 h-6 text-center"><span className="text-red-900">日</span></Table.Column>
+	      <Table.Column className="m-0 p-0 h-6 text-center">月</Table.Column>
+	      <Table.Column className="m-0 p-0 h-6 text-center">火</Table.Column>
+	      <Table.Column className="m-0 p-0 h-6 text-center">水</Table.Column>
+	      <Table.Column className="m-0 p-0 h-6 text-center">木</Table.Column>
+	      <Table.Column className="m-0 p-0 h-6 text-center">金</Table.Column>
+	      <Table.Column className="m-0 p-0 h-6 text-center"><span className="text-blue-900">土</span></Table.Column>
+	    </Table.Header>
+	    <Table.Body>
+	      {monthSchedule.data.map((item: WeekSchedule) => (
+                <Table.Row key={item.id} data-focus-visible={false}>
+	          {item.caldata.map((daySchedule: DaySchedule, count: number) => 
+  	            drawCell(daySchedule, monthSchedule.month, todayStr, count, calendarDate)
+                  )}
+	        </Table.Row>
+              ))}
+	    </Table.Body>
+          </Table.Content>
+        </Table.ScrollContainer>
       </Table>
     </div>
   );

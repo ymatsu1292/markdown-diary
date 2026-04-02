@@ -3,25 +3,19 @@
 import Script from "next/script";
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "@/lib/auth-client";
+import { Tabs } from "@heroui/react";
 import { getTodayStr } from "@/lib/dateutils";
 import { MiniCalendars } from "@/components/organisms/mini-calendars";
 import { MarkdownFileList } from "@/components/organisms/markdown-file-list";
 import { GrepResultList } from "@/components/organisms/grep-result-list";
 import { ContentViewer } from "@/components/organisms/content-viewer";
-import { Tabs, Tab } from "@heroui/react";
 import { PageData } from "@/types/page-data-type";
 import { ScheduleData } from "@/types/schedule-data-type";
 import { MdNavbar } from "@/components/organisms/md-navbar";
 
-//import base_logger from "@/lib/logger";
-//const logger = base_logger.child({ filename: __filename });
-
 export function MainPage() {
-  //const func_logger = logger.child({ "func": "MainPage" });
-  //func_logger.trace({"message": "START"});
-
   const { data: session } = useSession();
-  const [ selectedTab, setSelectedTab ] = useState<string>("calendar");
+  const [ activeTab, setActiveTab ] = useState("calendar");
   const [ pageData, setPageData ] = useState<PageData>({
     title: getTodayStr(),
     calendarDate: getTodayStr(),
@@ -30,12 +24,8 @@ export function MainPage() {
     grepResults: [],
   });
   const [ hasText, setHasText ] = useState<boolean | null>(null);
-  //const [ searchText, setSearchText ] = useState<string>("");
-  //const [ userId, setUserId ] = useState("user");
-  //const userId = session?.user?.email;
   const dirty = useRef<boolean>(false);
-  //const today_month = getTodayMonth();
-  
+
   // カレンダーの日付が変更された際の処理
   const loadSchedule = async(targetDate: string): Promise<ScheduleData | null> => {
     //console.log("loadSchedule開始");
@@ -72,8 +62,7 @@ export function MainPage() {
       }
     })();
   };
-  
-  // ページが変更されたときの処理
+
   const setPage = (
     newTitle: string,
   ) => {
@@ -135,62 +124,46 @@ export function MainPage() {
     // eslint-disable-next-line
   }, []);
   
-  //useEffect(() => {
-  //setPage(getTodayStr());
-  //}, [setPage]);
-  
-  // セッション情報が設定されたときの処理
-  // useEffect(() => {
-  //   //const func_logger = logger.child({ "func": "MainPage.useEffect[3]" });
-  //   //func_logger.debug({"message": "START"});
-
-  //   // if (session?.error == "refresh_access_token_error") {
-  //   //   func_logger.debug({"message": "TOKEN ERROR -> signIn"});
-  //   //   signIn();
-  //   // }
-
-  //   if (userId != session?.user?.email) {
-  //     setUserId(session?.user?.email || "dummy");
-  //     setPage(getTodayStr());
-  //   }
-  //   //func_logger.debug({"message": "END"});
-  // }, [session]);
-
   const doSearchIfNecessary = async (key: string, searchText: string) => {
     if (key == "Enter") {
-      setSelectedTab("grep");
+      setActiveTab("grep");
       doSearch(searchText);
     }
   };
-  
   const goPageIfNecessary = async (key: string, page: string) => {
     if (key == "Enter") {
       // ページを設定する
       setPage(page);
     }
   };
-
-  //console.log(pageData);
-
+  
   return (
     <div>
       <MdNavbar doSearchIfNecessary={doSearchIfNecessary} goPageIfNecessary={goPageIfNecessary} />
       <div className="flex">
         <div>
-          <Tabs selectedKey={selectedTab} onSelectionChange={(key: React.Key) => {setSelectedTab(String(key))}}>
-            <Tab key="calendar" title={<div className="flex items-center space-x-2"><span>カレンダー</span></div>}>
+          <Tabs className="w-full max-w-md text-center gap-0"
+            selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)}>
+            <Tabs.ListContainer className="mt-1">
+              <Tabs.List aria-label="disp" className="w-fit *:w-fit *:text-sm *:px-3">
+                <Tabs.Tab id="calendar">カレンダー<Tabs.Indicator /></Tabs.Tab>
+                <Tabs.Tab id="files">ファイル<Tabs.Indicator /></Tabs.Tab>
+                <Tabs.Tab id="search">検索<Tabs.Indicator /></Tabs.Tab>
+              </Tabs.List>
+            </Tabs.ListContainer>
+            <Tabs.Panel id="calendar" className="pt-1">
               <MiniCalendars
                 pageData={pageData}
                 setPage={setPage}
                 hasText={hasText}
               />
-            </Tab>
-            <Tab key="files" title={<div className="flex items-center space-x-2"><span>ファイル</span></div>}>
+            </Tabs.Panel>
+            <Tabs.Panel id="files" className="pt-1">
               <MarkdownFileList pageData={pageData} setPage={setPage} />
-            </Tab>
-            <Tab key="grep" title={<div className="flex items-center space-x-2"><span>検索</span></div>}>
+            </Tabs.Panel>
+            <Tabs.Panel id="search" className="pt-1">
               <GrepResultList pageData={pageData} setPage={setPage} />
-            </Tab>
+            </Tabs.Panel>
           </Tabs>
         </div>
         <div className="grow">
