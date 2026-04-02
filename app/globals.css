@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@plugin "./hero.ts";
+@import "@heroui/styles";
 @source "../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 @custom-variant dark (&:is(.dark *));
 @source inline("bg-{red,orange,amberyellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,ping,rose,slate,gray,zinc,neutral,stone,taupe,mauve,mist,olive}-200");
@@ -1259,5 +1259,7 @@ div.markdown-body .info {
 }
 
 .minicalendar {
-    --spacing: .015rem;
+    --spacing: 0rem;
+    border-bottom-width: 0px;
 }
+
