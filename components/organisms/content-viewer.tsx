@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useRef, RefObject } from "react";
-import { Tabs, Tab, Card, CardBody } from "@heroui/react";
-import { Input, Button, Link, Switch } from "@heroui/react";
-import { Listbox, ListboxItem } from "@heroui/react";
+import { Tabs, Card } from "@heroui/react";
+import { Label, Input, Button, Switch } from "@heroui/react";
+import { ListBox } from "@heroui/react";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
-import { Textarea } from "@heroui/react";
-import { Modal, ModalContent, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
+import { TextArea } from "@heroui/react";
+import { Modal, useOverlayState } from "@heroui/react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -13,12 +13,16 @@ import markdownit from "markdown-it";
 import { tasklist } from "@mdit/plugin-tasklist";
 import { container } from "@mdit/plugin-container";
 import hljs from "highlight.js";
+
+import { Save } from "lucide-react";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
+
+import { NotifyMessages } from "@/components/molecules/notify-messages";
 import { useSession } from "@/lib/auth-client";
+import { getPrevDay, getNextDay } from "@/lib/dateutils";
 import { History } from "@/types/history-data-type";
 import { PageData } from "@/types/page-data-type";
 import { EditData } from "@/types/edit-data-type";
-import { Save } from "lucide-react";
-import { NotifyMessages } from "@/components/molecules/notify-messages";
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
@@ -50,7 +54,7 @@ export function ContentViewer(
   const [ messages, setMessages ] = useState<string[]>([]);
   const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
   const [timestampSSE, setTimestampSSE] = useState<number>(0);
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const state = useOverlayState({ defaultOpen: false });
 
   const calc_timer_time = (value_str: string, default_value: number, min_value: number): number => {
     const time_value = Number(value_str);
@@ -261,7 +265,8 @@ export function ContentViewer(
       const json_data = await result.json();
       func_logger.trace({"json_data": json_data});
       setDiffHtml(json_data["diff_html"]);
-      onOpen();
+      //onOpen();
+      state.open();
     }
     
     func_logger.debug({"message": "END"});
@@ -459,20 +464,47 @@ export function ContentViewer(
   }});
 
   return (
-    <div className="container mx-auto">
-      <Tabs aria-label="editor">
-        <Tab key="editor" title="編集" className="flex">
-          <Card className="grow">
-            <CardBody>
+    <div className="container">
+      <Tabs aria-label="editor" className="gap-0">
+        <Tabs.ListContainer className="mx-auto">
+          <Tabs.List className="m-1 p-1 mb-0">
+            <Tabs.Tab id="editor">編集<Tabs.Indicator /></Tabs.Tab>
+            <Tabs.Tab id="viewer">参照<Tabs.Indicator /></Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
+        <Tabs.Panel id ="editor" className="pt-0 flex">
+          <Card className="grow rounded p-2">
+            <Card.Content>
               <div className="flex">
-                <div className="grow">
-                  <Input type="text" label="タイトル" value={pageData.title} />
-                </div>
+                <Input value={pageData.title} placeholder="タイトル" className="grow" readOnly />
                 <div className="flex">
-                  <Input type="text" label="差分対象" className="ml-2 min-w-40"
-                    value={diffTarget} onValueChange={setDiffTarget}
+                  <Input value={diffTarget} onChange={(e) => setDiffTarget(e.target.value)}
+                    placeholder="差分対象" className="ml-2 min-w-40 text-xs"
+                    onKeyDown={(e) =>{
+                      if (e.target instanceof HTMLInputElement) {
+                        if (e.key == "ArrowUp") {
+                          let newTarget = diffTarget;
+                          if (newTarget == "") {
+                            newTarget = pageData.title;
+                          } else {
+                            newTarget = getPrevDay(newTarget)
+                          }
+                          setDiffTarget(newTarget);
+                        } else if (e.key == "ArrowDown") {
+                          let newTarget = diffTarget;
+                          if (newTarget == "") {
+                            newTarget = pageData.title;
+                          } else {
+                            newTarget = getNextDay(newTarget)
+                          }
+                          setDiffTarget(newTarget);
+                        } else if (e.key == "Enter") {
+                          showDiff();
+                        }
+                      }
+                    }}
                   />
-                  <Button color="primary" className="ml-2 h-full" size="sm"
+                  <Button variant="primary" className="ml-2 h-full text-xs rounded-md" size="sm"
                     isDisabled={diffTarget === "" ? true : false}
                     onPress={() => {
                       showDiff();
@@ -480,36 +512,38 @@ export function ContentViewer(
                   >
                      差分<br/>表示
                   </Button>
-
+                  
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <div className="flex flex-col">
-                      <Switch
-                        name="autosaveSwitch"
-                        isSelected={autosave}
-                        onValueChange={setAutosave}
-                        size="lg"
-                        className="ml-1 h-full"
-                        startContent={<Save />}
-                        endContent={<Save />}
-                        isDisabled={editData.conflicted}
-                      />
+                    <div className="flex flex-col h-full">
+                      <Switch isSelected={autosave} onChange={setAutosave}
+                        className="ml-1" size="lg"
+                      >
+                        <Switch.Control>
+                          <Switch.Thumb>
+                            <Save />
+                          </Switch.Thumb>
+                        </Switch.Control>
+                      </Switch>
                       <div className="text-xs text-center">自動保存</div>
                     </div>
                     :
                     <div className="ml-1"></div>
                   }
-                  <Button color={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-0 h-full"
+                  <Button variant={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-1 h-full text-xs rounded-md"
                     size="sm" onPress={() => saveData(false)}>
-                    保存
+                                                                保存
                   </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Button color={editData.committed ? "primary" : "danger"} className="ml-1 h-full"
+                    <Button variant={editData.committed ? "primary" : "danger"} className="ml-1 h-full text-xs rounded-md"
                       size="sm" onPress={() => saveData(true)}>
                       {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                     </Button>
                     :
                     <></>
                   }
+                  <div className={showHistories ? "hidden" : "visible flex items-center"}>
+                    <Button onPress={() => getHistories()} variant="outline" className="ml-1 m-0 p-2 rounded-lg"><ChevronsLeft size={18}/></Button>
+                  </div>
                 </div>
               </div>
               <div id="editor">
@@ -519,85 +553,81 @@ export function ContentViewer(
                   theme={xcodeLight}
                 />
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
           {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
             <>
-              <Card className={showHistories ? "visible" : "hidden"}>
-                <CardBody>
+              <Card className={showHistories ? "ml-1 rounded visible" : "hidden"}>
+                <Card.Content>
+                  <div className="flex items-center text-sm rounded">
+                         バージョン一覧
+                    <Button onPress={() => setShowHistories(false)} variant="outline" className="ml-1 m-0 p-2 rounded-lg"><ChevronsRight size={18}/></Button>
+                  </div>
                   <div>
-                    バージョン一覧
-                    <Link rel="me" onPress={() => setShowHistories(false)}>　》</Link>
                     <hr className="mt-2"/>
                     <div className="m-0">
-                      <Listbox aria-label="history-list" className="m-0 p-0">
+                      <ListBox aria-label="history-list" className="m-0 p-0">
                         {histories && histories.map((history: History) => 
-                          <ListboxItem key={history["revision"]} aria-label={history["revision"]}
-                            endContent={<span>{history["revision"]}</span>}
-                            className="m-0 p-0">
-                            <Popover placement="left" className="m-0 p-0" size="lg"
+                          <ListBox.Item key={history["revision"]} aria-label={history["revision"]}
+                            className="my-0 mx-1 p-0 rounded">
+                            <Label className="mx-1">{history["revision"]}</Label>
+                            <Popover
                               onOpenChange={() => getHistoryDetail(history.revision)}>
                               <PopoverTrigger className="m-0 p-0">
-                                <Button className="m-0 p-0" variant="light">
+                                <Button className="m-0 p-0" variant="ghost">
                                   {history["datetime"]}
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent>
+                              <PopoverContent placement="left" className="m-1 p-1">
+                                <div className="flex">
+                                  <Button className="m-1 p-1 rounded-lg" onPress={() => appendHistoryDetail()}>取込</Button>
+                                  <Button className="m-1 p-1 rounded-lg" onPress={() => replaceHistoryDetail()}>差替</Button>
+                                </div>
                                 <div>
-                                  <Button className="m-1 p-1" onPress={() => appendHistoryDetail()}>取込</Button>
-                                  <Button className="m-1 p-1" onPress={() => replaceHistoryDetail()}>差替</Button>
-                                  <Textarea className="w-[600px]" minRows={10} value={revisionText}
-                                    isReadOnly />
+                                  <TextArea className="w-[600px] h-100" rows={10} value={revisionText}
+                                    readOnly />
                                 </div>
                               </PopoverContent>
                             </Popover>
-                          </ListboxItem>
+                          </ListBox.Item>
                         )}
-                      </Listbox>
+                      </ListBox>
                     </div>
                   </div>
-                </CardBody>
-              </Card>
-              <Card className={showHistories ? "hidden" : "visible"}>
-                <CardBody>
-                  <div><Link rel="me" onPress={() => getHistories()}>《</Link></div>
-                </CardBody>
+                </Card.Content>
               </Card>
             </>
             :
             <></>
           }
-        </Tab>
-        <Tab key="viewer" title="参照">
-          <Card>
-            <CardBody>
+        </Tabs.Panel>
+        <Tabs.Panel id="viewer" className="pt-0">
+          <Card className="grow m-0 p-1 rounded">
+            <Card.Content>
               <div className="flex">
                 <div className="grow" />
                 <div className="flex">
-                  <Button color="primary" className="ml-1 h-full"
-                    size="sm" onPress={() => loadData()}>
-                    読込
-                  </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Switch
-                      name="autosaveSwitch"
-                      isSelected={autosave}
-                      onValueChange={setAutosave}
-                      size="lg"
-                      className="ml-1 h-full"
-                      startContent={<Save />}
-                      endContent={<Save />}
-                      disabled={editData.conflicted}
-                    />
+                    <div className="flex flex-col h-full my-2 ml-1">
+                      <Switch name="autosaveSwitch" isSelected={autosave}
+                        onChange={setAutosave}
+                        size="lg">
+                        <Switch.Control>
+                          <Switch.Thumb>
+                            <Save />
+                          </Switch.Thumb>
+                        </Switch.Control>
+                      </Switch>
+                    </div>
                     :
                     <div className="ml-1"></div>
                   }
-                  <Button color={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-0 h-full"
+                  <Button variant={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-1 h-full text-xs rounded-lg"
                     size="sm" onPress={() => saveData(false)}>
-                    保存
+                                                                保存
                   </Button>
                   {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Button color={editData.committed ? "primary" : "danger"} className="ml-1 h-full"
+                    <Button variant={editData.committed ? "primary" : "danger"} className="ml-1 h-full text-xs rounded-lg"
                       size="sm" onPress={() => saveData(true)}>
                       {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                     </Button>
@@ -609,27 +639,28 @@ export function ContentViewer(
               <div className="markdown-body"
                 dangerouslySetInnerHTML={{__html: editData.html}}>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
-        </Tab>
+        </Tabs.Panel>
       </Tabs>
-      <NotifyMessages messages={messages} />
-      
-      <Modal size="5xl" scrollBehavior="inside"
-        isOpen={isOpen} placement="top-center" onOpenChange={onOpenChange}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalBody>
-                <div dangerouslySetInnerHTML={{ __html: diffHtml }}/>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="secondary" onPress={onClose}>閉じる</Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
+        
+      <Modal state={state}>
+        <Modal.Backdrop>
+          <Modal.Container size="lg" scroll="inside" placement="top">
+            <Modal.Dialog className="m-0 p-2 rounded">
+              <Modal.Body>
+                <div className="border p-1 bg-gray-900 rounded">
+                  <div dangerouslySetInnerHTML={{ __html: diffHtml }}/>
+                </div>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onPress={() => {state.close()}}>閉じる</Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
+      <NotifyMessages messages={messages} />
     </div>
   );
 }
