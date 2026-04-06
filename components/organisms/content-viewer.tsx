@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, RefObject } from "react";
-import { Tabs, Card } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { Label, Input, Button, Switch } from "@heroui/react";
 import { ListBox } from "@heroui/react";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
@@ -14,7 +14,7 @@ import { tasklist } from "@mdit/plugin-tasklist";
 import { container } from "@mdit/plugin-container";
 import hljs from "highlight.js";
 
-import { Save } from "lucide-react";
+import { Save, FilePenLine } from "lucide-react";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { NotifyMessages } from "@/components/molecules/notify-messages";
@@ -54,6 +54,7 @@ export function ContentViewer(
   const [ messages, setMessages ] = useState<string[]>([]);
   const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
   const [timestampSSE, setTimestampSSE] = useState<number>(0);
+  const [showEditor, setShowEditor] = useState<boolean>(true);
   const state = useOverlayState({ defaultOpen: false });
 
   const calc_timer_time = (value_str: string, default_value: number, min_value: number): number => {
@@ -465,185 +466,191 @@ export function ContentViewer(
 
   return (
     <div className="container">
-      <Tabs aria-label="editor" className="gap-0">
-        <Tabs.ListContainer className="mx-auto">
-          <Tabs.List className="m-1 p-1 mb-0">
-            <Tabs.Tab id="editor">編集<Tabs.Indicator /></Tabs.Tab>
-            <Tabs.Tab id="viewer">参照<Tabs.Indicator /></Tabs.Tab>
-          </Tabs.List>
-        </Tabs.ListContainer>
-        <Tabs.Panel id ="editor" className="pt-0 flex">
-          <Card className="grow rounded p-2">
-            <Card.Content>
+      <div className={showEditor ? "flex flex-row" : "hidden"}>
+        <Card className="grow rounded m-0 p-1">
+          <Card.Content>
+            <div className="flex">
+              <Switch isSelected={showEditor} onChange={setShowEditor} size="lg">
+                <Switch.Control>
+                  <Switch.Thumb>
+                    <FilePenLine />
+                  </Switch.Thumb>
+                </Switch.Control>
+              </Switch>
+              <Input value={pageData.title} placeholder="タイトル" className="grow" readOnly />
               <div className="flex">
-                <Input value={pageData.title} placeholder="タイトル" className="grow" readOnly />
-                <div className="flex">
-                  <Input value={diffTarget} onChange={(e) => setDiffTarget(e.target.value)}
-                    placeholder="差分対象" className="ml-2 min-w-40 text-xs"
-                    onKeyDown={(e) =>{
-                      if (e.target instanceof HTMLInputElement) {
-                        if (e.key == "ArrowUp") {
-                          let newTarget = diffTarget;
-                          if (newTarget == "") {
-                            newTarget = pageData.title;
-                          } else {
-                            newTarget = getPrevDay(newTarget)
-                          }
-                          setDiffTarget(newTarget);
-                        } else if (e.key == "ArrowDown") {
-                          let newTarget = diffTarget;
-                          if (newTarget == "") {
-                            newTarget = pageData.title;
-                          } else {
-                            newTarget = getNextDay(newTarget)
-                          }
-                          setDiffTarget(newTarget);
-                        } else if (e.key == "Enter") {
-                          showDiff();
+                <Input value={diffTarget} onChange={(e) => setDiffTarget(e.target.value)}
+                  placeholder="差分対象" className="ml-2 min-w-40 text-xs"
+                  onKeyDown={(e) =>{
+                    if (e.target instanceof HTMLInputElement) {
+                      if (e.key == "ArrowUp") {
+                        let newTarget = diffTarget;
+                        if (newTarget == "") {
+                          newTarget = pageData.title;
+                        } else {
+                          newTarget = getPrevDay(newTarget)
                         }
+                        setDiffTarget(newTarget);
+                      } else if (e.key == "ArrowDown") {
+                        let newTarget = diffTarget;
+                        if (newTarget == "") {
+                          newTarget = pageData.title;
+                        } else {
+                          newTarget = getNextDay(newTarget)
+                        }
+                        setDiffTarget(newTarget);
+                      } else if (e.key == "Enter") {
+                        showDiff();
                       }
-                    }}
-                  />
-                  <Button variant="primary" className="ml-2 h-full text-xs rounded-md" size="sm"
-                    isDisabled={diffTarget === "" ? true : false}
-                    onPress={() => {
-                      showDiff();
-                    }}
-                  >
-                     差分<br/>表示
-                  </Button>
-                  
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <div className="flex flex-col h-full">
-                      <Switch isSelected={autosave} onChange={setAutosave}
-                        className="ml-1" size="lg"
-                      >
-                        <Switch.Control>
-                          <Switch.Thumb>
-                            <Save />
-                          </Switch.Thumb>
-                        </Switch.Control>
-                      </Switch>
-                      <div className="text-xs text-center">自動保存</div>
-                    </div>
-                    :
-                    <div className="ml-1"></div>
-                  }
-                  <Button variant={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-1 h-full text-xs rounded-md"
-                    size="sm" onPress={() => saveData(false)}>
-                                                                保存
-                  </Button>
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Button variant={editData.committed ? "primary" : "danger"} className="ml-1 h-full text-xs rounded-md"
-                      size="sm" onPress={() => saveData(true)}>
-                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
-                    </Button>
-                    :
-                    <></>
-                  }
-                  <div className={showHistories ? "hidden" : "visible flex items-center"}>
-                    <Button onPress={() => getHistories()} variant="outline" className="ml-1 m-0 p-2 rounded-lg"><ChevronsLeft size={18}/></Button>
-                  </div>
-                </div>
-              </div>
-              <div id="editor">
-                <CodeMirror value={text}
-                  extensions={[markdown({ base: markdownLanguage, codeLanguages: languages })]}
-                  onChange={onChange} height="calc(100dvh - 200px)"
-                  theme={xcodeLight}
+                    }
+                  }}
                 />
-              </div>
-            </Card.Content>
-          </Card>
-          {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-            <>
-              <Card className={showHistories ? "ml-1 rounded visible" : "hidden"}>
-                <Card.Content>
-                  <div className="flex items-center text-sm rounded">
-                         バージョン一覧
-                    <Button onPress={() => setShowHistories(false)} variant="outline" className="ml-1 m-0 p-2 rounded-lg"><ChevronsRight size={18}/></Button>
+                <Button variant="primary" className="ml-2 h-full text-xs rounded-md" size="sm"
+                  isDisabled={diffTarget === "" ? true : false}
+                  onPress={() => {
+                    showDiff();
+                  }}
+                >
+                   差分<br/>表示
+                </Button>
+              
+                {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                  <div className="flex flex-col h-full">
+                    <Switch isSelected={autosave} onChange={setAutosave}
+                      className="ml-1" size="lg"
+                    >
+                      <Switch.Control>
+                        <Switch.Thumb>
+                          <Save />
+                        </Switch.Thumb>
+                      </Switch.Control>
+                    </Switch>
+                    <div className="text-xs text-center">自動保存</div>
                   </div>
-                  <div>
-                    <hr className="mt-2"/>
-                    <div className="m-0">
-                      <ListBox aria-label="history-list" className="m-0 p-0">
-                        {histories && histories.map((history: History) => 
-                          <ListBox.Item key={history["revision"]} aria-label={history["revision"]}
-                            className="my-0 mx-1 p-0 rounded">
-                            <Label className="mx-1">{history["revision"]}</Label>
-                            <Popover
-                              onOpenChange={() => getHistoryDetail(history.revision)}>
-                              <PopoverTrigger className="m-0 p-0">
-                                <Button className="m-0 p-0" variant="ghost">
-                                  {history["datetime"]}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent placement="left" className="m-1 p-1">
-                                <div className="flex">
-                                  <Button className="m-1 p-1 rounded-lg" onPress={() => appendHistoryDetail()}>取込</Button>
-                                  <Button className="m-1 p-1 rounded-lg" onPress={() => replaceHistoryDetail()}>差替</Button>
-                                </div>
-                                <div>
-                                  <TextArea className="w-[600px] h-100" rows={10} value={revisionText}
-                                    readOnly />
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </ListBox.Item>
-                        )}
-                      </ListBox>
-                    </div>
-                  </div>
-                </Card.Content>
-              </Card>
-            </>
-            :
-            <></>
-          }
-        </Tabs.Panel>
-        <Tabs.Panel id="viewer" className="pt-0">
-          <Card className="grow m-0 p-1 rounded">
-            <Card.Content>
-              <div className="flex">
-                <div className="grow" />
-                <div className="flex">
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <div className="flex flex-col h-full my-2 ml-1">
-                      <Switch name="autosaveSwitch" isSelected={autosave}
-                        onChange={setAutosave}
-                        size="lg">
-                        <Switch.Control>
-                          <Switch.Thumb>
-                            <Save />
-                          </Switch.Thumb>
-                        </Switch.Control>
-                      </Switch>
-                    </div>
-                    :
-                    <div className="ml-1"></div>
-                  }
-                  <Button variant={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-1 h-full text-xs rounded-lg"
-                    size="sm" onPress={() => saveData(false)}>
-                                                                保存
+                  :
+                  <div className="ml-1"></div>
+                }
+                <Button variant={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-1 h-full text-xs rounded-md"
+                  size="sm" onPress={() => saveData(false)}>
+                                                              保存
+                </Button>
+                {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                  <Button variant={editData.committed ? "primary" : "danger"} className="ml-1 h-full text-xs rounded-md"
+                    size="sm" onPress={() => saveData(true)}>
+                    {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Button variant={editData.committed ? "primary" : "danger"} className="ml-1 h-full text-xs rounded-lg"
-                      size="sm" onPress={() => saveData(true)}>
-                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
-                    </Button>
-                    :
-                    <></>
-                  }
+                  :
+                  <></>
+                }
+                <div className={showHistories ? "hidden" : "visible flex items-center"}>
+                  <Button onPress={() => getHistories()} variant="outline" className="ml-1 m-0 p-2 rounded-lg"><ChevronsLeft size={18}/></Button>
                 </div>
               </div>
-              <div className="markdown-body"
-                dangerouslySetInnerHTML={{__html: editData.html}}>
+            </div>
+            <div id="editor">
+              <CodeMirror value={text}
+                extensions={[markdown({ base: markdownLanguage, codeLanguages: languages })]}
+                onChange={onChange} height="calc(100dvh - 200px)"
+                theme={xcodeLight}
+              />
+            </div>
+          </Card.Content>
+        </Card>
+        {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+          <>
+            <Card className={showHistories ? "ml-1 rounded visible" : "hidden"}>
+              <Card.Content>
+                <div className="flex items-center text-sm rounded">
+                                                                     バージョン一覧
+                  <Button onPress={() => setShowHistories(false)} variant="outline" className="ml-1 m-0 p-2 rounded-lg"><ChevronsRight size={18}/></Button>
+                </div>
+                <div>
+                  <hr className="mt-2"/>
+                  <div className="m-0">
+                    <ListBox aria-label="history-list" className="m-0 p-0">
+                      {histories && histories.map((history: History) => 
+                        <ListBox.Item key={history["revision"]} aria-label={history["revision"]}
+                          className="my-0 mx-1 p-0 rounded">
+                          <Label className="mx-1">{history["revision"]}</Label>
+                          <Popover
+                            onOpenChange={() => getHistoryDetail(history.revision)}>
+                            <PopoverTrigger className="m-0 p-0">
+                              <Button className="m-0 p-0" variant="ghost">
+                                {history["datetime"]}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent placement="left" className="m-1 p-1">
+                              <div className="flex">
+                                <Button className="m-1 p-1 rounded-lg" onPress={() => appendHistoryDetail()}>取込</Button>
+                                <Button className="m-1 p-1 rounded-lg" onPress={() => replaceHistoryDetail()}>差替</Button>
+                              </div>
+                              <div>
+                                <TextArea className="w-[600px] h-100" rows={10} value={revisionText}
+                                  readOnly />
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </ListBox.Item>
+                      )}
+                    </ListBox>
+                  </div>
+                </div>
+              </Card.Content>
+            </Card>
+          </>
+          :
+          <></>
+        }
+      </div>
+      <div className={showEditor ? "hidden" : ""}>
+        <Card className="grow m-0 p-1 rounded">
+          <Card.Content>
+            <div className="flex">
+              <Switch isSelected={showEditor} onChange={setShowEditor} size="lg">
+                <Switch.Control>
+                  <Switch.Thumb>
+                    <FilePenLine />
+                  </Switch.Thumb>
+                </Switch.Control>
+              </Switch>
+              <div className="grow" />
+              <div className="flex">
+                {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                  <div className="flex flex-col h-full my-2 ml-1">
+                    <Switch name="autosaveSwitch" isSelected={autosave}
+                      onChange={setAutosave}
+                      size="lg">
+                      <Switch.Control>
+                        <Switch.Thumb>
+                          <Save />
+                        </Switch.Thumb>
+                      </Switch.Control>
+                    </Switch>
+                  </div>
+                  :
+                  <div className="ml-1"></div>
+                }
+                <Button variant={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-1 h-full text-xs rounded-lg"
+                  size="sm" onPress={() => saveData(false)}>
+                                                              保存
+                </Button>
+                {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                  <Button variant={editData.committed ? "primary" : "danger"} className="ml-1 h-full text-xs rounded-lg"
+                    size="sm" onPress={() => saveData(true)}>
+                    {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                  </Button>
+                  :
+                  <></>
+                }
               </div>
-            </Card.Content>
-          </Card>
-        </Tabs.Panel>
-      </Tabs>
-        
+            </div>
+            <div className="markdown-body"
+              dangerouslySetInnerHTML={{__html: editData.html}}>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+      
       <Modal state={state}>
         <Modal.Backdrop>
           <Modal.Container size="lg" scroll="inside" placement="top">
