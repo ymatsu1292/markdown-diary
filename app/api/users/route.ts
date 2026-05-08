@@ -16,19 +16,24 @@ export async function GET(req: NextRequest) {
   }
   
   const params = req.nextUrl.searchParams;
-  console.log("params=", params);
+  //console.log("params=", params);
   const page = Number(params.get("page"));
+  const key: string = params.get("key") || "username" ;
+  const filter: string = params.get("filter") || "";
 
   if (session.user.role == "admin") {
     const users = await auth.api.listUsers({
       query: {
-        limit: 20, offset: (page - 1) * 20, sortBy: "username"
+        filterField: key, filterValue: filter, filterOperator: "contains",
+        limit: 10, offset: (page - 1) * 10, sortBy: "username"
       },
       headers: await headers(),
     });
+    //console.log("users0=", users);
     res = NextResponse.json({"count": users.total, "results": users.users});
   } else {
     const users = { users: [session.user], total: 1, limit: 1, offset: 1 };
+    //console.log("users1=", users);
     res = NextResponse.json({"count": users.total, "results": users.users});
   }
   

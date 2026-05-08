@@ -550,7 +550,7 @@ export function ContentViewer(
             <div id="editor">
               <CodeMirror value={text}
                 extensions={[markdown({ base: markdownLanguage, codeLanguages: languages })]}
-                onChange={onChange} height="calc(100dvh - 200px)"
+                onChange={onChange} height="calc(100dvh - 6em)"
                 theme={xcodeLight}
               />
             </div>

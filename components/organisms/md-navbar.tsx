@@ -90,11 +90,11 @@ export function MdNavbar(
                     >
                        日記
                     </Dropdown.Item>
-                    {/*<Dropdown.Item key="useradmin"
+                    <Dropdown.Item key="useradmin"
                       onPress={() => router.push('/users')}
                     >
                        ユーザ管理
-                       </Dropdown.Item>}*/}
+                    </Dropdown.Item>
                   </Dropdown.Section>
                   <Dropdown.Section>
                     <Dropdown.Item variant="danger" onPress={async () => {
