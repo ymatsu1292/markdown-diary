@@ -1,7 +1,7 @@
 //import { useState, useMemo } from "react";
 import { ListBox } from "@heroui/react";
 import { File } from "lucide-react";
-import { PageData } from "@/types/page-data-type";
+import type { PageData } from "@/types/page-data-type";
 
 export function MarkdownFileList(
   { pageData, setPage } : {
