@@ -40,3 +40,10 @@ data/*
 \#*
 database.sqlite
 package-lock.json
+database.sqlite.*
+*.bak
+*.orig
+202*.sql
+*.dummy
+*.work
+*.tmp

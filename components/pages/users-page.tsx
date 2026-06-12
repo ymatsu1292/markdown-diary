@@ -1,10 +1,8 @@
 "use client";
 import { useState, useMemo } from "react";
-//import useSWR, { useSWRConfig } from "swr";
 import useSWR from "swr";
 
 import type { Key } from "react";
-//import type { DateValue } from "@heroui/react";
 
 import { Table, Pagination } from "@heroui/react";
 import { Input } from "@heroui/react";
@@ -16,7 +14,9 @@ import { useSession } from "@/lib/auth-client";
 
 import { MdNavbar } from "@/components/organisms/md-navbar";
 import { UserEditModal } from "@/components/organisms/user-edit-modal";
-import { UserData, UsersData, baseUserData } from "@/types/users-data-type";
+
+import { baseUserData } from "@/types/users-data-type";
+import type { UserData, UsersData } from "@/types/users-data-type";
 
 const fetcher = (...args: [RequestInfo | URL, RequestInit?]) => fetch(...args).then((res) => res.json());
 const calcBanExpiresIn = (banExpires: string): string => {

@@ -8,7 +8,8 @@ import { Form, Input, Button, TextField, FieldError, Switch } from "@heroui/reac
 import { Select, Label, ListBox } from "@heroui/react";
 import { Eye } from "lucide-react";
 
-import { UserData, baseUserData, Role } from "@/types/users-data-type";
+import type { UserData, Role } from "@/types/users-data-type";
+import { baseUserData } from "@/types/users-data-type";
 
 const roles: { key: Role; label: string; }[] = [
   {key: "admin", label: "管理者"},
