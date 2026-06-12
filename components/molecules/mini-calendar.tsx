@@ -1,7 +1,8 @@
 import { Table } from "@heroui/react";
 import { Link, Tooltip } from "@heroui/react";
 import { getTodayStr } from "@/lib/dateutils";
-import { MonthSchedule, WeekSchedule, DaySchedule } from "@/types/schedule-data-type";
+
+import type { MonthSchedule, WeekSchedule, DaySchedule } from "@/types/schedule-data-type";
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });

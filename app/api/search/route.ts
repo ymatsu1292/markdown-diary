@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { promisify } from "node:util";
 import { build_path } from "@/lib/build-path";
+import type { GrepResult } from "@/types/grep-type";
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   const directory = build_path(process.env.DATA_DIRECTORY || "", user_id);
 
   const cmd: string = "grep -r -n '" + target  + "' *.md";
-  const grepResults: string[][] = [];
+  const grepResults: GrepResult[] = [];
   try {
     func_logger.info({"command": cmd, "message": "exec"});
     const exec_res = await aexec(cmd, {"cwd": directory});
@@ -36,10 +37,9 @@ export async function GET(req: NextRequest) {
         const key: string = data.shift() || "";
         const linenum: string = data.shift() || "";
         const val: string = data.join(":") || "";
-        grepResults.push([key, linenum, val]);
+        grepResults.push({key: key+":"+linenum, fname: key, linenum: linenum, value: val});
       }
     });
-    //grepResults = exec_res["stdout"].split("\n");
     func_logger.info({"grepResults": grepResults});
   } catch (error) {
     func_logger.info({"command": cmd, "error": error});

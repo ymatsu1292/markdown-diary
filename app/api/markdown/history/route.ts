@@ -5,7 +5,8 @@ import { promisify } from "node:util";
 import { build_path } from "@/lib/build-path";
 import { rlog_parse } from "@/lib/rlog-parse";
 import { exec } from "child_process";
-import { History } from "@/types/history-data-type";
+
+import type { History } from "@/types/history-data-type";
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });

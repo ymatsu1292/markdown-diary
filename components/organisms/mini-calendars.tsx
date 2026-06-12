@@ -2,7 +2,7 @@ import { Button } from "@heroui/react";
 import { MiniCalendar } from "@/components/molecules/mini-calendar";
 import { getTodayStr, getPrevMonth, getPrevDay, getNextMonth, getNextDay } from "@/lib/dateutils";
 import { ChevronsLeft, ChevronLeft, ChevronsRight, ChevronRight, House } from "lucide-react";
-import { PageData } from "@/types/page-data-type";
+import type { PageData } from "@/types/page-data-type";
 
 export function MiniCalendars(
   { pageData, setPage, hasText } : {
