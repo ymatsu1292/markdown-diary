@@ -9,9 +9,10 @@ import { MiniCalendars } from "@/components/organisms/mini-calendars";
 import { MarkdownFileList } from "@/components/organisms/markdown-file-list";
 import { GrepResultList } from "@/components/organisms/grep-result-list";
 import { ContentViewer } from "@/components/organisms/content-viewer";
-import { PageData } from "@/types/page-data-type";
-import { ScheduleData } from "@/types/schedule-data-type";
 import { MdNavbar } from "@/components/organisms/md-navbar";
+
+import type { PageData } from "@/types/page-data-type";
+import type { ScheduleData } from "@/types/schedule-data-type";
 
 export function MainPage() {
   const { data: session } = useSession();
@@ -126,7 +127,7 @@ export function MainPage() {
   
   const doSearchIfNecessary = async (key: string, searchText: string) => {
     if (key == "Enter") {
-      setActiveTab("grep");
+      setActiveTab("search");
       doSearch(searchText);
     }
   };

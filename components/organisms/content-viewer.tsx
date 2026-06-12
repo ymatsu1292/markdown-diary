@@ -20,9 +20,9 @@ import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { NotifyMessages } from "@/components/molecules/notify-messages";
 import { useSession } from "@/lib/auth-client";
 import { getPrevDay, getNextDay } from "@/lib/dateutils";
-import { History } from "@/types/history-data-type";
-import { PageData } from "@/types/page-data-type";
-import { EditData } from "@/types/edit-data-type";
+import type { History } from "@/types/history-data-type";
+import type { PageData } from "@/types/page-data-type";
+import type { EditData } from "@/types/edit-data-type";
 
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
