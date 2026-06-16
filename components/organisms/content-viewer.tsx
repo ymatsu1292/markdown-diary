@@ -125,14 +125,6 @@ export function ContentViewer(
     func_logger.trace({"message": "END", "params": {"newText": newText, "originalUpdate": originalUpdate, "commitFlag": commitFlag}});
   }
 
-  // const onChange = useCallback((val: string) => {
-  //   const func_logger = logger.child({ "func": "ContentViewer.onChange" });
-  //   func_logger.trace({"message": "START", "params": {"val": val}});
-  //   func_logger.info({"message": "onChange開始"});
-  //   updateEditData(val, false, false, 0);
-  //   func_logger.info({"message": "onChange終了"});
-  //   func_logger.trace({"message": "END", "params": {"val": val}});
-  // }, [md, pageData.title, editData, updateEditData]);
   const onChange = (val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
     func_logger.trace({"message": "START", "params": {"val": val}});
