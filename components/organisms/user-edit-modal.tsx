@@ -4,7 +4,7 @@ import type { UseOverlayStateReturn } from "@heroui/react";
 import { useSession, authClient } from "@/lib/auth-client";
 import { useState } from "react";
 import { Modal } from "@heroui/react";
-import { Form, Input, Button, TextField, FieldError, Switch } from "@heroui/react";
+import { Input, Button, TextField, FieldError, Switch } from "@heroui/react";
 import { Select, Label, ListBox } from "@heroui/react";
 import { Eye } from "lucide-react";
 
