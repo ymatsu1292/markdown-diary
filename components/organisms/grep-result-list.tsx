@@ -1,6 +1,5 @@
 import { Table, Selection } from "@heroui/react";
 import type { PageData } from "@/types/page-data-type";
-import type { GrepResult } from "@/types/grep-type";
 
 export function GrepResultList(
   { pageData, setPage } : {
@@ -19,7 +18,7 @@ export function GrepResultList(
               onSelectionChange={(keys: Selection) => {
                 const regex = /^(.*)\.md:[0-9]+$/;
                 if (keys != "all" && [...keys].length > 0) {
-                  let regexResult = regex.exec(String([...keys][0])) || ["", ""];
+                  const regexResult = regex.exec(String([...keys][0])) || ["", ""];
                   setPage(regexResult[1]);
                 }
               }}
