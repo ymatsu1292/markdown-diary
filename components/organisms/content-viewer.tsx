@@ -1,4 +1,10 @@
-import { useState, useEffect, useMemo, useRef, RefObject } from "react";
+/**
+ * @fileoverview
+ * マークダウンの表示と編集を行うコンポーネント。
+ */
+
+// 外部ライブラリのインポート
+import { useState, useEffect, useRef, RefObject } from "react";
 import { Card } from "@heroui/react";
 import { Label, Input, Button, Switch } from "@heroui/react";
 import { ListBox } from "@heroui/react";
@@ -17,6 +23,7 @@ import hljs from "highlight.js";
 import { Save, FilePenLine } from "lucide-react";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
+// ローカルライブラリのインポート
 import { NotifyMessages } from "@/components/molecules/notify-messages";
 import { useSession } from "@/lib/auth-client";
 import { getPrevDay, getNextDay } from "@/lib/dateutils";
@@ -24,9 +31,21 @@ import type { History } from "@/types/history-data-type";
 import type { PageData } from "@/types/page-data-type";
 import type { EditData } from "@/types/edit-data-type";
 
+// ログのインポートおよび初期化処理
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
+/**
+ * マークダウンの表示を行う
+ * @param props dirtyRef/pageData/hasText/setHasTextを受け取る
+ * @returns マークダウンの表示を行うコンポーネントを返却する
+ * 
+ * @note 
+ * dirtyRef: マークダウンのテキストが更新されたかどうか、
+ * ContentViewerを呼び出す側で検出する際に利用する。
+ * pageData: 編集するマークダウンテキストの情報。
+ * hasText/setHasText: 編集対象のテキストが空かどうか。
+ */
 export function ContentViewer(
   { dirtyRef, pageData, hasText, setHasText } : {
     dirtyRef: RefObject<boolean>;
@@ -39,8 +58,11 @@ export function ContentViewer(
   func_logger.debug({"message": "START", "params": {
     "pageData": pageData,
   }});
+  // セッション情報
   const { data: session } = useSession();
+  // GUIで編集しているテキスト
   const [ text, setText ] = useState<string>("");
+  // 編集中の情報
   const [ editData, setEditData ] = useState<EditData>({
     originalText: "",
     html: "",
@@ -48,15 +70,27 @@ export function ContentViewer(
     conflicted: false, // コンフリクトしているときはoriginalTextはサーバに保存されていない状態
     timestamp: -1.0,
   });
+  // 自動保存処理の実施有無
   const [ autosave, setAutosave ] = useState<boolean>(true);
+  // 前回自動保存処理を実施したときのタイムスタンプ
   const autosaveTimestamp = useRef<number>(new Date().getTime());
+  // 前回コンフリクトチェックを実施したときのタイムスタンプ
   const conflictCheckTimestamp = useRef<number>(new Date().getTime());
+  // ユーザに通知したいメッセージ
   const [ messages, setMessages ] = useState<string[]>([]);
+  // タイムスタンプ情報(前回ファイル更新した際のサーバ上のタイムスタンプ)
   const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
   const [timestampSSE, setTimestampSSE] = useState<number>(0);
   const [showEditor, setShowEditor] = useState<boolean>(true);
   const state = useOverlayState({ defaultOpen: false });
 
+  /**
+   * タイマー用の値を計算する
+   * @param value_str 設定ファイルから取得したタイマー値用文字列
+   * @param default_value 設定がなかった場合や不正だった場合に使用するデフォルト値
+   * @param min_value タイマー値の最小値
+   * @returns タイマー値
+   */
   const calc_timer_time = (value_str: string, default_value: number, min_value: number): number => {
     const time_value = Number(value_str);
     if (isNaN(time_value)) {
@@ -68,9 +102,9 @@ export function ContentViewer(
   }
 
   // タイマーの値を設定
-  const timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_TIME || "", 30, 1), []);
-  const conflict_check_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_CHECK || "", 30, 10), []);
-  const autosave_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_AUTOSAVE || "", 30, 10), []);
+  const timer_time = calc_timer_time(process.env.NEXT_PUBLIC_TIMER_TIME || "", 30, 1);
+  const conflict_check_timer_time = calc_timer_time(process.env.NEXT_PUBLIC_TIMER_CHECK || "", 30, 10);
+  const autosave_timer_time = calc_timer_time(process.env.NEXT_PUBLIC_TIMER_AUTOSAVE || "", 30, 10);
   
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
@@ -84,7 +118,6 @@ export function ContentViewer(
       return "";
     }}).use(container, {name: "info"}).use(tasklist);
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
-  //const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
   const [ diffTarget, setDiffTarget ] = useState<string>("");
   const [ diffHtml, setDiffHtml ] = useState<string>("");
   const [ histories, setHistories ] = useState<History[]>([]);
@@ -269,7 +302,7 @@ export function ContentViewer(
     func_logger.debug({"message": "START"});
 
     let new_text;
-    if (text.substr(-1) === "\n" || text.length == 0) {
+    if (text.slice(-1) === "\n" || text.length == 0) {
       new_text = text + revisionText;
     } else {
       new_text = text + "\n" + revisionText;
@@ -344,25 +377,6 @@ export function ContentViewer(
     // eslint-disable-next-line
   }, [session?.user?.id, pageData.title]);
 
-  // useEffect(() => {
-  //   const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
-  //   runLoadData();
-  //   const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
-  //   const eventSource = new EventSource(uri);
-  //   eventSource.onmessage = (event) => {
-  //     func_logger.debug({"message": "onMessage", "event": event});
-  //     setTimestampSSE(event.data);
-  //   };
-  //   eventSource.onerror = () => {
-  //     func_logger.debug({"message": "onError"});
-  //     eventSource.close();
-  //   };
-  //   return () => {
-  //     eventSource.close();
-  //   };
-  //   // eslint-disable-next-line
-  // }, [pageData.title]);
-  
   // タイマー時刻が更新された際にデータをチェックまたは保存する
   useEffect(() => {
     (async() => {
@@ -462,13 +476,17 @@ export function ContentViewer(
         <Card className="grow rounded m-0 p-1">
           <Card.Content>
             <div className="flex">
-              <Switch isSelected={showEditor} onChange={setShowEditor} size="lg">
-                <Switch.Control>
-                  <Switch.Thumb>
-                    <FilePenLine />
-                  </Switch.Thumb>
-                </Switch.Control>
-              </Switch>
+              <div className="flex flex-col h-full my-2 ml-1">
+                <Switch isSelected={showEditor} onChange={setShowEditor} size="lg">
+                  <Switch.Content>
+                    <Switch.Control>
+                      <Switch.Thumb>
+                        <FilePenLine />
+                      </Switch.Thumb>
+                    </Switch.Control>
+                  </Switch.Content>
+                </Switch>
+              </div>
               <Input value={pageData.title} placeholder="タイトル" className="grow" readOnly />
               <div className="flex">
                 <Input value={diffTarget} onChange={(e) => setDiffTarget(e.target.value)}
@@ -511,11 +529,13 @@ export function ContentViewer(
                     <Switch isSelected={autosave} onChange={setAutosave}
                       className="ml-1" size="lg"
                     >
-                      <Switch.Control>
-                        <Switch.Thumb>
-                          <Save />
-                        </Switch.Thumb>
-                      </Switch.Control>
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb>
+                            <Save />
+                          </Switch.Thumb>
+                        </Switch.Control>
+                      </Switch.Content>
                     </Switch>
                     <div className="text-xs text-center">自動保存</div>
                   </div>
@@ -598,13 +618,17 @@ export function ContentViewer(
         <Card className="grow m-0 p-1 rounded">
           <Card.Content>
             <div className="flex">
-              <Switch isSelected={showEditor} onChange={setShowEditor} size="lg">
-                <Switch.Control>
-                  <Switch.Thumb>
-                    <FilePenLine />
-                  </Switch.Thumb>
-                </Switch.Control>
-              </Switch>
+              <div className="flex flex-col h-full my-2 ml-1">
+                <Switch isSelected={showEditor} onChange={setShowEditor} size="lg">
+                  <Switch.Content>
+                    <Switch.Control>
+                      <Switch.Thumb>
+                        <FilePenLine />
+                      </Switch.Thumb>
+                    </Switch.Control>
+                  </Switch.Content>
+                </Switch>
+              </div>
               <div className="grow" />
               <div className="flex">
                 {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
@@ -612,11 +636,13 @@ export function ContentViewer(
                     <Switch name="autosaveSwitch" isSelected={autosave}
                       onChange={setAutosave}
                       size="lg">
-                      <Switch.Control>
-                        <Switch.Thumb>
-                          <Save />
-                        </Switch.Thumb>
-                      </Switch.Control>
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb>
+                            <Save />
+                          </Switch.Thumb>
+                        </Switch.Control>
+                      </Switch.Content>
                     </Switch>
                   </div>
                   :
