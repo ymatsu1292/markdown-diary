@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const key: string = params.get("key") || "username" ;
   const filter: string = params.get("filter") || "";
 
-  if (session.user.role == "admin") {
+  if (session?.user?.role == "admin") {
     const users = await auth.api.listUsers({
       query: {
         filterField: key, filterValue: filter, filterOperator: "contains",
