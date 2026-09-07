@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ScheduleData, MonthSchedule, WeekSchedule } from "@/types/schedule-data-type";
 import { EventData } from "@/types/schedule-data-type";
 import { mkdir, writeFile, readFile, opendir } from "node:fs/promises";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { build_path } from "@/lib/build-path";
 
-//import moment from "moment";
-import { format, parse, startOfMonth, subMonths, addMonths, previousSunday } from "date-fns";
+import type { ScheduleData, MonthSchedule, WeekSchedule } from "@/types/schedule-data-type";
+
+import { format, parse, startOfMonth, subMonths, addMonths, previousSunday, isSunday } from "date-fns";
 import { setDefaultOptions, addDays } from "date-fns";
 import { ja } from "date-fns/locale";
 setDefaultOptions({ locale: ja });
@@ -25,7 +25,10 @@ function create_calendar_base(check_month: Date): MonthSchedule {
     "month": format(check_month, "yyyy-MM"),
     "data": []
   }
-  const start_date = previousSunday(check_month);
+  let start_date = previousSunday(check_month);
+  if (isSunday(check_month)) {
+    start_date = check_month;
+  }
   //console.log("start_date=", start_date, ", check_month=", month);
   let week_number = 0;
   let continue_flag = true;

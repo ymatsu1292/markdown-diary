@@ -1,5 +1,5 @@
-import { Listbox, ListboxItem } from "@heroui/react";
-import { PageData } from "@/types/page-data-type";
+import { Table, Selection } from "@heroui/react";
+import type { PageData } from "@/types/page-data-type";
 
 export function GrepResultList(
   { pageData, setPage } : {
@@ -9,24 +9,37 @@ export function GrepResultList(
 ) {
   return (
     <div className="bg-blue-50 w-120">
-      <div className="m-1 p-1">grep結果({pageData.grepText})</div>
+      <div className="m-1 p-1">grep結果【{pageData.grepText}】</div>
       <div className="container mx-auto">
-        <Listbox aria-label="greplist" variant="flat" selectionMode="single"
-          itemClasses={{base: "my-0 py-0 font-bold font-mono", title: "font-serif"}}
-          className="h-[calc(100dvh-170px)] overflow-scroll"
-        >
-          { pageData.grepResults.map((item) => 
-            <ListboxItem key={item[0]+":"+item[1]} startContent={item[0]+"["+item[1]+"]"}
-              onPress={(e) => {
-                if (e.target instanceof HTMLElement && e.target.dataset != undefined && e.target.dataset.key != undefined ) {
-                  setPage(e.target.dataset.key.split(":")[0].slice(0, -3));
+        <Table className="text-xs">
+          <Table.ScrollContainer>
+            <Table.Content aria-label="grep results"
+              selectionMode="single"
+              onSelectionChange={(keys: Selection) => {
+                const regex = /^(.*)\.md:[0-9]+$/;
+                if (keys != "all" && [...keys].length > 0) {
+                  const regexResult = regex.exec(String([...keys][0])) || ["", ""];
+                  setPage(regexResult[1]);
                 }
               }}
             >
-              {item[2]}
-            </ListboxItem>)
-          }
-        </Listbox>
+              <Table.Header className="hidden">
+                <Table.Column key="fname" isRowHeader className="p-0 m-0" minWidth={100}>ファイル名:行</Table.Column>
+                <Table.Column key="value" className="p-0 m-0">値</Table.Column>
+              </Table.Header>
+              <Table.Body>
+                <Table.Collection items={pageData.grepResults}>
+                  {(item) => (
+                    <Table.Row key={item.key}>
+                      <Table.Cell key="key" className="p-1 text-xs text-left">{item.key}</Table.Cell>
+                      <Table.Cell key="value" className="p-1 text-xs text-left">{item.value}</Table.Cell>
+                    </Table.Row>
+                  )}
+                </Table.Collection>
+              </Table.Body>
+            </Table.Content>
+          </Table.ScrollContainer>
+        </Table>
       </div>
     </div>
   );  

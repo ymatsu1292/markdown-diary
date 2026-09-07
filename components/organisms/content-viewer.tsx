@@ -1,10 +1,16 @@
-import { useState, useEffect, useMemo, useRef, RefObject } from "react";
-import { Tabs, Tab, Card, CardBody } from "@heroui/react";
-import { Input, Button, Link, Switch } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
-import { Listbox, ListboxItem } from "@heroui/react";
+/**
+ * @fileoverview
+ * マークダウンの表示と編集を行うコンポーネント。
+ */
+
+// 外部ライブラリのインポート
+import { useState, useEffect, useRef, RefObject } from "react";
+import { Card } from "@heroui/react";
+import { Label, Input, Button, Switch } from "@heroui/react";
+import { ListBox } from "@heroui/react";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
-import { Textarea } from "@heroui/react";
+import { TextArea } from "@heroui/react";
+import { Modal, useOverlayState } from "@heroui/react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
@@ -13,16 +19,33 @@ import markdownit from "markdown-it";
 import { tasklist } from "@mdit/plugin-tasklist";
 import { container } from "@mdit/plugin-container";
 import hljs from "highlight.js";
-import { useSession } from "@/lib/auth-client";
-import { History } from "@/types/history-data-type";
-import { PageData } from "@/types/page-data-type";
-import { EditData } from "@/types/edit-data-type";
-import { Save } from "lucide-react";
-import { NotifyMessages } from "@/components/molecules/notify-messages";
 
+import { Save, FilePenLine } from "lucide-react";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
+
+// ローカルライブラリのインポート
+import { NotifyMessages } from "@/components/molecules/notify-messages";
+import { useSession } from "@/lib/auth-client";
+import { getPrevDay, getNextDay } from "@/lib/dateutils";
+import type { History } from "@/types/history-data-type";
+import type { PageData } from "@/types/page-data-type";
+import type { EditData } from "@/types/edit-data-type";
+
+// ログのインポートおよび初期化処理
 import base_logger from "@/lib/logger";
 const logger = base_logger.child({ filename: __filename });
 
+/**
+ * マークダウンの表示を行う
+ * @param props dirtyRef/pageData/hasText/setHasTextを受け取る
+ * @returns マークダウンの表示を行うコンポーネントを返却する
+ * 
+ * @note 
+ * dirtyRef: マークダウンのテキストが更新されたかどうか、
+ * ContentViewerを呼び出す側で検出する際に利用する。
+ * pageData: 編集するマークダウンテキストの情報。
+ * hasText/setHasText: 編集対象のテキストが空かどうか。
+ */
 export function ContentViewer(
   { dirtyRef, pageData, hasText, setHasText } : {
     dirtyRef: RefObject<boolean>;
@@ -35,8 +58,11 @@ export function ContentViewer(
   func_logger.debug({"message": "START", "params": {
     "pageData": pageData,
   }});
+  // セッション情報
   const { data: session } = useSession();
+  // GUIで編集しているテキスト
   const [ text, setText ] = useState<string>("");
+  // 編集中の情報
   const [ editData, setEditData ] = useState<EditData>({
     originalText: "",
     html: "",
@@ -44,13 +70,27 @@ export function ContentViewer(
     conflicted: false, // コンフリクトしているときはoriginalTextはサーバに保存されていない状態
     timestamp: -1.0,
   });
+  // 自動保存処理の実施有無
   const [ autosave, setAutosave ] = useState<boolean>(true);
+  // 前回自動保存処理を実施したときのタイムスタンプ
   const autosaveTimestamp = useRef<number>(new Date().getTime());
+  // 前回コンフリクトチェックを実施したときのタイムスタンプ
   const conflictCheckTimestamp = useRef<number>(new Date().getTime());
+  // ユーザに通知したいメッセージ
   const [ messages, setMessages ] = useState<string[]>([]);
+  // タイムスタンプ情報(前回ファイル更新した際のサーバ上のタイムスタンプ)
   const [timestampSSEold, setTimestampSSEold] = useState<number>(0);
   const [timestampSSE, setTimestampSSE] = useState<number>(0);
+  const [showEditor, setShowEditor] = useState<boolean>(true);
+  const state = useOverlayState({ defaultOpen: false });
 
+  /**
+   * タイマー用の値を計算する
+   * @param value_str 設定ファイルから取得したタイマー値用文字列
+   * @param default_value 設定がなかった場合や不正だった場合に使用するデフォルト値
+   * @param min_value タイマー値の最小値
+   * @returns タイマー値
+   */
   const calc_timer_time = (value_str: string, default_value: number, min_value: number): number => {
     const time_value = Number(value_str);
     if (isNaN(time_value)) {
@@ -62,9 +102,9 @@ export function ContentViewer(
   }
 
   // タイマーの値を設定
-  const timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_TIME || "", 30, 1), []);
-  const conflict_check_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_CHECK || "", 30, 10), []);
-  const autosave_timer_time = useMemo(() => calc_timer_time(process.env.NEXT_PUBLIC_TIMER_AUTOSAVE || "", 30, 10), []);
+  const timer_time = calc_timer_time(process.env.NEXT_PUBLIC_TIMER_TIME || "", 30, 1);
+  const conflict_check_timer_time = calc_timer_time(process.env.NEXT_PUBLIC_TIMER_CHECK || "", 30, 10);
+  const autosave_timer_time = calc_timer_time(process.env.NEXT_PUBLIC_TIMER_AUTOSAVE || "", 30, 10);
   
   const md = markdownit({html: true, linkify: true, typographer: true, 
     highlight: function (str, lang) {
@@ -78,7 +118,8 @@ export function ContentViewer(
       return "";
     }}).use(container, {name: "info"}).use(tasklist);
   const [ timerTime, setTimerTime ] = useState(new Date().getTime());
-  const [ selectedTemplate, setSelectedTemplate ] = useState<string>("");
+  const [ diffTarget, setDiffTarget ] = useState<string>("");
+  const [ diffHtml, setDiffHtml ] = useState<string>("");
   const [ histories, setHistories ] = useState<History[]>([]);
   const [ showHistories, setShowHistories ] = useState<boolean>(false);
   const [ revisionText, setRevisionText ] = useState<string>("");
@@ -117,14 +158,6 @@ export function ContentViewer(
     func_logger.trace({"message": "END", "params": {"newText": newText, "originalUpdate": originalUpdate, "commitFlag": commitFlag}});
   }
 
-  // const onChange = useCallback((val: string) => {
-  //   const func_logger = logger.child({ "func": "ContentViewer.onChange" });
-  //   func_logger.trace({"message": "START", "params": {"val": val}});
-  //   func_logger.info({"message": "onChange開始"});
-  //   updateEditData(val, false, false, 0);
-  //   func_logger.info({"message": "onChange終了"});
-  //   func_logger.trace({"message": "END", "params": {"val": val}});
-  // }, [md, pageData.title, editData, updateEditData]);
   const onChange = (val: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.onChange" });
     func_logger.trace({"message": "START", "params": {"val": val}});
@@ -233,27 +266,6 @@ export function ContentViewer(
     func_logger.debug({"message": "END"});
   };
 
-  const appendTemplate = async() => {
-    const func_logger = logger.child({ "func": "ContentViewer.appendTemplate" });
-    func_logger.debug({"message": "START"});
-    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/template?target=${selectedTemplate}`);
-    const result = await fetch(uri);
-    let json_data = null;
-    if (result.ok) {
-      json_data = await result.json();
-
-      let tmpText;
-      if (text.substr(-1) === "\n" || text.length == 0) {
-        tmpText = text + json_data["template"];
-      } else {
-        tmpText = text + "\n" + json_data["template"];
-      }
-      updateEditData(tmpText, false, false, 0);
-    }
-    
-    func_logger.debug({"message": "END", "json_data": json_data});
-  };
-
   const getHistoryDetail = async(revision: string) => {
     const func_logger = logger.child({ "func": "ContentViewer.getHistoryDetail" });
     func_logger.debug({"message": "START"});
@@ -269,12 +281,28 @@ export function ContentViewer(
     func_logger.debug({"message": "END"});
   };
 
+  const showDiff = async() => {
+    const func_logger = logger.child({ "func": "ContentViewer.showDiff" });
+    func_logger.debug({"message": "START"});
+
+    const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/diff?t1=${pageData.title}&t2=${diffTarget}`);
+    const result = await fetch(uri);
+    if (result.ok) {
+      const json_data = await result.json();
+      func_logger.trace({"json_data": json_data});
+      setDiffHtml(json_data["diff_html"]);
+      //onOpen();
+      state.open();
+    }
+    
+    func_logger.debug({"message": "END"});
+  };
   const appendHistoryDetail = async() => {
     const func_logger = logger.child({ "func": "ContentViewer.appendHistoryDetail" });
     func_logger.debug({"message": "START"});
 
     let new_text;
-    if (text.substr(-1) === "\n" || text.length == 0) {
+    if (text.slice(-1) === "\n" || text.length == 0) {
       new_text = text + revisionText;
     } else {
       new_text = text + "\n" + revisionText;
@@ -349,25 +377,6 @@ export function ContentViewer(
     // eslint-disable-next-line
   }, [session?.user?.id, pageData.title]);
 
-  // useEffect(() => {
-  //   const func_logger = logger.child({ "func": "ContentViewer.useEffect" });
-  //   runLoadData();
-  //   const uri = encodeURI(process.env.NEXT_PUBLIC_BASE_PATH + `/api/markdown/text/timestamp-sse?target=${pageData.title}`);
-  //   const eventSource = new EventSource(uri);
-  //   eventSource.onmessage = (event) => {
-  //     func_logger.debug({"message": "onMessage", "event": event});
-  //     setTimestampSSE(event.data);
-  //   };
-  //   eventSource.onerror = () => {
-  //     func_logger.debug({"message": "onError"});
-  //     eventSource.close();
-  //   };
-  //   return () => {
-  //     eventSource.close();
-  //   };
-  //   // eslint-disable-next-line
-  // }, [pageData.title]);
-  
   // タイマー時刻が更新された際にデータをチェックまたは保存する
   useEffect(() => {
     (async() => {
@@ -462,186 +471,220 @@ export function ContentViewer(
   }});
 
   return (
-    <div className="container mx-auto">
-      <Tabs aria-label="editor">
-        <Tab key="editor" title="編集" className="flex">
-          <Card className="grow">
-            <CardBody>
-              <div className="flex">
-                <div className="grow">
-                  <Input type="text" label="タイトル" value={pageData.title} />
-                </div>
-                <div className="flex">
-                  {(pageData.scheduleData != null && pageData.scheduleData?.templates != null && pageData.scheduleData.templates.length > 0) ?
-                    <>
-                      <Select label="テンプレート" className="ml-2 min-w-40"
-                        selectionMode="single"
-                        onSelectionChange={(keys) => {
-                          const keylist: React.Key[] = [...keys];
-                          func_logger.trace({"keylist": keylist});
-                          if (keylist.length === 0) {
-                            setSelectedTemplate("");
-                          } else {
-                            setSelectedTemplate(keylist[0] as string);
-                          }
-                        }}
-                        selectedKeys={[selectedTemplate]} 
-                      >
-                        {pageData.scheduleData.templates.map((template) => (
-                          <SelectItem key={template}>
-                            {template}
-                          </SelectItem>
-                        ))}
-                      </Select>
-                      <Button color="primary" className="ml-2 h-full" size="sm"
-                        isDisabled={selectedTemplate === "" ? true : false}
-                        onPress={() => {
-                          appendTemplate();
-                        }}
-                      >
-                        テンプレ<br/>取込
-                      </Button>
-                    </>
-                    :
-                    <></>
-                  }
-                  <Button color="primary" className="ml-1 h-full"
-                    size="sm" onPress={() => loadData()}>
-                    読込<br/>(上書き)
-                  </Button>
-
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <div className="flex flex-col">
-                      <Switch
-                        name="autosaveSwitch"
-                        isSelected={autosave}
-                        onValueChange={setAutosave}
-                        size="lg"
-                        className="ml-1 h-full"
-                        startContent={<Save />}
-                        endContent={<Save />}
-                        isDisabled={editData.conflicted}
-                      />
-                      <div className="text-xs text-center">自動保存</div>
-                    </div>
-                    :
-                    <div className="ml-1"></div>
-                  }
-                  <Button color={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-0 h-full"
-                    size="sm" onPress={() => saveData(false)}>
-                    保存
-                  </Button>
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Button color={editData.committed ? "primary" : "danger"} className="ml-1 h-full"
-                      size="sm" onPress={() => saveData(true)}>
-                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
-                    </Button>
-                    :
-                    <></>
-                  }
-                </div>
+    <div className="container">
+      <div className={showEditor ? "flex flex-row" : "hidden"}>
+        <Card className="grow rounded m-0 p-1">
+          <Card.Content>
+            <div className="flex">
+              <div className="flex flex-col h-full my-2 ml-1">
+                <Switch isSelected={showEditor} onChange={setShowEditor} size="lg">
+                  <Switch.Content>
+                    <Switch.Control>
+                      <Switch.Thumb>
+                        <FilePenLine />
+                      </Switch.Thumb>
+                    </Switch.Control>
+                  </Switch.Content>
+                </Switch>
               </div>
-              <div id="editor">
-                <CodeMirror value={text}
-                  extensions={[markdown({ base: markdownLanguage, codeLanguages: languages })]}
-                  onChange={onChange} height="calc(100dvh - 200px)"
-                  theme={xcodeLight}
+              <Input value={pageData.title} placeholder="タイトル" className="grow" readOnly />
+              <div className="flex">
+                <Input value={diffTarget} onChange={(e) => setDiffTarget(e.target.value)}
+                  placeholder="差分対象" className="ml-2 min-w-40 text-xs"
+                  onKeyDown={(e) =>{
+                    if (e.target instanceof HTMLInputElement) {
+                      if (e.key == "ArrowUp") {
+                        let newTarget = diffTarget;
+                        if (newTarget == "") {
+                          newTarget = pageData.title;
+                        } else {
+                          newTarget = getPrevDay(newTarget)
+                        }
+                        setDiffTarget(newTarget);
+                      } else if (e.key == "ArrowDown") {
+                        let newTarget = diffTarget;
+                        if (newTarget == "") {
+                          newTarget = pageData.title;
+                        } else {
+                          newTarget = getNextDay(newTarget)
+                        }
+                        setDiffTarget(newTarget);
+                      } else if (e.key == "Enter") {
+                        showDiff();
+                      }
+                    }
+                  }}
                 />
-              </div>
-            </CardBody>
-          </Card>
-          {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-            <>
-              <Card className={showHistories ? "visible" : "hidden"}>
-                <CardBody>
-                  <div>
-                    バージョン一覧
-                    <Link rel="me" onPress={() => setShowHistories(false)}>　》</Link>
-                    <hr className="mt-2"/>
-                    <div className="m-0">
-                      <Listbox aria-label="history-list" className="m-0 p-0">
-                        {histories && histories.map((history: History) => 
-                          <ListboxItem key={history["revision"]} aria-label={history["revision"]}
-                            endContent={<span>{history["revision"]}</span>}
-                            className="m-0 p-0">
-                            <Popover placement="left" className="m-0 p-0" size="lg"
-                              onOpenChange={() => getHistoryDetail(history.revision)}>
-                              <PopoverTrigger className="m-0 p-0">
-                                <Button className="m-0 p-0" variant="light">
-                                  {history["datetime"]}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent>
-                                <div>
-                                  <Button className="m-1 p-1" onPress={() => appendHistoryDetail()}>取込</Button>
-                                  <Button className="m-1 p-1" onPress={() => replaceHistoryDetail()}>差替</Button>
-                                  <Textarea className="w-[600px]" minRows={10} value={revisionText}
-                                    isReadOnly />
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </ListboxItem>
-                        )}
-                      </Listbox>
-                    </div>
+                <Button variant="primary" className="ml-2 h-full text-xs rounded-md" size="sm"
+                  isDisabled={diffTarget === "" ? true : false}
+                  onPress={() => {
+                    showDiff();
+                  }}
+                >
+                   差分<br/>表示
+                </Button>
+              
+                {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                  <div className="flex flex-col h-full">
+                    <Switch isSelected={autosave} onChange={setAutosave}
+                      className="ml-1" size="lg"
+                    >
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb>
+                            <Save />
+                          </Switch.Thumb>
+                        </Switch.Control>
+                      </Switch.Content>
+                    </Switch>
+                    <div className="text-xs text-center">自動保存</div>
                   </div>
-                </CardBody>
-              </Card>
-              <Card className={showHistories ? "hidden" : "visible"}>
-                <CardBody>
-                  <div><Link rel="me" onPress={() => getHistories()}>《</Link></div>
-                </CardBody>
-              </Card>
-            </>
-            :
-            <></>
-          }
-        </Tab>
-        <Tab key="viewer" title="参照">
-          <Card>
-            <CardBody>
-              <div className="flex">
-                <div className="grow" />
-                <div className="flex">
-                  <Button color="primary" className="ml-1 h-full"
-                    size="sm" onPress={() => loadData()}>
-                    読込
+                  :
+                  <div className="ml-1"></div>
+                }
+                <Button variant={(!editData.conflicted && compareText(editData.originalText, text)) ? "primary": "danger"} className="ml-1 h-full text-xs rounded-md"
+                  size="sm" onPress={() => saveData(false)}>
+                                                              保存
+                </Button>
+                {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                  <Button variant={editData.committed ? "primary" : "danger"} className="ml-1 h-full text-xs rounded-md"
+                    size="sm" onPress={() => saveData(true)}>
+                    {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
                   </Button>
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Switch
-                      name="autosaveSwitch"
-                      isSelected={autosave}
-                      onValueChange={setAutosave}
-                      size="lg"
-                      className="ml-1 h-full"
-                      startContent={<Save />}
-                      endContent={<Save />}
-                      disabled={editData.conflicted}
-                    />
-                    :
-                    <div className="ml-1"></div>
-                  }
-                  <Button color={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-0 h-full"
-                    size="sm" onPress={() => saveData(false)}>
-                    保存
-                  </Button>
-                  {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
-                    <Button color={editData.committed ? "primary" : "danger"} className="ml-1 h-full"
-                      size="sm" onPress={() => saveData(true)}>
-                      {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
-                    </Button>
-                    :
-                    <></>
-                  }
+                  :
+                  <></>
+                }
+                <div className={showHistories ? "hidden" : "visible flex items-center"}>
+                  <Button onPress={() => getHistories()} variant="outline" className="ml-1 m-0 p-2 rounded-lg"><ChevronsLeft size={18}/></Button>
                 </div>
               </div>
-              <div className="markdown-body"
-                dangerouslySetInnerHTML={{__html: editData.html}}>
+            </div>
+            <div id="editor">
+              <CodeMirror value={text}
+                extensions={[markdown({ base: markdownLanguage, codeLanguages: languages })]}
+                onChange={onChange} height="calc(100dvh - 6em)"
+                theme={xcodeLight}
+              />
+            </div>
+          </Card.Content>
+        </Card>
+        {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+          <>
+            <Card className={showHistories ? "ml-1 rounded visible" : "hidden"}>
+              <Card.Content>
+                <div className="flex items-center text-sm rounded">
+                                                                     バージョン一覧
+                  <Button onPress={() => setShowHistories(false)} variant="outline" className="ml-1 m-0 p-2 rounded-lg"><ChevronsRight size={18}/></Button>
+                </div>
+                <div>
+                  <hr className="mt-2"/>
+                  <div className="m-0">
+                    <ListBox aria-label="history-list" className="m-0 p-0">
+                      {histories && histories.map((history: History) => 
+                        <ListBox.Item key={history["revision"]} aria-label={history["revision"]}
+                          className="my-0 mx-1 p-0 rounded">
+                          <Label className="mx-1">{history["revision"]}</Label>
+                          <Popover
+                            onOpenChange={() => getHistoryDetail(history.revision)}>
+                            <PopoverTrigger className="m-0 p-0">
+                              <Button className="m-0 p-0" variant="ghost">
+                                {history["datetime"]}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent placement="left" className="m-1 p-1">
+                              <div className="flex">
+                                <Button className="m-1 p-1 rounded-lg" onPress={() => appendHistoryDetail()}>取込</Button>
+                                <Button className="m-1 p-1 rounded-lg" onPress={() => replaceHistoryDetail()}>差替</Button>
+                              </div>
+                              <div>
+                                <TextArea className="w-[600px] h-100" rows={10} value={revisionText}
+                                  readOnly />
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </ListBox.Item>
+                      )}
+                    </ListBox>
+                  </div>
+                </div>
+              </Card.Content>
+            </Card>
+          </>
+          :
+          <></>
+        }
+      </div>
+      <div className={showEditor ? "hidden" : ""}>
+        <Card className="grow m-0 p-1 rounded">
+          <Card.Content>
+            <div className="flex">
+              <div className="flex flex-col h-full my-2 ml-1">
+                <Switch isSelected={showEditor} onChange={setShowEditor} size="lg">
+                  <Switch.Content>
+                    <Switch.Control>
+                      <Switch.Thumb>
+                        <FilePenLine />
+                      </Switch.Thumb>
+                    </Switch.Control>
+                  </Switch.Content>
+                </Switch>
               </div>
-            </CardBody>
-          </Card>
-        </Tab>
-      </Tabs>
+              <div className="grow" />
+              <div className="flex">
+                {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                  <div className="flex flex-col h-full my-2 ml-1">
+                    <Switch name="autosaveSwitch" isSelected={autosave}
+                      onChange={setAutosave}
+                      size="lg">
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb>
+                            <Save />
+                          </Switch.Thumb>
+                        </Switch.Control>
+                      </Switch.Content>
+                    </Switch>
+                  </div>
+                  :
+                  <div className="ml-1"></div>
+                }
+                <Button variant={compareText(editData.originalText, text) ? "primary": "danger"} className="ml-1 h-full text-xs rounded-lg"
+                  size="sm" onPress={() => saveData(false)}>
+                                                              保存
+                </Button>
+                {process.env.NEXT_PUBLIC_USE_RCS === "true" ?
+                  <Button variant={editData.committed ? "primary" : "danger"} className="ml-1 h-full text-xs rounded-lg"
+                    size="sm" onPress={() => saveData(true)}>
+                    {process.env.NEXT_PUBLIC_USE_RCS === "true" ? "コミット" : "保存"}
+                  </Button>
+                  :
+                  <></>
+                }
+              </div>
+            </div>
+            <div className="markdown-body"
+              dangerouslySetInnerHTML={{__html: editData.html}}>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+      
+      <Modal state={state}>
+        <Modal.Backdrop>
+          <Modal.Container size="lg" scroll="inside" placement="top">
+            <Modal.Dialog className="m-0 p-2 rounded">
+              <Modal.Body>
+                <div className="border p-1 bg-gray-900 rounded">
+                  <div dangerouslySetInnerHTML={{ __html: diffHtml }}/>
+                </div>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onPress={() => {state.close()}}>閉じる</Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
       <NotifyMessages messages={messages} />
     </div>
   );

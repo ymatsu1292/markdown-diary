@@ -1,4 +1,4 @@
-import { Card, CardBody } from "@heroui/react";
+import { Card } from "@heroui/react";
 
 export function NotifyMessages(
   { messages } : {
@@ -10,13 +10,13 @@ export function NotifyMessages(
     {(messages.length > 0) ?
       <div className="fixed bottom-8 right-8">
         <Card className="bg-red-300">
-          <CardBody>
+          <Card.Content>
             <>
               {messages.map((message, index) => (
                 <p key={index}>{message}</p>
               ))}
             </>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
       :
