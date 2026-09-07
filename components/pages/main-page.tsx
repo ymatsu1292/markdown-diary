@@ -143,10 +143,10 @@ export function MainPage() {
       <MdNavbar doSearchIfNecessary={doSearchIfNecessary} goPageIfNecessary={goPageIfNecessary} />
       <div className="flex">
         <div>
-          <Tabs className="w-full max-w-md text-center gap-0"
+          <Tabs className="w-full max-w-sm text-center gap-0"
             selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)}>
             <Tabs.ListContainer className="mt-1">
-              <Tabs.List aria-label="disp" className="w-fit *:w-fit *:text-sm *:px-3">
+              <Tabs.List aria-label="disp" className="w-fit *:w-fit *:text-sm *:px-2 rounded-md">
                 <Tabs.Tab id="calendar">カレンダー<Tabs.Indicator /></Tabs.Tab>
                 <Tabs.Tab id="files">ファイル<Tabs.Indicator /></Tabs.Tab>
                 <Tabs.Tab id="search">検索<Tabs.Indicator /></Tabs.Tab>
